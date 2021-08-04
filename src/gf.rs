@@ -2,8 +2,8 @@
 
 // Definitions
 type Gf = u16;
-const GFBITS: u16 = 13;
-const GFMASK: u16 = (1 << GFBITS) - 1;
+const GFBITS: usize = 13;
+const GFMASK: usize = (1 << GFBITS) - 1;
 
 pub fn gf_iszero(a: Gf) -> Gf {
     
@@ -21,7 +21,7 @@ pub fn gf_add(in0: Gf, in1: Gf) -> Gf {
 
 pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
 
-    let (mut tmp, mut t0, mut t1, mut t): (u64, u64, u64, u64);
+    let (mut tmp, t0, t1, mut t): (u64, u64, u64, u64);
 
     t0 = in0 as u64;
     t1 = in1 as u64;
