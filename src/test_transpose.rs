@@ -1,5 +1,7 @@
 use crate::transpose;
 
+//
+
 pub fn print_matrix(m: [u64; 64]) {
     
     for i in 0..64 {
@@ -46,7 +48,7 @@ pub fn test_transpose() {
 
     // assert matrice elements are equal
     for g in 0..63 {
-        assert_eq!(expected_result[g] == test_output[g], true);
+        assert_eq!(expected_result[g], test_output[g]);
     }
 
 }
