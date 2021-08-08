@@ -3,7 +3,6 @@ use crate::transpose;
 //
 
 pub fn print_matrix(m: [u64; 64]) {
-    
     for i in 0..64 {
         for j in 0..64 {
             print!("{}", (m[i] >> (63 - j)) & 1);
@@ -13,7 +12,6 @@ pub fn print_matrix(m: [u64; 64]) {
 }
 
 fn setup_exected_result() -> [u64; 64] {
-
     let mut expected_result: [u64; 64] = [0; 64];
 
     expected_result[0] = 3074457345618258602;
@@ -28,7 +26,6 @@ fn setup_exected_result() -> [u64; 64] {
 
 #[test]
 pub fn test_transpose() {
-
     let mut test_input: [u64; 64] = [0; 64];
     let mut test_output: [u64; 64] = [0; 64];
 
@@ -50,5 +47,4 @@ pub fn test_transpose() {
     for g in 0..63 {
         assert_eq!(expected_result[g], test_output[g]);
     }
-
 }

@@ -1,12 +1,9 @@
-
-
 // Definitions
 type Gf = u16;
 const GFBITS: usize = 13;
 const GFMASK: usize = (1 << GFBITS) - 1;
 
 pub fn gf_iszero(a: Gf) -> Gf {
-    
     let mut t: u32 = a as u32;
 
     t -= 1;
@@ -15,14 +12,13 @@ pub fn gf_iszero(a: Gf) -> Gf {
     t as Gf
 }
 
-// 0 .. 65.535 
+// 0 .. 65.535
 // binary addition mod 2^1 is eq. to the XOR operation
 pub fn gf_add(in0: Gf, in1: Gf) -> Gf {
-	in0 ^ in1
+    in0 ^ in1
 }
 
 pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
-
     let (mut tmp, t0, t1, mut t): (u64, u64, u64, u64);
 
     t0 = in0 as u64;
@@ -37,15 +33,15 @@ pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
     // actually a multiplication tmp = t0 * t1 ...
 
     // multiplication in a polynomial ring
-    // example of polynom multiplication, 
+    // example of polynom multiplication,
     // (x^2 + 1) * (x + 2)
     // polynom division
 
     t = tmp & 0x1FF0000;
-	tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
+    tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
 
-	t = tmp & 0x000E000;
-	tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
+    t = tmp & 0x000E000;
+    tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
 
     (tmp & GFMASK as u64) as u16
 }
