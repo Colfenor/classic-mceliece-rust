@@ -20,7 +20,7 @@ pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
 
     let (mut i, mut j, mut s): (usize, usize, usize);
 
-    for h in 0..63 {
+    for h in 0..64 {
         output[h] = input[h];
     }
 
