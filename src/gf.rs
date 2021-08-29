@@ -1,3 +1,5 @@
+use std::num::Wrapping;
+
 // Definitions
 type Gf = u16;
 const GFBITS: usize = 13;
@@ -5,12 +7,12 @@ const GFMASK: usize = (1 << GFBITS) - 1;
 const SYS_T: usize = 128;
 
 pub fn gf_iszero(a: Gf) -> Gf {
-    let mut t: u32 = a as u32;
+    let mut t: Wrapping<u32> = Wrapping(a as u32);
 
-    t -= 1;
+    t -= Wrapping(1u32);
     t >>= 19;
 
-    t as Gf
+    t.0 as u16
 }
 
 // 0 .. 65.535
