@@ -1,9 +1,9 @@
 use std::num::Wrapping;
 
 // Definitions
-type Gf = u16;
-const GFBITS: usize = 13;
-const GFMASK: usize = (1 << GFBITS) - 1;
+pub type Gf = u16;
+pub const GFBITS: usize = 13;
+pub const GFMASK: usize = (1 << GFBITS) - 1;
 const SYS_T: usize = 128;
 
 pub fn gf_iszero(a: Gf) -> Gf {
