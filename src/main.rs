@@ -1,3 +1,4 @@
+mod benes;
 mod gf;
 mod test_gf;
 mod test_transpose;
