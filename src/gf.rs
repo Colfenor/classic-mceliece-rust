@@ -36,9 +36,9 @@ pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
     // actually a multiplication tmp = t0 * t1 ...
 
     // multiplication in a polynomial ring
-    // example of polynom multiplication,
+    // example of polynomial multiplication,
     // (x^2 + 1) * (x + 2)
-    // polynom division
+    // polynomial division
 
     t = tmp & 0x1FF0000;
     tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
@@ -52,7 +52,7 @@ pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
 /* input: field element in */
 /* return: (in^2)^2 */
 #[inline]
-pub fn gf_sq2(input: Gf) -> Gf {
+fn gf_sq2(input: Gf) -> Gf {
     const B: [u64; 4] = [
         0x1111111111111111,
         0x0303030303030303,
@@ -86,7 +86,7 @@ pub fn gf_sq2(input: Gf) -> Gf {
 /* input: field element in, m */
 /* return: (in^2)*m */
 #[inline]
-pub fn gf_sqmul(input: Gf, m: Gf) -> Gf {
+fn gf_sqmul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
     let mut t0: u64;
     let t1: u64;
@@ -119,7 +119,7 @@ pub fn gf_sqmul(input: Gf, m: Gf) -> Gf {
 /* input: field element in, m */
 /* return: ((in^2)^2)*m */
 #[inline]
-pub fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
+fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
     let mut t0: u64;
     let t1: u64;

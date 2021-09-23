@@ -57,7 +57,9 @@ fn layer_ex(data: &mut [u64], bits: &mut u64, lgs: usize) {
 /*        bits, condition bits of the Benes network */
 /*        rev, 0 for normal application; !0 for inverse */
 /* output: r, permuted bits */
-/*pub fn apply_benes(r: &[u8], bits: &[u8], rev: usize) {
+// todo fixe größe angeben, und rückgabewert neues array mit fixer größe
+// 
+pub fn apply_benes(r: &[u8], bits: &[u8], rev: usize) {
 
     let (mut i, mut iter, mut inc): (usize, usize, i32) = (0, 0, 0);
 
@@ -82,4 +84,4 @@ fn layer_ex(data: &mut [u64], bits: &mut u64, lgs: usize) {
         r_int_v[0][i] = load8(r_ptr);
         r_int_v[1][i] = load8(*r_ptr + i*16 + 8);
     }
-}*/
+}
