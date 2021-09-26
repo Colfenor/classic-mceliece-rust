@@ -4,7 +4,8 @@ use std::num::Wrapping;
 pub type Gf = u16;
 pub const GFBITS: usize = 13;
 pub const GFMASK: usize = (1 << GFBITS) - 1;
-const SYS_T: usize = 128;
+pub const SYS_T: usize = 128;
+pub const SYS_N: usize = 8192;
 
 pub fn gf_iszero(a: Gf) -> Gf {
     let mut t: Wrapping<u32> = Wrapping(a as u32);
