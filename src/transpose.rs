@@ -357,3 +357,22 @@ pub fn test_transpose() {
         assert_eq!(test_output, testcases[i].output);
     }
 }
+
+/*
+fn uint64_MINMAX(mut a: u64, mut b: u64) -> (u64, u64) {
+
+    let mut c: i64 = b as i64 - a as i64;
+    println!("1: 0x{:016X}i64,", c);
+    println!("2: {}", c);
+    c >>= 63;
+    println!("3: 0x{:016X}i64,", c);
+    println!("4: {}", c);
+    c = -c;
+    println!("4: {}", c);
+    let mut c_u64 = c as u64;
+    c_u64 &= a ^ b;
+    a ^= c_u64;
+    b ^= c_u64;
+
+    (a, b)
+}*/

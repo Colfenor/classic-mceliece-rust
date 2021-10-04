@@ -2,10 +2,9 @@
   This file is for evaluating a polynomial at one or more field elements
 */
 
-use crate::gf::{Gf, SYS_N, SYS_T, gf_add, gf_mul};
+use crate::gf::{gf_add, gf_mul, Gf, SYS_N, SYS_T};
 
 fn eval(f: &mut [Gf; SYS_T], a: Gf) -> Gf {
-
     let mut i: usize;
     let mut r: Gf = f[SYS_T];
 
@@ -22,11 +21,9 @@ fn eval(f: &mut [Gf; SYS_T], a: Gf) -> Gf {
 /* input: polynomial f and list of field elements L */
 /* output: out = [ f(a) for a in L ] */
 fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T], L: &mut [Gf; SYS_T]) {
-
     let mut i: usize = 0;
 
     while i < SYS_N {
-
         out[i] = eval(f, L[i]);
 
         i += 1;
