@@ -1,6 +1,7 @@
 mod benes;
 mod gf;
 mod root;
+mod synd;
 mod transpose;
 mod uint64_sort;
 mod util;

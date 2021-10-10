@@ -58,9 +58,10 @@ fn layer_ex(data: &mut [u64], bits: &mut u64, lgs: usize) {
 /*        rev, 0 for normal application; !0 for inverse */
 /* output: r, permuted bits */
 // todo fixe größe angeben, und rückgabewert neues array mit fixer größe
-//
+//#define crypto_kem_mceliece8192128f_ref_SECRETKEYBYTES 14120 -> sk
+//ret_decrypt = decrypt(e, sk + 40, c);
 /*
-pub fn apply_benes(r: &[u8], bits: &[u8], rev: usize) {
+pub fn apply_benes(r: &[u8], bits: &[u8; 14160], rev: usize) {
 
     let (mut i, mut iter, mut inc): (usize, usize, i32) = (0, 0, 0);
 
@@ -85,5 +86,4 @@ pub fn apply_benes(r: &[u8], bits: &[u8], rev: usize) {
         r_int_v[0][i] = load8(r_ptr);
         r_int_v[1][i] = load8(*r_ptr + i*16 + 8);
     }
-}
-*/
+} */
