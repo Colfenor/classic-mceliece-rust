@@ -100,7 +100,7 @@ fn test_uint64_MINMAX() {
 
         if x > y {
             println!(
-                "errornous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
+                "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
                 x, y
             );
         }
