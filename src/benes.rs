@@ -1,4 +1,8 @@
-use crate::{gf::GFBITS, transpose, util::load8};
+use crate::{
+    gf::GFBITS,
+    transpose,
+    util::{load8, store8},
+};
 /*
   This file is for Benes network related functions
 
@@ -63,10 +67,10 @@ fn layer_ex(data: &mut [u64], bits: &mut [u64], lgs: usize) {
 //let mut subbits = [0u8; 3584];
 //subbits.copy_from_slice(&bits[0..3584]);
 
-pub fn apply_benes(r: &[u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usize) {
+pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
     let (mut i, mut iter, mut inc): (usize, usize, i32) = (0, 0, 0);
 
-    //let mut r_ptr = [0u8; (1 << GFBITS)/8];
+    //let mut r_ptr = r;
     let mut bits_ptr: &[u8];
 
     let mut r_int_v = [[0u64; 64]; 2];
@@ -92,10 +96,10 @@ pub fn apply_benes(r: &[u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usize) 
         //r_int_v[1][i] = load8();
     }*/
 
-    for chunk in r.chunks(16) {
-        let (subchunk1, _) = chunk.split_at(8);
-        r_int_v[0][i] = load8(chunk);
+    for chunk in r.chunks_mut(16) {
+        let (subchunk1, _) = chunk.split_at_mut(8);
         r_int_v[1][i] = load8(subchunk1);
+        r_int_v[0][i] = load8(chunk);
     }
 
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
@@ -162,9 +166,9 @@ pub fn apply_benes(r: &[u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usize) 
     transpose::transpose(&mut r_int_v[0], r_int_h[0]);
     transpose::transpose(&mut r_int_v[1], r_int_h[1]);
 
-    /*for chunk in r.chunks(16) {
-        let (subchunk1, _) = chunk.split_at(8);
-        //store8(); r_int_v[0][i]
-
-    }*/
+    for chunk in r.chunks_mut(16) {
+        let (subchunk1, _) = chunk.split_at_mut(8);
+        store8(subchunk1, r_int_v[1][i]);
+        store8(chunk, r_int_v[0][i]);
+    }
 }
