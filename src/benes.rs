@@ -14,6 +14,7 @@ use crate::{
 fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     let (mut i, mut j, mut s): (usize, usize, usize) = (0, 0, 0);
     let mut d: u64;
+    let mut index = 0;
 
     s = 1 << lgs;
 
@@ -21,12 +22,18 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
         j = i;
         while j < i + s {
             d = data[0][j + 0] ^ data[0][j + s];
-            d &= bits[j + 1] as u64;
+
+            d &= bits[index];
+            index += 1;
+
             data[0][j + 0] ^= d;
             data[0][j + s] ^= d;
 
             d = data[1][j + 0] ^ data[1][j + s];
-            d &= bits[j + 1] as u64;
+
+            d &= bits[index];
+            index += 1;
+
             data[1][j + 0] ^= d;
             data[1][j + s] ^= d;
 
@@ -39,14 +46,17 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 fn layer_ex(data: &mut [u64], bits: &mut [u64], lgs: usize) {
     let (mut i, mut j, mut s): (usize, usize, usize) = (0, 0, 0);
     let mut d: u64;
-
+    let mut index = 0;
     s = 1 << lgs;
 
     while i < 64 {
         j = i;
         while j < i + s {
             d = data[j + 0] ^ data[j + s];
-            d &= bits[j + 1] as u64;
+
+            d &= bits[index];
+            index += 1;
+
             data[j + 0] ^= d;
             data[j + s] ^= d;
 
@@ -67,25 +77,15 @@ fn layer_ex(data: &mut [u64], bits: &mut [u64], lgs: usize) {
 //let mut subbits = [0u8; 3584];
 //subbits.copy_from_slice(&bits[0..3584]);
 
-pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
-    let (mut i, mut iter, mut inc): (usize, usize, i32) = (0, 0, 0);
-
-    //let mut r_ptr = r;
-    let mut bits_ptr: &[u8];
+pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usize) {
+    let mut i: usize = 0;
 
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
     let mut b_int_h = [0u64; 64];
 
-    // todo check on ptr arithmetic
-    if rev != 0 {
-        //bits_ptr = bits + 12288;
-        inc = -1024;
-    } else {
-        bits_ptr = bits;
-        inc = 0;
-    }
+    let mut calc_index = if rev == 0 { 0 } else { 12288 };
 
     /*for i in 0..64 {
         let mut r_ptr: Vec<u8> = Vec::with_capacity(i*16 + 0);
@@ -97,29 +97,31 @@ pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
     }*/
 
     for chunk in r.chunks_mut(16) {
-        let (subchunk1, _) = chunk.split_at_mut(8);
+        let (subchunk1, subchunk2) = chunk.split_at_mut(8);
         r_int_v[1][i] = load8(subchunk1);
-        r_int_v[0][i] = load8(chunk);
+        r_int_v[0][i] = load8(subchunk2);
     }
 
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
     transpose::transpose(&mut r_int_h[1], r_int_v[1]);
 
-    if rev == 0 {
-        let mut iter = 0;
-        while iter <= 6 {
-            for chunk in bits.chunks(8) {
-                b_int_v[i] = load8(chunk);
-            }
-
-            transpose::transpose(&mut b_int_h, b_int_v);
-
-            layer_ex(&mut r_int_h[0], &mut b_int_h, iter);
-
-            iter += 1;
+    let mut iter = 0;
+    while iter <= 6 {
+        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
+            b_int_v[i] = load8(chunk);
         }
-    } else {
-        // todo
+
+        calc_index = if rev == 0 {
+            calc_index
+        } else {
+            calc_index - 1024
+        };
+
+        transpose::transpose(&mut b_int_h, b_int_v);
+
+        layer_ex(&mut r_int_h[0], &mut b_int_h, iter);
+
+        iter += 1;
     }
 
     transpose::transpose(&mut r_int_v[0], r_int_h[0]);
@@ -127,20 +129,30 @@ pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
 
     let mut iter: usize = 0;
     while iter <= 5 {
-        for chunk in bits.chunks(8) {
+        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
         }
+        calc_index = if rev == 0 {
+            calc_index
+        } else {
+            calc_index - 1024
+        };
 
         layer_in(&mut r_int_v, &mut b_int_v, iter);
 
         iter += 1;
     }
-
+    // alternative: for loop in range with rev
     iter = 4;
     while iter >= 0 {
-        for chunk in bits.chunks(8) {
+        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
         }
+        calc_index = if rev == 0 {
+            calc_index
+        } else {
+            calc_index - 1024
+        };
 
         layer_in(&mut r_int_v, &mut b_int_v, iter);
 
@@ -152,9 +164,14 @@ pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
 
     iter = 6;
     while iter >= 0 {
-        for chunk in bits.chunks(8) {
+        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
         }
+        calc_index = if rev == 0 {
+            calc_index
+        } else {
+            calc_index - 1024
+        };
 
         transpose::transpose(&mut b_int_h, b_int_v);
 
@@ -167,8 +184,10 @@ pub fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 14160], rev: usize) {
     transpose::transpose(&mut r_int_v[1], r_int_h[1]);
 
     for chunk in r.chunks_mut(16) {
-        let (subchunk1, _) = chunk.split_at_mut(8);
-        store8(subchunk1, r_int_v[1][i]);
-        store8(chunk, r_int_v[0][i]);
+        let (subchunk1, subchunk2) = chunk.split_at_mut(8);
+        store8(subchunk1, r_int_v[0][i]);
+        store8(subchunk2, r_int_v[1][i]);
     }
 }
+
+// todo unit testing
