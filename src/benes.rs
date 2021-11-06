@@ -50,14 +50,11 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     let mut index2 = 32;
 
     s = 1 << lgs;
-    println!("---the S: {} ---", s);
     while i < 64 {
         j = i;
         while j < i + s {
             d = data[0][j + 0] ^ data[0][j + s];
-            println!("1: {} 2:{} \n", data[0][j + 0], data[0][j + s]);
             d &= bits[index];
-            println!("ind:{} j:{} d:{}", index, j, d);
             index += 1;
 
             data[0][j + 0] ^= d;
@@ -65,7 +62,6 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 
             d = data[1][j + 0] ^ data[1][j + s];
             d &= bits[index2];
-            //println!("in2:{} j:{}", index2, j);
             index2 += 1;
 
             data[1][j + 0] ^= d;
@@ -112,10 +108,6 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
         i += 1;
     }
 
-    for i in 0..r_int_v[0].len() {
-        //println!("i:{} res:{}", i, r_int_v[0][i]);
-    }
-
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
     transpose::transpose(&mut r_int_h[1], r_int_v[1]);
 
@@ -124,12 +116,11 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
         i = 0;
         for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
-            //println!("i:{} b:{} ", i, b_int_v[i]);
             i += 1;
         }
 
         calc_index = if rev == 0 {
-            calc_index
+            calc_index + 512
         } else {
             calc_index - 1024
         };
@@ -152,7 +143,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
             i += 1;
         }
         calc_index = if rev == 0 {
-            calc_index
+            calc_index + 512
         } else {
             calc_index - 1024
         };
@@ -169,7 +160,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
             i += 1;
         }
         calc_index = if rev == 0 {
-            calc_index
+            calc_index + 512
         } else {
             calc_index - 1024
         };
@@ -187,7 +178,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
             i += 1;
         }
         calc_index = if rev == 0 {
-            calc_index
+            calc_index + 512
         } else {
             calc_index - 1024
         };
@@ -210,10 +201,10 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
 }
 
 #[test]
-fn test_applyBenes() {
+fn test_apply_benes() {
     let mut L = [0u8; (1 << GFBITS) / 8];
     let mut bits = [0u8; 14160];
-    bits[0] = 1;
+    bits[0] = 255;
 
     for i in 0..L.len() {
         L[i] = 1;
@@ -223,7 +214,7 @@ fn test_applyBenes() {
     apply_benes(&mut L, &bits, 0);
 
     for i in 0..L.len() {
-        //println!("i:{} res:{}", i, L[i]);
+        println!("i:{} res:{}", i, L[i]);
         if i > 40 {
             break;
         }
