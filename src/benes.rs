@@ -1,7 +1,7 @@
 use crate::{
-    gf::GFBITS,
+    gf::{Gf, GFBITS, SYS_N},
     transpose,
-    util::{load8, store8},
+    util::{bitrev, load8, store8},
 };
 /*
   This file is for Benes network related functions
@@ -217,6 +217,33 @@ fn test_apply_benes() {
         println!("i:{} res:{}", i, L[i]);
         if i > 40 {
             break;
+        }
+    }
+}
+
+pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; 14160]) {
+    let mut a: Gf;
+    let (mut i, mut j): (usize, usize);
+    let mut L = [[0u8; (1 << GFBITS) / 8]; GFBITS];
+
+    i = 0;
+    while i < (1 << GFBITS) {
+        a = bitrev(i as Gf);
+        for j in 0..GFBITS {
+            L[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
+        }
+        i += 1;
+    }
+
+    for j in 0..GFBITS {
+        apply_benes(&mut L[j], c, 0);
+    }
+
+    for i in 0..SYS_N {
+        s[i] = 0;
+        for j in (0..=(GFBITS - 1)).rev() {
+            s[i] <<= 1;
+            s[i] |= ((L[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
 }
