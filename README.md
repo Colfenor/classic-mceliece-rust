@@ -1,4 +1,4 @@
-# classic-mceliece
+# classic-mceliece-rust
 
 This repository aims to be a rust port of the Classic McEliece public-key encryption and key-establishment NIST reference implementation.
 
