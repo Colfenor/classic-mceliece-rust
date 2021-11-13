@@ -1,4 +1,6 @@
 mod benes;
+mod bm;
+mod crypto_hash;
 mod gf;
 mod root;
 mod synd;

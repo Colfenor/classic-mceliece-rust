@@ -202,23 +202,25 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
 
 #[test]
 fn test_apply_benes() {
-    let mut L = [0u8; (1 << GFBITS) / 8];
+    // Basic testcase
+    let mut L = [31u8; (1 << GFBITS) / 8];
     let mut bits = [0u8; 14160];
     bits[0] = 255;
 
-    for i in 0..L.len() {
-        L[i] = 1;
-        //println!("{} i:{}", L[i], i);
-    }
+    let mut compare_array = [31u8; (1 << GFBITS) / 8];
+    compare_array[0] = 47;
+    compare_array[1] = 47;
 
     apply_benes(&mut L, &bits, 0);
 
-    for i in 0..L.len() {
+    assert_eq!(L, compare_array);
+
+    /*for i in 0..L.len() {
         println!("i:{} res:{}", i, L[i]);
         if i > 40 {
             break;
         }
-    }
+    }*/
 }
 
 pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; 14160]) {
