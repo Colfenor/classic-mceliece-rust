@@ -5,13 +5,11 @@ use crate::gf::{gf_frac, gf_mul, Gf, SYS_T};
   see http://crypto.stanford.edu/~mironov/cs359/massey.pdf
 */
 
-// TODO verify side channel sec
 pub fn min(a: usize, b: usize) -> usize {
-    if a < b {
-        a
-    } else {
-        b
-    }
+    let c = (a < b) as isize; // c = 0000_0000_0000_0001
+    let d = c << (isize::BITS - 1); // d = 1000_0000_0000_0000
+    let e = (d >> (isize::BITS - 1)) as usize; // e = 1111_1111_1111_1111
+    (a & e) | (b & !e)
 }
 
 /* the Berlekamp-Massey algorithm */
@@ -32,11 +30,6 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 256]) {
     let mut b: Gf = 1;
     let mut d: Gf;
     let mut f: Gf;
-
-    for i in 0..SYS_T + 1 {
-        C[i] = 0;
-        B[i] = 0;
-    }
 
     B[1] = 1;
     C[0] = 1;
