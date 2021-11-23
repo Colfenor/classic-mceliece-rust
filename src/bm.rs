@@ -1,4 +1,7 @@
-use crate::gf::{gf_frac, gf_mul, Gf, SYS_T};
+use crate::{
+    gf::{gf_frac, gf_mul, Gf},
+    params::SYS_T,
+};
 
 /*
   This file is for the Berlekamp-Massey algorithm

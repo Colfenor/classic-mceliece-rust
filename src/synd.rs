@@ -1,6 +1,6 @@
-use crate::gf::{gf_add, gf_inv, gf_mul, Gf, SYS_N, SYS_T};
+use crate::gf::{gf_add, gf_inv, gf_mul, Gf};
+use crate::params::{SYS_N, SYS_T};
 use crate::root::eval;
-
 /* input: Goppa polynomial f, support L, received word r */
 /* output: out, the syndrome of length 2t */
 fn synd(out: &mut [Gf; SYS_T * 2], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N], r: &[u8]) {

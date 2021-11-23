@@ -1,7 +1,10 @@
+mod api;
 mod benes;
 mod bm;
 mod crypto_hash;
 mod gf;
+mod int32_sort;
+mod params;
 mod root;
 mod synd;
 mod transpose;

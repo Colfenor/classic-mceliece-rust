@@ -1,4 +1,4 @@
-use crate::gf::{Gf, GFMASK};
+use crate::{gf::Gf, params::GFMASK};
 /*
   This file is for loading/storing data in a little-endian fashion
 */

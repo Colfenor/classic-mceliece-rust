@@ -1,5 +1,7 @@
 use crate::{
-    gf::{Gf, GFBITS, SYS_N},
+    gf::Gf,
+    params::GFBITS,
+    params::SYS_N,
     transpose,
     util::{bitrev, load8, store8},
 };

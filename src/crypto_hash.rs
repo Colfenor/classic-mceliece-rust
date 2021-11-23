@@ -5,10 +5,20 @@ use sha3::{
     Digest, Shake256,
 };
 
-use crate::gf::SYND_BYTES;
+use crate::params::SYND_BYTES;
 
 /*
 wrapper for the Shake256 hashing algo
+
+// todo find out how to read input at specific position
+
+(Variante 1: bestimme alle Input + Outputgrößen und definiere eigene Funktionen für jede Größe
+mit Arrays als Argumente und Rückgabewert)
+
+eher bevorzugt
+Variante 2: eine Funktion und Referenzen auf Slices als Argumente… zB “input: &[u8]”.
+
+input.len()
 */
 pub fn shake256(output: &mut [u8; 448], input: [u8; 1025]) {
     let mut shake_hash_fn = Shake256::default();
@@ -18,7 +28,6 @@ pub fn shake256(output: &mut [u8; 448], input: [u8; 1025]) {
     result_shake.read(output);
 }
 
-// todo find out how to read input at specific position
 #[test]
 pub fn test_shake256() {
     println!("synd:{}", SYND_BYTES); // 208 + 240 c
@@ -32,6 +41,7 @@ pub fn test_shake256() {
     for i in 0..c.len() {
         println!("i:{} c:{}", i, c[i]);
     }
+    // todo assert input array
 
     println!("done");
 }

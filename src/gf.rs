@@ -1,14 +1,8 @@
 use std::num::Wrapping;
 
-// Definitions
-pub type Gf = u16;
-pub const GFBITS: usize = 13;
-pub const GFMASK: usize = (1 << GFBITS) - 1;
-pub const SYS_T: usize = 128;
-pub const SYS_N: usize = 8192;
+use crate::params::{GFBITS, GFMASK, SYS_T};
 
-pub const PK_NROWS: usize = SYS_T * GFBITS;
-pub const SYND_BYTES: usize = (PK_NROWS + 7) / 8;
+pub type Gf = u16;
 
 pub fn gf_iszero(a: Gf) -> Gf {
     let mut t: Wrapping<u32> = Wrapping(a as u32);
