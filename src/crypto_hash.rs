@@ -7,41 +7,50 @@ use sha3::{
 
 use crate::params::SYND_BYTES;
 
-/*
-wrapper for the Shake256 hashing algo
+pub fn shake256(start: usize, end: usize, output: &mut [u8; 448], input: [u8; 1025]) {
+    if !(0 < start && start <= 448 || 0 < end && end <= 448) {
+        println!("invalid input range !");
+        return;
+    }
 
-// todo find out how to read input at specific position
-
-(Variante 1: bestimme alle Input + Outputgrößen und definiere eigene Funktionen für jede Größe
-mit Arrays als Argumente und Rückgabewert)
-
-eher bevorzugt
-Variante 2: eine Funktion und Referenzen auf Slices als Argumente… zB “input: &[u8]”.
-
-input.len()
-*/
-pub fn shake256(output: &mut [u8; 448], input: [u8; 1025]) {
     let mut shake_hash_fn = Shake256::default();
     shake_hash_fn.update(input);
 
     let mut result_shake = shake_hash_fn.finalize_xof();
-    result_shake.read(output);
+    result_shake.read(&mut output[start..=end]);
 }
 
 #[test]
 pub fn test_shake256() {
     println!("synd:{}", SYND_BYTES); // 208 + 240 c
 
-    let mut c = [0u8; 448]; // size determines how many bytes are read
+    let compare_array: [u8; 448] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 55, 81,
+        44, 85, 4, 189, 1, 7, 40, 132, 103, 127, 97, 167, 25, 227, 112, 198, 162, 66, 176, 109,
+        230, 169, 238, 211, 180, 135, 14, 199, 94, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    let mut c = [0u8; 448];
     let mut two_e = [0u8; 1025];
     two_e[0] = 2; //inlen -> sizeof(two_e) == 1025;
 
-    shake256(&mut c, two_e);
+    shake256(208, 239, &mut c, two_e);
 
-    for i in 0..c.len() {
+    /*for i in 0..c.len() {
         println!("i:{} c:{}", i, c[i]);
-    }
-    // todo assert input array
-
-    println!("done");
+    }*/
+    assert_eq!(c, compare_array);
 }
