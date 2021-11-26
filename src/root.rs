@@ -31,7 +31,9 @@ fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N]) {
 
 #[test]
 pub fn test_root() {
-    let mut test_array = [
+    assert_eq!(SYS_N, 8192);
+
+    let mut test_array: [u16; 8192] = [
         1, 1, 3144, 1885, 3035, 8041, 6283, 5074, 7699, 7531, 4782, 1571, 6052, 4586, 6620, 3423,
         1232, 5176, 1605, 7264, 3634, 2768, 8019, 7769, 1819, 3099, 5259, 7503, 6041, 6485, 3239,
         2765, 2642, 671, 242, 905, 3227, 4037, 5988, 7598, 4718, 4330, 1085, 2896, 6478, 598, 2454,
@@ -586,8 +588,4 @@ pub fn test_root() {
     root(&mut inv, &mut g, &mut L);
 
     assert_eq!(test_array, inv);
-
-    /*for i in 0..inv.len() {
-        println!("i:{}, inv:{}", i, inv[i]);
-    }*/
 }

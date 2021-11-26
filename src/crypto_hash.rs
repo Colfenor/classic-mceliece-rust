@@ -7,17 +7,13 @@ use sha3::{
 
 use crate::params::SYND_BYTES;
 
-pub fn shake256(start: usize, end: usize, output: &mut [u8; 448], input: [u8; 1025]) {
-    if !(0 < start && start <= 448 || 0 < end && end <= 448) {
-        println!("invalid input range !");
-        return;
-    }
-
+// arbitrary input/output len
+pub fn shake256(output: &mut [u8], input: &[u8]) {
     let mut shake_hash_fn = Shake256::default();
     shake_hash_fn.update(input);
 
     let mut result_shake = shake_hash_fn.finalize_xof();
-    result_shake.read(&mut output[start..=end]);
+    result_shake.read(output);
 }
 
 #[test]
@@ -47,7 +43,7 @@ pub fn test_shake256() {
     let mut two_e = [0u8; 1025];
     two_e[0] = 2; //inlen -> sizeof(two_e) == 1025;
 
-    shake256(208, 239, &mut c, two_e);
+    shake256(&mut c[208..=239], &two_e[0..1025]);
 
     /*for i in 0..c.len() {
         println!("i:{} c:{}", i, c[i]);
