@@ -19,7 +19,7 @@ pub fn eval(f: &mut [Gf; SYS_T + 1], a: Gf) -> Gf {
 
 /* input: polynomial f and list of field elements L */
 /* output: out = [ f(a) for a in L ] */
-fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N]) {
+pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N]) {
     let mut i: usize = 0;
 
     while i < SYS_N {

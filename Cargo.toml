@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 rand = "0.8.4"
 sha3 = "0.9.1"
+lazy_static = "1.4.0"
+aes = "0.7.5"
+block-modes = "0.8.1"

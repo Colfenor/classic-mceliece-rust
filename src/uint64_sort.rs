@@ -16,7 +16,7 @@ const fn uint64_MINMAX(mut a: u64, mut b: u64) -> (u64, u64) {
     (a, b)
 }
 
-fn uint64_sort(x: &mut [u64], n: usize) {
+pub fn uint64_sort(x: &mut [u64], n: usize) {
     let (mut top, mut p, mut q, mut r, mut i): (usize, usize, usize, usize, usize);
 
     if n < 2 {
