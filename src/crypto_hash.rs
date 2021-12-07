@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::Read;
 
 use sha3::{
     digest::{ExtendableOutput, Update},

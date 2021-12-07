@@ -1,4 +1,5 @@
 use crate::{
+    api::CRYPTO_SECRETKEYBYTES,
     gf::Gf,
     params::GFBITS,
     params::SYS_N,
@@ -86,7 +87,11 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 //let mut subbits = [0u8; 3584];
 //subbits.copy_from_slice(&bits[0..3584]);
 
-pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usize) {
+pub fn apply_benes(
+    r: &mut [u8; (1 << GFBITS) / 8],
+    bits: &[u8; CRYPTO_SECRETKEYBYTES + 40],
+    rev: usize,
+) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -206,7 +211,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8; 14160], rev: usi
 fn test_apply_benes() {
     // Basic testcase
     let mut L = [31u8; (1 << GFBITS) / 8];
-    let mut bits = [0u8; 14160];
+    let mut bits = [0u8; CRYPTO_SECRETKEYBYTES + 40];
     bits[0] = 255;
 
     let mut compare_array = [31u8; (1 << GFBITS) / 8];
@@ -225,7 +230,7 @@ fn test_apply_benes() {
     }*/
 }
 
-pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; 14160]) {
+pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; CRYPTO_SECRETKEYBYTES + 40]) {
     let mut a: Gf;
     let (mut i, mut j): (usize, usize);
     let mut L = [[0u8; (1 << GFBITS) / 8]; GFBITS];

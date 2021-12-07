@@ -352,7 +352,7 @@ pub fn test_transpose() {
         println!("Starting testcases {}", i);
 
         transpose(&mut test_output, testcases[i].input);
-        print_matrix(test_output);
+        //print_matrix(test_output);
 
         assert_eq!(test_output, testcases[i].output);
     }

@@ -5,6 +5,8 @@ mod crypto_hash;
 mod gf;
 mod int32_sort;
 mod params;
+mod pk_gen;
+mod pk_gen_arrays;
 mod randombytes;
 mod root;
 mod sk_gen;
