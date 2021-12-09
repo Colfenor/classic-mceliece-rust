@@ -1,8 +1,7 @@
 use crate::{
-    api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
+    api::CRYPTO_PUBLICKEYBYTES,
     gf::{gf_inv, gf_mul},
     params::{GFBITS, GFMASK, PK_NROWS, PK_ROW_BYTES, SYS_N, SYS_T},
-    pk_gen_arrays::{PERM_INPUT, PK_COMPARE},
     root::root,
     uint64_sort::uint64_sort,
     util::{bitrev, load8, load_gf, store8},
@@ -106,7 +105,7 @@ fn mov_columns(
 
     // moving columns of mat according to the column indices of pivots
     for i in 0..PK_NROWS {
-        //mat_row = mat[i]; NEVERRRRR DO THIS !!!!!
+        //mat_row = mat[i]; mut ref would also work
         t = load8(&mat[i][block_idx..block_idx + 8]);
 
         for j in 0..32 {
@@ -235,10 +234,8 @@ pub fn pk_gen(
                 break;
             }
 
-            if row == PK_NROWS - 32 {
-                if mov_columns(&mut mat, pi, pivots) != 0 {
-                    return -1;
-                }
+            if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
+                return -1;
             }
 
             for k in (row + 1)..PK_NROWS {
@@ -297,6 +294,8 @@ pub fn test_mov_columns() {
 
 #[test]
 pub fn test_pk_gen() {
+    use crate::pk_gen_arrays::{PERM_INPUT, PK_COMPARE};
+
     let mut test_perm = PERM_INPUT.to_vec();
     assert_eq!(test_perm.len(), 1 << GFBITS);
 

@@ -5,7 +5,7 @@ use rand::Rng;
 // let (_, c) = b.overflowing_sub(a); shouldn't be used, because this
 // will create a branch on some compilers
 
-const fn uint64_MINMAX(mut a: u64, mut b: u64) -> (u64, u64) {
+const fn uint64_minmax(mut a: u64, mut b: u64) -> (u64, u64) {
     let d: u64 = (!b & a) | ((!b | a) & (b.wrapping_sub(a)));
     let mut c: u64 = d >> 63;
     c = 0u64.wrapping_sub(c);
@@ -32,7 +32,7 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
         i = 0;
         while i < n - p {
             if (i & p) == 0 {
-                let (tmp_xi, tmp_xip) = uint64_MINMAX(x[i], x[i + p]);
+                let (tmp_xi, tmp_xip) = uint64_minmax(x[i], x[i + p]);
                 x[i] = tmp_xi;
                 x[i + p] = tmp_xip;
             }
@@ -46,7 +46,7 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
                     let mut a = x[i + p];
                     r = q;
                     while r > p {
-                        let (tmp_a, tmp_xir) = uint64_MINMAX(a, x[i + r]);
+                        let (tmp_a, tmp_xir) = uint64_minmax(a, x[i + r]);
                         x[i + r] = tmp_xir;
                         a = tmp_a;
                         r >>= 1;
@@ -67,14 +67,14 @@ fn gen_random_u64() -> u64 {
 }
 
 #[test]
-fn test_uint64_MINMAX() {
+fn test_uint64_minmax() {
     // basic test-case
     let x: u64 = 42;
     let y: u64 = 10;
 
     // first parameter should become min
     // second parameter should become max,
-    let (x, y) = uint64_MINMAX(x, y);
+    let (x, y) = uint64_minmax(x, y);
 
     //println!("x is {}", x);
     //println!("y is {}", y);
@@ -86,7 +86,7 @@ fn test_uint64_MINMAX() {
     let x: u64 = 0xffffffffffffffff;
     let y: u64 = 1;
 
-    let (x, y) = uint64_MINMAX(x, y);
+    let (x, y) = uint64_minmax(x, y);
 
     assert_eq!(x, 1);
     assert_eq!(y, 0xffffffffffffffff);
@@ -96,7 +96,7 @@ fn test_uint64_MINMAX() {
         let x: u64 = gen_random_u64();
         let y: u64 = gen_random_u64();
 
-        let (x, y) = uint64_MINMAX(x, y);
+        let (x, y) = uint64_minmax(x, y);
 
         if x > y {
             println!(
