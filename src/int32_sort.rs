@@ -12,21 +12,21 @@ const fn int32_MINMAX(mut a: i32, mut b: i32) -> (i32, i32) {
     (a, b)
 }
 
-fn int32_sort(x: &mut [i32], n: usize) {
+pub fn int32_sort(x: &mut [i32], n: i64) {
     let (mut top, mut p, mut q, mut r, mut i): (usize, usize, usize, usize, usize);
 
     if n < 2 {
         return;
     }
     top = 1;
-    while top < n - top {
+    while top < n as usize - top {
         top += top;
     }
 
     p = top;
     while p > 0 {
         i = 0;
-        while i < n - p {
+        while i < n as usize - p {
             if (i & p) == 0 {
                 let (tmp_xi, tmp_xip) = int32_MINMAX(x[i], x[i + p]);
                 x[i] = tmp_xi;
@@ -37,7 +37,7 @@ fn int32_sort(x: &mut [i32], n: usize) {
         i = 0;
         q = top;
         while q > p {
-            while i < n - q {
+            while i < n as usize - q {
                 if (i & p) == 0 {
                     let mut a = x[i + p];
                     r = q;
@@ -103,6 +103,25 @@ fn test_int32_MINMAX() {
                 "erroneous behaviour with inputs: x: 0x{:016X}i32 y: 0x{:016X}i32",
                 x, y
             );
+        }
+    }
+}
+
+#[test]
+fn test_int32_sort() {
+    let mut array: [i32; 64] = [0; 64];
+
+    for i in 0..array.len() {
+        array[i] = gen_random_i32();
+        //println!("{}", array[i]);
+    }
+
+    int32_sort(&mut array, 64);
+
+    for i in 0..array.len() {
+        //println!("{}", array[i]);
+        if i >= 1 {
+            assert_eq!(array[i] > array[i - 1], true);
         }
     }
 }

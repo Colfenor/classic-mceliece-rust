@@ -3,7 +3,7 @@ pub const GFBITS: usize = 13;
 pub const SYS_T: usize = 128;
 pub const SYS_N: usize = 8192; // SYS_N/8 = 1024
 
-pub const COND_BYTES: usize = (1 << (GFBITS - 4)) * (2 * GFBITS - 1);
+pub const COND_BYTES: usize = (1 << (GFBITS - 4)) * (2 * GFBITS - 1); // 12800
 pub const IRR_BYTES: usize = SYS_T * 2;
 
 pub const PK_NROWS: usize = SYS_T * GFBITS; // 1664 -> 1664 / 8 = 208

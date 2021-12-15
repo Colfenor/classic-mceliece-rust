@@ -19,7 +19,7 @@ fn ctz(input: u64) -> i32 {
     r
 }
 
-fn same_mask(x: u16, y: u16) -> u64 {
+pub fn same_mask(x: u16, y: u16) -> u64 {
     let mut mask = 0u64;
 
     mask = (x ^ y) as u64;

@@ -1,7 +1,10 @@
 mod api;
 mod benes;
 mod bm;
+mod controlbits;
+mod controlbits_arrays;
 mod crypto_hash;
+mod encrypt;
 mod gf;
 mod int32_sort;
 mod params;

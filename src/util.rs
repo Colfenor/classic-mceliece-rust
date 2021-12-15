@@ -4,8 +4,8 @@ use crate::{gf::Gf, params::GFMASK};
 */
 
 pub fn store_gf(dest: &mut [u8], a: Gf) {
-    dest[0] = (a as u8) & 0xFF;
-    dest[1] = (a as u8) >> 8;
+    dest[0] = (a & 0xFF) as u8;
+    dest[1] = a.overflowing_shr(8).0 as u8;
 }
 
 // function parameters are immutable
