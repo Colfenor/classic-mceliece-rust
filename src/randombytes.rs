@@ -40,7 +40,7 @@ pub fn randombytes(x: &mut [u8], mut xlen: usize) -> Result<(), Box<dyn error::E
 
         {
             let r = &DRBG_CTX.lock()?;
-            aes256_ecb(&r.key[..], &r.v[..], &mut block);
+            aes256_ecb(&r.key[..], &r.v[..], &mut block)?;
         }
 
         if xlen > 15 {
@@ -49,6 +49,7 @@ pub fn randombytes(x: &mut [u8], mut xlen: usize) -> Result<(), Box<dyn error::E
             xlen -= 16;
         } else {
             x[i..(i + xlen as usize)].copy_from_slice(&block[0..xlen as usize]);
+            xlen = 0;
         }
     }
     aes256_ctr_drbg_update(&[])?;
@@ -65,11 +66,12 @@ pub fn randombytes_init(entropy_input: [u8; 48]) -> Result<(), Box<dyn error::Er
     Ok(())
 }
 
-fn aes256_ecb(key: &[u8], ctr: &[u8], buffer: &mut [u8]) {
-    let cipher = Ecb::<Aes256, NoPadding>::new_from_slices(key, Default::default()).unwrap();
+fn aes256_ecb(key: &[u8], ctr: &[u8], buffer: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
+    let cipher = Ecb::<Aes256, NoPadding>::new_from_slices(key, Default::default())?;
     let pos = ctr.len();
-    buffer[..pos].copy_from_slice(&ctr[..]);
-    cipher.encrypt(buffer, pos).unwrap();
+    buffer[..pos].copy_from_slice(ctr);
+    cipher.encrypt(buffer, pos)?;
+    Ok(())
 }
 
 fn aes256_ctr_drbg_update(provided_data: &[u8]) -> Result<(), Box<dyn error::Error>> {
@@ -89,7 +91,7 @@ fn aes256_ctr_drbg_update(provided_data: &[u8]) -> Result<(), Box<dyn error::Err
             &tmp_key,
             &DRBG_CTX.lock()?.v,
             &mut temp[(16 * i)..(16 * (i + 1))],
-        );
+        )?;
     }
 
     if !provided_data.is_empty() {
@@ -103,6 +105,7 @@ fn aes256_ctr_drbg_update(provided_data: &[u8]) -> Result<(), Box<dyn error::Err
     Ok(())
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
