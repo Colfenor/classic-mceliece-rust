@@ -4,6 +4,7 @@ mod bm;
 mod controlbits;
 mod controlbits_arrays;
 mod crypto_hash;
+mod decrypt;
 mod encrypt;
 mod gf;
 mod int32_sort;

@@ -3,7 +3,7 @@ use crate::params::{SYS_N, SYS_T};
 use crate::root::eval;
 /* input: Goppa polynomial f, support L, received word r */
 /* output: out, the syndrome of length 2t */
-fn synd(out: &mut [Gf; SYS_T * 2], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N], r: &[u8]) {
+pub fn synd(out: &mut [Gf; SYS_T * 2], f: &mut [Gf; SYS_T + 1], L: &mut [Gf; SYS_N], r: &[u8]) {
     let (mut i, mut j): (usize, usize);
     let (mut e, mut e_inv, mut c): (Gf, Gf, Gf);
 
