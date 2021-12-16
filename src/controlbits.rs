@@ -53,23 +53,6 @@ pub fn cbrecursion(
     temp: &mut [i32; 2 * (1 << GFBITS)],
 ) {
     assert_eq!(n, 1 << GFBITS);
-    //let mut A = alias::slice(temp);
-    let mut A = temp;
-    let mut B = [0i32; 1 << GFBITS];
-    B.clone_from_slice(&A[n as usize..]);
-    //let mut B = alias::slice(temp[n as usize..]);
-    //let mut q = alias::slice(temp[(n + n / 4) as usize..]);
-    //let (discard, B) = A.split_at_mut(n as usize);
-
-    /*let mut B = [0i32; 2 * (1 << GFBITS)];
-    let mut temp_q = [0i32; 2 * (1 << GFBITS)];
-    let mut q = [0i16; 2 * (1 << GFBITS)];
-
-    B.clone_from_slice(&temp[n as usize..]);
-    temp_q.clone_from_slice(&temp[(n + n / 4) as usize..]);
-    let mut q = temp_q.map(|n| n as i16);*/
-
-    //let mut q = temp[0..(n + n / 4) as usize].clone();
 
     if w == 1 {
         out[(pos >> 3) as usize] ^= (pi[0] << (pos & 7)) as u8;
@@ -77,29 +60,29 @@ pub fn cbrecursion(
     }
 
     for x in 0..n as usize {
-        A[x] = ((pi[x] ^ 1).overflowing_shl(16).0 | pi[x ^ 1]) as i32;
+        temp[x] = ((pi[x] ^ 1).overflowing_shl(16).0 | pi[x ^ 1]) as i32;
     }
 
-    int32_sort(A, n);
+    int32_sort(temp, n);
 
     let mut Ax = 0;
     let mut px = 0;
     let mut cx = 0;
 
     for x in 0..n as usize {
-        Ax = A[x];
+        Ax = temp[x];
         px = Ax & 0xffff;
         cx = px;
         if x < cx as usize {
             cx = x as i32;
         }
-        B[x] = (px << 16) | cx;
+        temp[n as usize + x] = (px << 16) | cx;
     }
 
     for x in 0..n as usize {
-        A[x] = (A[x] << 16) | x as i32;
+        temp[x] = (temp[x] << 16) | x as i32;
     }
-    int32_sort(A, n);
+    int32_sort(temp, n);
 
     let mut ppcpx = 0;
     let mut ppcx = 0;
@@ -107,77 +90,77 @@ pub fn cbrecursion(
 
     if w <= 10 {
         for x in 0..n as usize {
-            B[x] = ((A[x] & 0xffff) << 10) | (B[x] & 0x3ff);
+            temp[n as usize + x] = ((temp[x] & 0xffff) << 10) | (temp[x] & 0x3ff);
         }
 
         for i in 1..w - 1 {
             for x in 0..n as usize {
-                A[x] = ((B[x] & !0x3ff) << 6) | x as i32;
+                temp[x] = ((temp[n as usize + x] & !0x3ff) << 6) | x as i32;
             }
-            int32_sort(A, n);
+            int32_sort(temp, n);
 
             for x in 0..n as usize {
-                A[x] = (A[x] << 20) | B[x];
+                temp[x] = (temp[x] << 20) | temp[n as usize + x];
             }
-            int32_sort(A, n);
+            int32_sort(temp, n);
 
             for x in 0..n as usize {
-                ppcpx = A[x] & 0xfffff;
-                ppcx = (A[x] & 0xffc00) | (B[x] & 0x3ff);
+                ppcpx = temp[x] & 0xfffff;
+                ppcx = (temp[x] & 0xffc00) | (temp[n as usize + x] & 0x3ff);
 
                 if ppcpx < ppcx {
                     ppcx = ppcpx;
                 }
-                B[x] = ppcx;
+                temp[n as usize + x] = ppcx;
             }
         }
 
         for x in 0..n as usize {
-            B[x] &= 0x3ff;
+            temp[n as usize + x] &= 0x3ff;
         }
     } else {
         for x in 0..n as usize {
-            B[x] = (A[x] << 16) | (B[x] & 0xffff);
+            temp[n as usize + x] = (temp[x] << 16) | (temp[n as usize + x] & 0xffff);
         }
 
         for i in 1..w - 1 {
             for x in 0..n as usize {
-                A[x] = (B[x] & !0xffff) | x as i32;
+                temp[x] = (temp[n as usize + x] & !0xffff) | x as i32;
             }
-            int32_sort(A, n);
+            int32_sort(temp, n);
 
             for x in 0..n as usize {
-                A[x] = (A[x] << 16) | (B[x] & 0xffff);
+                temp[x] = (temp[x] << 16) | (temp[n as usize + x] & 0xffff);
             }
 
             if i < w - 2 {
                 for x in 0..n as usize {
-                    B[x] = (A[x] & !0xffff) | (B[x] >> 16);
+                    temp[n as usize + x] = (temp[x] & !0xffff) | (temp[n as usize + x] >> 16);
                 }
-                int32_sort(&mut B, n);
+                int32_sort(&mut temp[n as usize..], n);
 
                 for x in 0..n as usize {
-                    B[x] = (B[x] << 16) | (A[x] & 0xffff);
+                    temp[n as usize + x] = (temp[n as usize + x] << 16) | (temp[x] & 0xffff);
                 }
             }
-            int32_sort(A, n);
+            int32_sort(temp, n);
 
             for x in 0..n as usize {
-                cpx = (B[x] & !0xffff) | (A[x] & 0xffff);
-                if cpx < B[x] {
-                    B[x] = cpx;
+                cpx = (temp[n as usize + x] & !0xffff) | (temp[x] & 0xffff);
+                if cpx < temp[n as usize + x] {
+                    temp[n as usize + x] = cpx;
                 }
             }
         }
         for x in 0..n as usize {
-            B[x] &= 0xffff;
+            temp[n as usize + x] &= 0xffff;
         }
     }
 
     for x in 0..n as usize {
-        A[x] = (pi[x].overflowing_shl(16).0 + x as i16) as i32;
+        temp[x] = (pi[x].overflowing_shl(16).0 + x as i16) as i32;
     }
-    int32_sort(A, n);
+    int32_sort(temp, n);
 
     let mut x: usize = 0;
     let mut fj: i32 = 0;
@@ -186,17 +169,17 @@ pub fn cbrecursion(
 
     for j in 0..(n / 2) as usize {
         x = 2 * j;
-        fj = B[x] & 1; /* f[j] */
+        fj = temp[n as usize + x] & 1; /* f[j] */
         Fx = x as i32 + fj; /* F[x] */
         Fx1 = Fx ^ 1; /* F[x+1] */
 
         out[(pos >> 3) as usize] ^= (fj << (pos & 7)) as u8;
         pos += step;
 
-        B[x] = (A[x] << 16) | Fx;
-        B[x + 1] = (A[x + 1] << 16) | Fx1;
+        temp[n as usize + x] = (temp[x] << 16) | Fx;
+        temp[n as usize + x + 1] = (temp[x + 1] << 16) | Fx1;
     }
-    int32_sort(&mut B, n);
+    int32_sort(&mut temp[n as usize..], n);
 
     pos += (2 * w - 3) * step * (n / 2);
 
@@ -207,32 +190,28 @@ pub fn cbrecursion(
 
     for k in 0..(n / 2) as usize {
         y = 2 * k;
-        lk = B[y] & 1; /* l[k] */
+        lk = temp[n as usize + y] & 1; /* l[k] */
         Ly = y as i32 + lk; /* L[y] */
         Ly1 = Ly ^ 1; /* L[y+1] */
 
         out[(pos >> 3) as usize] ^= (lk << (pos & 7)) as u8;
         pos += step;
 
-        A[y] = (Ly << 16) | (B[y] & 0xffff);
-        A[y + 1] = (Ly1 << 16) | (B[y + 1] & 0xffff);
+        temp[y] = (Ly << 16) | (temp[n as usize + y] & 0xffff);
+        temp[y + 1] = (Ly1 << 16) | (temp[n as usize + y + 1] & 0xffff);
     }
-    int32_sort(A, n);
+    int32_sort(temp, n);
 
     pos -= (2 * w - 2) * step * (n / 2);
-
-    // versuche in einer operation in i32 reinzuschreiben
 
     for j in 0..(n / 4) as usize {
         //q[j].set(((A[j]  & 0xffff) >> 1) + (((A[j+2]  & 0xffff)) >> 1) << 16);
 
         //q[j + (n / 2) as usize] = ((A[j + 1]  & 0xffff) >> 1) as i16;
     }
-    //let mut new_q = [0i16; 1 << GFBITS];
-    //new_q.clone_from_slice(&q[(n / 2) as usize..]);
 
     //cbrecursion(out, pos, step * 2, &mut q, w - 1, n / 2, temp);
-    //cbrecursion(out, pos + step, step * 2, &mut new_q, w - 1, n / 2, temp);
+    //cbrecursion(out, pos + step, step * 2, &mut new_q, w - 1, n / 2, temp);*/
 }
 
 // params
