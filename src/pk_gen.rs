@@ -19,7 +19,7 @@ fn ctz(input: u64) -> i32 {
     r
 }
 
-pub fn same_mask(x: u16, y: u16) -> u64 {
+fn same_mask(x: u16, y: u16) -> u64 {
     let mut mask = 0u64;
 
     mask = (x ^ y) as u64;
@@ -158,12 +158,11 @@ pub fn pk_gen(
     let mut inv = [0u16; SYS_N];
 
     g[SYS_T] = 1;
-
     let mut i = 0;
     for chunk in sk.chunks_mut(2) {
         g[i] = load_gf(chunk);
         i += 1;
-        if i == SYS_T - 1 {
+        if i == SYS_T + 1 {
             break;
         }
     }
