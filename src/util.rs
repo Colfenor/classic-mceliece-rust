@@ -2,7 +2,6 @@ use crate::{gf::Gf, params::GFMASK};
 /*
   This file is for loading/storing data in a little-endian fashion
 */
-
 pub fn store_gf(dest: &mut [u8], a: Gf) {
     dest[0] = (a & 0xFF) as u8;
     dest[1] = a.overflowing_shr(8).0 as u8;

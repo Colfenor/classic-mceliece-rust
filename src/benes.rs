@@ -53,26 +53,37 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     let mut index2 = 32;
 
     s = 1 << lgs;
-    while i < 64 {
-        j = i;
-        while j < i + s {
-            d = data[0][j + 0] ^ data[0][j + s];
+    if s == 64 {
+        for j in 0..64 {
+            d = data[0][j + 0] ^ data[1][j];
             d &= bits[index];
             index += 1;
 
             data[0][j + 0] ^= d;
-            data[0][j + s] ^= d;
-
-            d = data[1][j + 0] ^ data[1][j + s];
-            d &= bits[index2];
-            index2 += 1;
-
-            data[1][j + 0] ^= d;
-            data[1][j + s] ^= d;
-
-            j += 1;
+            data[1][j] ^= d;
         }
-        i += s * 2;
+    } else {
+        while i < 64 {
+            j = i;
+            while j < i + s {
+                d = data[0][j + 0] ^ data[0][j + s];
+                d &= bits[index];
+                index += 1;
+
+                data[0][j + 0] ^= d;
+                data[0][j + s] ^= d;
+
+                d = data[1][j + 0] ^ data[1][j + s];
+                d &= bits[index2]; // 64
+                index2 += 1;
+
+                data[1][j + 0] ^= d;
+                data[1][j + s] ^= d;
+
+                j += 1;
+            }
+            i += s * 2;
+        }
     }
 }
 
@@ -87,11 +98,7 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 //let mut subbits = [0u8; 3584];
 //subbits.copy_from_slice(&bits[0..3584]);
 
-pub fn apply_benes(
-    r: &mut [u8; (1 << GFBITS) / 8],
-    bits: &[u8; CRYPTO_SECRETKEYBYTES + 40],
-    rev: usize,
-) {
+pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -110,8 +117,9 @@ pub fn apply_benes(
     let mut i: usize = 0;
     for chunk in r.chunks_mut(16) {
         let (subchunk1, subchunk2) = chunk.split_at_mut(8);
-        r_int_v[1][i] = load8(subchunk1);
-        r_int_v[0][i] = load8(subchunk2);
+        r_int_v[0][i] = load8(subchunk1);
+        r_int_v[1][i] = load8(subchunk2);
+
         i += 1;
     }
 
@@ -119,11 +127,14 @@ pub fn apply_benes(
     transpose::transpose(&mut r_int_h[1], r_int_v[1]);
 
     let mut iter = 0;
-    while iter <= 5 {
+    while iter <= 6 {
         i = 0;
         for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
             i += 1;
+            if i == 64 {
+                break;
+            }
         }
 
         calc_index = if rev == 0 {
@@ -149,6 +160,7 @@ pub fn apply_benes(
             b_int_v[i] = load8(chunk);
             i += 1;
         }
+
         calc_index = if rev == 0 {
             calc_index + 512
         } else {
@@ -178,7 +190,7 @@ pub fn apply_benes(
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
     transpose::transpose(&mut r_int_h[1], r_int_v[1]);
 
-    for iter in (0..=5).rev() {
+    for iter in (0..=6).rev() {
         i = 0;
         for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
             b_int_v[i] = load8(chunk);
@@ -218,7 +230,7 @@ fn test_apply_benes() {
     compare_array[0] = 47;
     compare_array[1] = 47;
 
-    apply_benes(&mut L, &bits, 0);
+    apply_benes(&mut L, &mut bits, 0);
 
     assert_eq!(L, compare_array);
 
@@ -230,18 +242,18 @@ fn test_apply_benes() {
     }*/
 }
 
-pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; CRYPTO_SECRETKEYBYTES + 40]) {
+pub fn support_gen(s: &mut [Gf; SYS_N], c: &mut [u8]) {
     let mut a: Gf;
     let (mut i, mut j): (usize, usize);
     let mut L = [[0u8; (1 << GFBITS) / 8]; GFBITS];
+    //println!("L");
 
-    i = 0;
-    while i < (1 << GFBITS) {
+    for i in 0..(1 << GFBITS) {
         a = bitrev(i as Gf);
+
         for j in 0..GFBITS {
             L[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
-        i += 1;
     }
 
     for j in 0..GFBITS {

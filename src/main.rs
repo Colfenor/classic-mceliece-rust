@@ -5,6 +5,7 @@ mod controlbits;
 mod controlbits_arrays;
 mod crypto_hash;
 mod decrypt;
+mod decrypt_array;
 mod encrypt;
 mod encrypt_array;
 mod gf;
