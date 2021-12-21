@@ -49,6 +49,13 @@ fn gen_e(e: &mut [u8]) {
             }
         }
 
+        /*for i in 0..SYS_T {
+            ind[i] = load_gf(&bytes[i*2..]);
+        }*/
+        /*for i in 0..ind.len() {
+        println!("i:{} {}", i, ind[i]);
+        }*/
+
         eq = 0;
 
         for i in 1..SYS_T {
@@ -78,6 +85,7 @@ fn gen_e(e: &mut [u8]) {
             //println!("i:{} j:{} mask:{}", i, j, mask);
 
             e[i] |= val[j] & mask;
+            //println!("i:{} j:{} e:{}", i, j, e[i]);
         }
     }
 }
@@ -104,6 +112,7 @@ fn syndrome(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
         }
 
         row[i / 8] |= 1 << (i % 8);
+        //println!("i:{} r:{}", i, row[i/8]);
 
         b = 0;
         for j in 0..SYS_N / 8 {
@@ -114,6 +123,7 @@ fn syndrome(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
         b ^= b >> 2;
         b ^= b >> 1;
         b &= 1;
+        //println!("i:{} b:{}", i, b);
 
         s[i / 8] |= b << (i % 8);
 
@@ -139,7 +149,7 @@ pub fn encrypt(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
 
 #[test]
 pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
-    use crate::encrypt_array::PK_INPUT;
+    use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
 
     let mut entropy_input = [0u8; 48];
     for i in 0..48u8 {
@@ -152,12 +162,19 @@ pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
 
     let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
     let mut pk = PK_INPUT.to_vec();
+    assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-    encrypt(&mut c, &mut pk, &mut two_e);
+    let mut test_e = TEST_E.to_vec();
+    assert_eq!(test_e.len(), SYS_N / 8);
 
-    /*for i in 0..c.len() {
-        println!("i:{} c:{}", i, c[i]);
-    }*/
+    let mut compare_s = COMPARE_S.to_vec();
+    assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
+
+    //inject test e :)
+    //encrypt(&mut c, &mut pk, &mut two_e[1..]);
+    syndrome(&mut c, &mut pk, &mut test_e);
+
+    assert_eq!(compare_s, c);
 
     Ok(())
 }
