@@ -1,9 +1,14 @@
+use std::mem::size_of;
+
 use crate::{
     crypto_hash::shake256,
     decrypt,
     decrypt::decrypt,
     encrypt::encrypt,
-    params::{COND_BYTES, IRR_BYTES, SYND_BYTES, SYS_N},
+    params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
+    randombytes::randombytes,
+    sk_gen::genpoly_gen,
+    util::{load_gf, store_gf},
 };
 
 pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
@@ -70,20 +75,73 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
         index += 1;
     }
 
-    /*
-    WORKS :)
-    println!("pre: ");
-    for i in 0..1 + SYS_N/8 + (SYND_BYTES + 32) {
-        println!("{}", preimage[i]);
-    }
-    println!("ENDI");*/
-
     shake256(key, &preimage);
+
+    /*println!("KEY: ");
+    for i in 0..32 {
+        println!("{}", key[i]);
+    }
+    println!("ENDK");*/
 
     return 0;
 }
 
-pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8]) -> i32 {
+pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
+    let mut seed = [0u8; 33];
+    seed[0] = 64;
+    // ------------------ 1024     +     32768      +  256   +  32
+    let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
+    let mut pivots: u64 = 0;
+
+    let mut f = [0u16; SYS_T];
+    let mut irr = [0u16; SYS_T];
+
+    let mut perm = [0u32; 1 << GFBITS];
+    let mut pi = [0u16; 1 << GFBITS];
+
+    match randombytes(&mut seed[1..], 32) {
+        Err(e) => {
+            println!("{:?}", e);
+        }
+        Ok(()) => {}
+    }
+
+    loop {
+        // expanding and updating the seed
+        shake256(&mut r, &seed[0..33]);
+        // memcpy loop
+        for i in 0..32 {
+            sk[i] = seed[i + 1];
+        }
+
+        sk = &mut sk[32 + 8..];
+
+        for i in 0..32 {
+            //seed[i+1] =
+        }
+
+        let mut i = 0;
+        for chunk in r.chunks_mut((i + 1) * 2) {
+            f[i] = load_gf(chunk);
+            i += 1;
+            if i == SYS_T {
+                break;
+            }
+        }
+
+        if genpoly_gen(&mut irr, &mut f) != 0 {
+            continue;
+        }
+        i = 0;
+        for chunk in sk.chunks_mut((i + 1) * 2) {
+            store_gf(chunk, irr[i]);
+            i += 1;
+            if i == SYS_T {
+                break;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -100,7 +158,17 @@ pub fn test_crypto_kem_dec() {
     let mut c = C_INPUT.to_vec();
     assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
 
-    let mut test_key = [0u8; 100];
+    let mut test_key = [0u8; 32];
+
+    let compare_key: [u8; 32] = [
+        236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10, 133,
+        197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
+    ];
 
     crypto_kem_dec(&mut test_key, &mut c, &mut sk);
+
+    assert_eq!(test_key, compare_key);
 }
+
+#[test]
+pub fn test_crypto_kem_enc() {}
