@@ -161,7 +161,6 @@ pub fn pk_gen(
     let mut i = 0;
     for chunk in sk.chunks_mut(2) {
         g[i] = load_gf(chunk);
-        println!("i:{} g:{}", i, g[i]);
         i += 1;
         if i == SYS_T + 1 {
             break;
