@@ -11,6 +11,7 @@ mod encrypt_array;
 mod gf;
 mod int32_sort;
 mod operations;
+mod operations_arrays;
 mod params;
 mod pk_gen;
 mod pk_gen_arrays;

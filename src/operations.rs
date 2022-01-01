@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::mem::size_of;
 
 use crate::{
@@ -6,9 +7,10 @@ use crate::{
     decrypt::decrypt,
     encrypt::encrypt,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
+    pk_gen::pk_gen,
     randombytes::randombytes,
     sk_gen::genpoly_gen,
-    util::{load_gf, store_gf},
+    util::{load4, load_gf, store8, store_gf},
 };
 
 pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
@@ -33,6 +35,13 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
     shake256(key, &one_ec);
 
     return 0;
+}
+
+// debug function
+pub fn print_array<T: Debug>(input: &[T]) {
+    for i in 0..input.len() {
+        println!("i:{} {:?}", i, input[i]);
+    }
 }
 
 pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
@@ -91,13 +100,15 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     seed[0] = 64;
     // ------------------ 1024     +     32768      +  256   +  32
     let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
+    let mut r_len = r.len(); // 34080
     let mut pivots: u64 = 0;
+    let mut index = r_len - 32;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];
 
     let mut perm = [0u32; 1 << GFBITS];
-    let mut pi = [0u16; 1 << GFBITS];
+    let mut pi = [0i16; 1 << GFBITS];
 
     match randombytes(&mut seed[1..], 32) {
         Err(e) => {
@@ -106,22 +117,30 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
         Ok(()) => {}
     }
 
+    // only for debug purpose
+    seed = [
+        64, 124, 153, 53, 160, 176, 118, 148, 170, 12, 109, 16, 228, 219, 107, 26, 221, 47, 216,
+        26, 37, 204, 177, 72, 3, 45, 205, 115, 153, 54, 115, 127, 45,
+    ];
+
     loop {
         // expanding and updating the seed
-        shake256(&mut r, &seed[0..33]);
+        shake256(&mut r[0..r_len], &seed[0..33]);
+
         // memcpy loop
         for i in 0..32 {
             sk[i] = seed[i + 1];
         }
 
-        sk = &mut sk[32 + 8..];
+        //sk = &mut sk[32 + 8..];
 
+        // memcpy loop
         for i in 0..32 {
-            //seed[i+1] =
+            seed[i + 1] = r[r_len - 32 + i]; // use index
         }
 
         let mut i = 0;
-        for chunk in r.chunks_mut((i + 1) * 2) {
+        for chunk in r[(r_len - 256 - 32) + i * 2..].chunks(2) {
             f[i] = load_gf(chunk);
             i += 1;
             if i == SYS_T {
@@ -132,14 +151,45 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
         if genpoly_gen(&mut irr, &mut f) != 0 {
             continue;
         }
+
         i = 0;
-        for chunk in sk.chunks_mut((i + 1) * 2) {
+        for chunk in sk[(32 + 8) + i * 2..].chunks_mut(2) {
             store_gf(chunk, irr[i]);
             i += 1;
             if i == SYS_T {
                 break;
             }
         }
+
+        // generating permutation
+        i = 0;
+        for chunk in r[(r_len - 256 - 32 - 32768) + i * 4..].chunks(4) {
+            perm[i] = load4(chunk);
+            i += 1;
+            if i == 1 << GFBITS {
+                break;
+            }
+        }
+
+        if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
+            continue;
+        }
+
+        /*println!("perm: ");
+        print_array(&perm);
+        println!("END");*/
+        // works until here
+
+        // TODO controlbits function
+
+        // storing the random string s
+        for i in 0..SYS_N / 8 {
+            sk[COND_BYTES + i] = r[i];
+        }
+
+        store8(&mut sk[32..40], pivots);
+
+        break;
     }
 
     return 0;
@@ -172,3 +222,19 @@ pub fn test_crypto_kem_dec() {
 
 #[test]
 pub fn test_crypto_kem_enc() {}
+
+#[test]
+pub fn test_crypto_kem_keypair() {
+    use crate::{
+        api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
+        operations_arrays::{PK_INPUT, SK_INPUT},
+    };
+
+    let pk_input = PK_INPUT.to_vec();
+    assert_eq!(pk_input.len(), CRYPTO_PUBLICKEYBYTES);
+
+    let sk_input = SK_INPUT.to_vec();
+    assert_eq!(sk_input.len(), CRYPTO_SECRETKEYBYTES);
+
+    crypto_kem_keypair(&mut pk_input.to_vec(), &mut sk_input.to_vec());
+}

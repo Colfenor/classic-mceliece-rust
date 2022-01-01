@@ -161,6 +161,7 @@ pub fn pk_gen(
     let mut i = 0;
     for chunk in sk.chunks_mut(2) {
         g[i] = load_gf(chunk);
+        println!("i:{} g:{}", i, g[i]);
         i += 1;
         if i == SYS_T + 1 {
             break;
@@ -185,7 +186,6 @@ pub fn pk_gen(
         pi[i] = (buf[i] & GFMASK as u64) as i16;
     }
 
-    // TODO check casting for errors
     for i in 0..SYS_N {
         L[i] = bitrev(pi[i] as u16);
     }
