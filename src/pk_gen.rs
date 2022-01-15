@@ -1,6 +1,7 @@
 use crate::{
     api::CRYPTO_PUBLICKEYBYTES,
     gf::{gf_inv, gf_mul},
+    operations::print_array,
     params::{GFBITS, GFMASK, PK_NROWS, PK_ROW_BYTES, SYS_N, SYS_T},
     root::root,
     uint64_sort::uint64_sort,
@@ -162,7 +163,7 @@ pub fn pk_gen(
     for chunk in sk.chunks_mut(2) {
         g[i] = load_gf(chunk);
         i += 1;
-        if i == SYS_T + 1 {
+        if i == SYS_T {
             break;
         }
     }
@@ -215,7 +216,7 @@ pub fn pk_gen(
                 b |= ((inv[j + 0] >> k) & 1) as u8;
 
                 mat[i * GFBITS + k][j / 8] = b;
-                //println!("j:{}, mat:{}", j, mat[i * GFBITS + k][j / 8]);
+                //println!("j:{} i:{} {}", j, i, b);
             }
         }
         for j in 0..SYS_N {
@@ -232,8 +233,10 @@ pub fn pk_gen(
                 break;
             }
 
-            if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
-                return -1;
+            if row == PK_NROWS - 32 {
+                if mov_columns(&mut mat, pi, pivots) != 0 {
+                    return -1;
+                }
             }
 
             for k in (row + 1)..PK_NROWS {

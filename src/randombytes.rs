@@ -1,12 +1,17 @@
-use aes::Aes256;
-use block_modes::block_padding::NoPadding;
-use block_modes::{BlockMode, Ecb};
+use aes::BlockEncrypt;
+use aes::NewBlockCipher;
+use hex;
 use lazy_static::lazy_static;
 use std::error;
 use std::sync;
 
 //by @prokls
 
+pub struct Aes256CtrDrbgStruct {
+    pub key: [u8; 32],
+    pub v: [u8; 16],
+    pub reseed_counter: i32,
+}
 // global variable holding the RNG state
 lazy_static! {
     static ref DRBG_CTX: sync::Mutex<Aes256CtrDrbgStruct> = sync::Mutex::new({
@@ -18,90 +23,85 @@ lazy_static! {
     });
 }
 
-struct Aes256CtrDrbgStruct {
-    key: [u8; 32],
-    v: [u8; 16],
-    reseed_counter: i32,
+fn aes256_ecb(key: &[u8; 32], ctr: &[u8; 16], buffer: &mut [u8; 16]) {
+    let cipher = aes::Aes256::new(key.into());
+    buffer.copy_from_slice(ctr);
+    cipher.encrypt_block(buffer.into());
 }
 
-pub fn randombytes(x: &mut [u8], mut xlen: usize) -> Result<(), Box<dyn error::Error>> {
-    let mut block = [0u8; 16];
-    let mut i: usize = 0;
+fn aes256_ctr_drbg_update(
+    provided_data: &mut Option<[u8; 48]>,
+    key: &mut [u8; 32],
+    v: &mut [u8; 16],
+) {
+    let mut temp = [[0u8; 16]; 3];
 
-    while xlen > 0 {
-        for j in (0..16).rev() {
-            if DRBG_CTX.lock()?.v[j] == 0xff {
-                DRBG_CTX.lock()?.v[j] = 0;
-            } else {
-                DRBG_CTX.lock()?.v[j] += 1;
-                break;
-            }
-        }
-
-        {
-            let r = &DRBG_CTX.lock()?;
-            aes256_ecb(&r.key[..], &r.v[..], &mut block)?;
-        }
-
-        if xlen > 15 {
-            x[i..i + 16].copy_from_slice(&block);
-            i += 16;
-            xlen -= 16;
-        } else {
-            x[i..(i + xlen as usize)].copy_from_slice(&block[0..xlen as usize]);
-            xlen = 0;
-        }
-    }
-    aes256_ctr_drbg_update(&[])?;
-    DRBG_CTX.lock()?.reseed_counter += 1;
-    Ok(())
-}
-
-pub fn randombytes_init(entropy_input: [u8; 48]) -> Result<(), Box<dyn error::Error>> {
-    DRBG_CTX.lock()?.key = [0u8; 32];
-    DRBG_CTX.lock()?.v = [0u8; 16];
-
-    aes256_ctr_drbg_update(&entropy_input)?;
-    DRBG_CTX.lock()?.reseed_counter = 1;
-    Ok(())
-}
-
-fn aes256_ecb(key: &[u8], ctr: &[u8], buffer: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
-    let cipher = Ecb::<Aes256, NoPadding>::new_from_slices(key, Default::default())?;
-    let pos = ctr.len();
-    buffer[..pos].copy_from_slice(ctr);
-    cipher.encrypt(buffer, pos)?;
-    Ok(())
-}
-
-fn aes256_ctr_drbg_update(provided_data: &[u8]) -> Result<(), Box<dyn error::Error>> {
-    let mut temp = [0u8; 48];
     for i in 0..3 {
-        for j in (0..16).rev() {
-            if DRBG_CTX.lock()?.v[j] == 0xff {
-                DRBG_CTX.lock()?.v[j] = 0;
-            } else {
-                DRBG_CTX.lock()?.v[j] += 1;
-                break;
+        let count = u128::from_be_bytes(*v);
+        v.copy_from_slice(&(count + 1).to_be_bytes());
+
+        aes256_ecb(key, v, &mut temp[i]);
+    }
+
+    if let Some(d) = provided_data {
+        for j in 0..3 {
+            for i in 0..16 {
+                temp[j][i] ^= d[16 * j + i];
             }
         }
-        let mut tmp_key = [0u8; 32];
-        tmp_key.copy_from_slice(&DRBG_CTX.lock().unwrap().key[..]);
-        aes256_ecb(
-            &tmp_key,
-            &DRBG_CTX.lock()?.v,
-            &mut temp[(16 * i)..(16 * (i + 1))],
-        )?;
     }
 
-    if !provided_data.is_empty() {
-        for i in 0..48 {
-            temp[i] ^= provided_data[i];
-        }
+    key[0..16].copy_from_slice(&temp[0]);
+    key[16..32].copy_from_slice(&temp[1]);
+    v.copy_from_slice(&temp[2]);
+}
+
+pub fn randombytes_init(
+    entropy_input: &[u8; 48],
+    personalization_string: &[u8; 48],
+    _security_strength: u32,
+) -> Result<(), Box<dyn error::Error>> {
+    let mut drbg_ctx = DRBG_CTX.lock()?;
+
+    // reset ctx
+    drbg_ctx.key = [0u8; 32];
+    drbg_ctx.v = [0u8; 16];
+    drbg_ctx.reseed_counter = 1i32;
+
+    // get seed ready
+    let mut seed = [0u8; 48];
+    for i in 0..48 {
+        seed[i] = entropy_input[i] ^ personalization_string[i];
     }
 
-    DRBG_CTX.lock()?.key.copy_from_slice(&temp[0..32]);
-    DRBG_CTX.lock()?.v.copy_from_slice(&temp[32..48]);
+    let mut key = drbg_ctx.key;
+    aes256_ctr_drbg_update(&mut Some(seed), &mut key, &mut drbg_ctx.v);
+    drbg_ctx.key.copy_from_slice(&key);
+
+    Ok(())
+}
+
+pub fn randombytes(x: &mut [u8], xlen: usize) -> Result<(), Box<dyn error::Error>> {
+    assert_eq!(x.len(), xlen);
+    let mut drbg_ctx = DRBG_CTX.lock()?;
+
+    for chunk in x.chunks_mut(16) {
+        let count = u128::from_be_bytes(drbg_ctx.v);
+        drbg_ctx.v.copy_from_slice(&(count + 1).to_be_bytes());
+
+        let mut block = [0u8; 16];
+        aes256_ecb(&drbg_ctx.key, &drbg_ctx.v, &mut block);
+
+        (*chunk).copy_from_slice(&mut block);
+    }
+
+    let mut key = drbg_ctx.key;
+    aes256_ctr_drbg_update(&mut None, &mut key, &mut drbg_ctx.v);
+    drbg_ctx.key.copy_from_slice(&key);
+
+    drbg_ctx.reseed_counter += 1;
+    println!("reseedctr:{}", drbg_ctx.reseed_counter);
+
     Ok(())
 }
 
@@ -112,12 +112,13 @@ mod tests {
     #[test]
     fn test_randombytes() -> Result<(), Box<dyn error::Error>> {
         let mut entropy_input = [0u8; 48];
+        let mut personalization_string = [0u8; 48];
 
         for i in 0..48u8 {
             entropy_input[i as usize] = i;
         }
 
-        randombytes_init(entropy_input)?;
+        randombytes_init(&entropy_input, &personalization_string, 256)?;
 
         let mut given1 = [0u8; 48];
         randombytes(&mut given1, 48)?;

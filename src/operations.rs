@@ -1,6 +1,7 @@
-use std::fmt::Debug;
 use std::mem::size_of;
+use std::{error, fmt::Debug};
 
+use crate::controlbits::controlbitsfrompermutation;
 use crate::{
     crypto_hash::shake256,
     decrypt,
@@ -8,7 +9,7 @@ use crate::{
     encrypt::encrypt,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
-    randombytes::randombytes,
+    randombytes::{randombytes, randombytes_init},
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
@@ -28,8 +29,10 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
         one_ec[i] = two_e[i];
     }
 
-    for i in 1 + SYS_N / 8..SYND_BYTES + 32 {
-        one_ec[i] = c[i];
+    let mut j = 0;
+    for i in (1 + SYS_N / 8)..(1 + SYS_N / 8 + SYND_BYTES + 32) {
+        one_ec[i] = c[j];
+        j += 1;
     }
 
     shake256(key, &one_ec);
@@ -95,6 +98,19 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
     return 0;
 }
 
+// quick custom log2 fn
+fn log2(mut x: usize) -> usize {
+    while x.count_ones() != 1 {
+        x += 1;
+    }
+    let mut log = 0;
+    while x != 0 {
+        x >>= 1;
+        log += 1;
+    }
+    log - 1
+}
+
 pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     let mut seed = [0u8; 33];
     seed[0] = 64;
@@ -116,12 +132,6 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
         }
         Ok(()) => {}
     }
-
-    // only for debug purpose
-    seed = [
-        64, 124, 153, 53, 160, 176, 118, 148, 170, 12, 109, 16, 228, 219, 107, 26, 221, 47, 216,
-        26, 37, 204, 177, 72, 3, 45, 205, 115, 153, 54, 115, 127, 45,
-    ];
 
     loop {
         // expanding and updating the seed
@@ -175,12 +185,17 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
             continue;
         }
 
-        /*println!("perm: ");
-        print_array(&perm);
-        println!("END");*/
-        // works until here
-
         // TODO controlbits function
+
+        // works until here
+        let m = log2(pi.len());
+        let count = (2 * m - 1) * (1 << (m - 1));
+        controlbitsfrompermutation(
+            &mut sk[(32 + 8 + IRR_BYTES)..(32 + 8 + IRR_BYTES + count)],
+            &mut pi,
+            GFBITS,
+            1 << GFBITS,
+        );
 
         // storing the random string s
         for i in 0..SYS_N / 8 {
@@ -221,10 +236,65 @@ pub fn test_crypto_kem_dec() {
 }
 
 #[test]
-pub fn test_crypto_kem_enc() {}
+pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
+    use crate::{
+        api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
+        encrypt_array::PK_INPUT,
+    };
+
+    let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
+    let mut ss = [0u8; CRYPTO_BYTES];
+    let mut pk = PK_INPUT.to_vec();
+    assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
+
+    let mut compare_key: [u8; 32] = [
+        236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10, 133,
+        197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
+    ];
+    let mut compare_s: [u8; CRYPTO_CIPHERTEXTBYTES] = [
+        242, 32, 240, 115, 213, 142, 119, 195, 175, 92, 54, 108, 148, 206, 223, 242, 89, 228, 20,
+        76, 143, 186, 142, 203, 248, 51, 88, 44, 41, 34, 66, 148, 49, 215, 188, 202, 21, 213, 135,
+        64, 92, 246, 70, 65, 28, 225, 19, 149, 13, 231, 177, 94, 146, 172, 255, 139, 219, 153, 56,
+        91, 225, 145, 127, 126, 230, 140, 186, 88, 195, 37, 5, 40, 44, 86, 141, 103, 238, 41, 200,
+        75, 7, 152, 140, 157, 77, 2, 205, 90, 33, 84, 74, 48, 80, 210, 75, 112, 1, 179, 35, 47,
+        188, 83, 79, 32, 51, 171, 122, 16, 171, 78, 92, 129, 106, 12, 231, 177, 251, 219, 70, 210,
+        219, 181, 250, 201, 52, 188, 250, 87, 198, 117, 38, 85, 100, 175, 52, 0, 234, 77, 206, 215,
+        230, 139, 237, 176, 175, 76, 82, 162, 91, 251, 166, 190, 33, 98, 170, 122, 219, 142, 246,
+        133, 239, 188, 17, 148, 7, 166, 147, 138, 249, 4, 99, 11, 126, 117, 90, 157, 47, 116, 150,
+        240, 97, 41, 238, 117, 56, 208, 145, 68, 16, 123, 213, 27, 199, 37, 214, 213, 167, 63, 65,
+        157, 130, 119, 187, 193, 149, 255, 76, 127, 62, 221, 8, 98, 22, 201, 15, 40, 199, 142, 3,
+        196, 150, 181, 110, 102, 89, 220, 149, 197, 247, 197, 26, 55, 29, 54, 186, 217, 188, 23,
+        87, 194,
+    ];
+
+    // set the same seed as in C implementation
+    let mut entropy_input = [0u8; 48];
+    let mut personalization_string = [0u8; 48];
+    entropy_input = [
+        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
+        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
+        208, 133, 65, 219, 210, 225, 255, 161,
+    ];
+
+    randombytes_init(&entropy_input, &personalization_string, 256)?;
+
+    let mut second_seed = [0u8; 33];
+    second_seed[0] = 64;
+
+    randombytes(&mut second_seed[1..], 32);
+
+    // call
+    crypto_kem_enc(&mut c, &mut ss, &mut pk);
+
+    assert_eq!(ss, compare_key);
+
+    assert_eq!(c, compare_s);
+
+    Ok(())
+}
 
 #[test]
-pub fn test_crypto_kem_keypair() {
+pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
     use crate::{
         api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
         operations_arrays::{PK_INPUT, SK_INPUT},
@@ -236,5 +306,17 @@ pub fn test_crypto_kem_keypair() {
     let sk_input = SK_INPUT.to_vec();
     assert_eq!(sk_input.len(), CRYPTO_SECRETKEYBYTES);
 
+    let mut entropy_input = [0u8; 48];
+    let mut personalization_string = [0u8; 48];
+    entropy_input = [
+        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
+        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
+        208, 133, 65, 219, 210, 225, 255, 161,
+    ];
+
+    randombytes_init(&entropy_input, &personalization_string, 256)?;
+
     crypto_kem_keypair(&mut pk_input.to_vec(), &mut sk_input.to_vec());
+
+    Ok(())
 }

@@ -2,8 +2,9 @@ use std::error;
 
 use crate::{
     api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
+    operations::print_array,
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
-    randombytes::{randombytes, randombytes_init},
+    randombytes::{self, randombytes, randombytes_init},
     util::load_gf,
 };
 
@@ -52,9 +53,6 @@ fn gen_e(e: &mut [u8]) {
         /*for i in 0..SYS_T {
             ind[i] = load_gf(&bytes[i*2..]);
         }*/
-        /*for i in 0..ind.len() {
-        println!("i:{} {}", i, ind[i]);
-        }*/
 
         eq = 0;
 
@@ -81,7 +79,7 @@ fn gen_e(e: &mut [u8]) {
         e[i] = 0;
 
         for j in 0..SYS_T {
-            mask = same_mask_u8(i as u16, ind[j] >> 3) as u8;
+            mask = same_mask_u8(i as u16, ind[j] >> 3);
             //println!("i:{} j:{} mask:{}", i, j, mask);
 
             e[i] |= val[j] & mask;
@@ -136,7 +134,7 @@ pub fn encrypt(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
 
     print!("encrypt e: positions");
     for k in 0..SYS_N {
-        if e[k / 8] & (1 << (k & 7)) == 1 {
+        if e[k / 8] & (1 << (k & 7)) != 0 {
             print!(" {}", k);
         }
     }
@@ -152,10 +150,24 @@ pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
     use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
 
     let mut entropy_input = [0u8; 48];
-    for i in 0..48u8 {
+    let mut personalization_string = [0u8; 48];
+
+    /*for i in 0..48u8 {
         entropy_input[i as usize] = i;
-    }
-    randombytes_init(entropy_input)?;
+    }*/
+    // set the same seed as in C implementation
+    entropy_input = [
+        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
+        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
+        208, 133, 65, 219, 210, 225, 255, 161,
+    ];
+
+    randombytes_init(&entropy_input, &personalization_string, 256)?;
+
+    let mut second_seed = [0u8; 33];
+    second_seed[0] = 64;
+
+    randombytes(&mut second_seed[1..], 32);
 
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -171,8 +183,7 @@ pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
     assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
 
     //inject test e :)
-    //encrypt(&mut c, &mut pk, &mut two_e[1..]);
-    syndrome(&mut c, &mut pk, &mut test_e);
+    encrypt(&mut c, &mut pk, &mut two_e[1..]);
 
     assert_eq!(compare_s, c);
 
