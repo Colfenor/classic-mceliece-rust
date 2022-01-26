@@ -233,10 +233,8 @@ pub fn pk_gen(
                 break;
             }
 
-            if row == PK_NROWS - 32 {
-                if mov_columns(&mut mat, pi, pivots) != 0 {
-                    return -1;
-                }
+            if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
+                return -1;
             }
 
             for k in (row + 1)..PK_NROWS {

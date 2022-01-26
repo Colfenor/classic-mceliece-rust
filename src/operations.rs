@@ -192,113 +192,129 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     return 0;
 }
 
-#[test]
-pub fn test_crypto_kem_dec() {
-    use crate::{
-        api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
-        decrypt_arrays::{C_INPUT, SK_INPUT},
-    };
+#[cfg(test)]
+mod tests {
+    use crate::operations_arrays::COMPARE_SK;
 
-    let mut sk = SK_INPUT.to_vec();
-    assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
+    use super::*;
 
-    let mut c = C_INPUT.to_vec();
-    assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
+    #[test]
+    pub fn test_crypto_kem_dec() {
+        use crate::{
+            api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
+            decrypt_arrays::{C_INPUT, SK_INPUT},
+        };
 
-    let mut test_key = [0u8; 32];
+        let mut sk = SK_INPUT.to_vec();
+        assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 
-    let compare_key: [u8; 32] = [
-        236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10, 133,
-        197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
-    ];
+        let mut c = C_INPUT.to_vec();
+        assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
 
-    crypto_kem_dec(&mut test_key, &mut c, &mut sk);
+        let mut test_key = [0u8; 32];
 
-    assert_eq!(test_key, compare_key);
-}
+        let compare_key: [u8; 32] = [
+            236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10,
+            133, 197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
+        ];
 
-#[test]
-pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
-    use crate::{
-        api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
-        encrypt_array::PK_INPUT,
-    };
+        crypto_kem_dec(&mut test_key, &mut c, &mut sk);
 
-    let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut ss = [0u8; CRYPTO_BYTES];
-    let mut pk = PK_INPUT.to_vec();
-    assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
+        assert_eq!(test_key, compare_key);
+    }
 
-    let mut compare_key: [u8; 32] = [
-        236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10, 133,
-        197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
-    ];
-    let mut compare_s: [u8; CRYPTO_CIPHERTEXTBYTES] = [
-        242, 32, 240, 115, 213, 142, 119, 195, 175, 92, 54, 108, 148, 206, 223, 242, 89, 228, 20,
-        76, 143, 186, 142, 203, 248, 51, 88, 44, 41, 34, 66, 148, 49, 215, 188, 202, 21, 213, 135,
-        64, 92, 246, 70, 65, 28, 225, 19, 149, 13, 231, 177, 94, 146, 172, 255, 139, 219, 153, 56,
-        91, 225, 145, 127, 126, 230, 140, 186, 88, 195, 37, 5, 40, 44, 86, 141, 103, 238, 41, 200,
-        75, 7, 152, 140, 157, 77, 2, 205, 90, 33, 84, 74, 48, 80, 210, 75, 112, 1, 179, 35, 47,
-        188, 83, 79, 32, 51, 171, 122, 16, 171, 78, 92, 129, 106, 12, 231, 177, 251, 219, 70, 210,
-        219, 181, 250, 201, 52, 188, 250, 87, 198, 117, 38, 85, 100, 175, 52, 0, 234, 77, 206, 215,
-        230, 139, 237, 176, 175, 76, 82, 162, 91, 251, 166, 190, 33, 98, 170, 122, 219, 142, 246,
-        133, 239, 188, 17, 148, 7, 166, 147, 138, 249, 4, 99, 11, 126, 117, 90, 157, 47, 116, 150,
-        240, 97, 41, 238, 117, 56, 208, 145, 68, 16, 123, 213, 27, 199, 37, 214, 213, 167, 63, 65,
-        157, 130, 119, 187, 193, 149, 255, 76, 127, 62, 221, 8, 98, 22, 201, 15, 40, 199, 142, 3,
-        196, 150, 181, 110, 102, 89, 220, 149, 197, 247, 197, 26, 55, 29, 54, 186, 217, 188, 23,
-        87, 194,
-    ];
+    #[test]
+    pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
+        use crate::{
+            api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
+            encrypt_array::PK_INPUT,
+        };
 
-    // set the same seed as in C implementation
-    let mut entropy_input = [0u8; 48];
-    let mut personalization_string = [0u8; 48];
-    entropy_input = [
-        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
-        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
-        208, 133, 65, 219, 210, 225, 255, 161,
-    ];
+        let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut ss = [0u8; CRYPTO_BYTES];
+        let mut pk = PK_INPUT.to_vec();
+        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-    randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut compare_key: [u8; 32] = [
+            236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10,
+            133, 197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
+        ];
+        let mut compare_s: [u8; CRYPTO_CIPHERTEXTBYTES] = [
+            242, 32, 240, 115, 213, 142, 119, 195, 175, 92, 54, 108, 148, 206, 223, 242, 89, 228,
+            20, 76, 143, 186, 142, 203, 248, 51, 88, 44, 41, 34, 66, 148, 49, 215, 188, 202, 21,
+            213, 135, 64, 92, 246, 70, 65, 28, 225, 19, 149, 13, 231, 177, 94, 146, 172, 255, 139,
+            219, 153, 56, 91, 225, 145, 127, 126, 230, 140, 186, 88, 195, 37, 5, 40, 44, 86, 141,
+            103, 238, 41, 200, 75, 7, 152, 140, 157, 77, 2, 205, 90, 33, 84, 74, 48, 80, 210, 75,
+            112, 1, 179, 35, 47, 188, 83, 79, 32, 51, 171, 122, 16, 171, 78, 92, 129, 106, 12, 231,
+            177, 251, 219, 70, 210, 219, 181, 250, 201, 52, 188, 250, 87, 198, 117, 38, 85, 100,
+            175, 52, 0, 234, 77, 206, 215, 230, 139, 237, 176, 175, 76, 82, 162, 91, 251, 166, 190,
+            33, 98, 170, 122, 219, 142, 246, 133, 239, 188, 17, 148, 7, 166, 147, 138, 249, 4, 99,
+            11, 126, 117, 90, 157, 47, 116, 150, 240, 97, 41, 238, 117, 56, 208, 145, 68, 16, 123,
+            213, 27, 199, 37, 214, 213, 167, 63, 65, 157, 130, 119, 187, 193, 149, 255, 76, 127,
+            62, 221, 8, 98, 22, 201, 15, 40, 199, 142, 3, 196, 150, 181, 110, 102, 89, 220, 149,
+            197, 247, 197, 26, 55, 29, 54, 186, 217, 188, 23, 87, 194,
+        ];
 
-    let mut second_seed = [0u8; 33];
-    second_seed[0] = 64;
+        // set the same seed as in C implementation
+        let mut entropy_input = [0u8; 48];
+        let mut personalization_string = [0u8; 48];
+        entropy_input = [
+            6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
+            204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
+            249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
+        ];
 
-    randombytes(&mut second_seed[1..], 32)?;
+        randombytes_init(&entropy_input, &personalization_string, 256)?;
 
-    // call
-    crypto_kem_enc(&mut c, &mut ss, &mut pk);
+        let mut second_seed = [0u8; 33];
+        second_seed[0] = 64;
 
-    assert_eq!(ss, compare_key);
+        randombytes(&mut second_seed[1..], 32)?;
 
-    assert_eq!(c, compare_s);
+        // call
+        crypto_kem_enc(&mut c, &mut ss, &mut pk);
 
-    Ok(())
-}
+        assert_eq!(ss, compare_key);
 
-#[test]
-pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
-    use crate::{
-        api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
-        operations_arrays::{PK_INPUT, SK_INPUT},
-    };
+        assert_eq!(c, compare_s);
 
-    let pk_input = PK_INPUT.to_vec();
-    assert_eq!(pk_input.len(), CRYPTO_PUBLICKEYBYTES);
+        Ok(())
+    }
 
-    let sk_input = SK_INPUT.to_vec();
-    assert_eq!(sk_input.len(), CRYPTO_SECRETKEYBYTES);
+    #[test]
+    pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
+        use crate::{
+            api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
+            operations_arrays::{COMPARE_PK, COMPARE_SK, PK_INPUT, SK_INPUT},
+        };
 
-    let mut entropy_input = [0u8; 48];
-    let mut personalization_string = [0u8; 48];
-    entropy_input = [
-        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
-        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
-        208, 133, 65, 219, 210, 225, 255, 161,
-    ];
+        let mut pk_input = PK_INPUT.to_vec();
+        assert_eq!(pk_input.len(), CRYPTO_PUBLICKEYBYTES);
 
-    randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut sk_input = SK_INPUT.to_vec();
+        assert_eq!(sk_input.len(), CRYPTO_SECRETKEYBYTES);
 
-    crypto_kem_keypair(&mut pk_input.to_vec(), &mut sk_input.to_vec());
+        let mut entropy_input = [0u8; 48];
+        let mut personalization_string = [0u8; 48];
+        entropy_input = [
+            6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
+            204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
+            249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
+        ];
 
-    Ok(())
+        let compare_sk = COMPARE_SK.to_vec();
+        assert_eq!(compare_sk.len(), CRYPTO_SECRETKEYBYTES);
+
+        let compare_pk = COMPARE_PK.to_vec();
+        assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
+
+        randombytes_init(&entropy_input, &personalization_string, 256)?;
+
+        crypto_kem_keypair(&mut pk_input, &mut sk_input);
+
+        assert_eq!(compare_sk, sk_input);
+        assert_eq!(compare_pk, pk_input);
+
+        Ok(())
+    }
 }
