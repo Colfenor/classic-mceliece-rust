@@ -114,6 +114,13 @@ fn log2(mut x: usize) -> usize {
 pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     let mut seed = [0u8; 33];
     seed[0] = 64;
+
+    const S_BASE: usize = 32 + 8 + IRR_BYTES + COND_BYTES;
+
+    const SEED: usize = SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2;
+    const IRR_POLYS: usize = SYS_N / 8 + (1 << GFBITS) * 4;
+    const PERM: usize = SYS_N / 8;
+
     // ------------------ 1024     +     32768      +  256   +  32
     let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
     let mut r_len = r.len(); // 34080
@@ -126,70 +133,44 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     let mut perm = [0u32; 1 << GFBITS];
     let mut pi = [0i16; 1 << GFBITS];
 
-    match randombytes(&mut seed[1..], 32) {
-        Err(e) => {
-            println!("{:?}", e);
-        }
-        Ok(()) => {}
+    if let Err(e) = randombytes(&mut seed[1..], 32) {
+        eprintln!("{:?}", e);
+        return 1;
     }
 
     loop {
         // expanding and updating the seed
-        shake256(&mut r[0..r_len], &seed[0..33]);
+        shake256(&mut r[..], &seed[0..33]);
 
-        // memcpy loop
-        for i in 0..32 {
-            sk[i] = seed[i + 1];
-        }
+        (&mut sk[..32]).clone_from_slice(&seed[1..]);
+        (&mut seed[1..]).clone_from_slice(&r[r.len() - 32..]);
 
-        //sk = &mut sk[32 + 8..];
+        // generating irreducible polynomial
 
-        // memcpy loop
-        for i in 0..32 {
-            seed[i + 1] = r[r_len - 32 + i]; // use index
-        }
-
-        let mut i = 0;
-        for chunk in r[(r_len - 256 - 32) + i * 2..].chunks(2) {
+        for (i, chunk) in r[IRR_POLYS..SEED].chunks(2).enumerate() {
             f[i] = load_gf(chunk);
-            i += 1;
-            if i == SYS_T {
-                break;
-            }
         }
 
         if genpoly_gen(&mut irr, &mut f) != 0 {
             continue;
         }
 
-        i = 0;
-        for chunk in sk[(32 + 8) + i * 2..].chunks_mut(2) {
+        for (i, chunk) in sk[32 + 8..32 + 8 + 2 * SYS_T].chunks_mut(2).enumerate() {
             store_gf(chunk, irr[i]);
-            i += 1;
-            if i == SYS_T {
-                break;
-            }
         }
 
         // generating permutation
-        i = 0;
-        for chunk in r[(r_len - 256 - 32 - 32768) + i * 4..].chunks(4) {
+
+        for (i, chunk) in r[PERM..IRR_POLYS].chunks(4).enumerate() {
             perm[i] = load4(chunk);
-            i += 1;
-            if i == 1 << GFBITS {
-                break;
-            }
         }
 
         if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
             continue;
         }
 
-        // TODO controlbits function
-
-        // works until here
         let m = log2(pi.len());
-        let count = (2 * m - 1) * (1 << (m - 1));
+        let count = (((2 * m - 1) * (1 << (m - 1))) + 7) / 8;
         controlbitsfrompermutation(
             &mut sk[(32 + 8 + IRR_BYTES)..(32 + 8 + IRR_BYTES + count)],
             &mut pi,
@@ -198,11 +179,12 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
         );
 
         // storing the random string s
-        for i in 0..SYS_N / 8 {
-            sk[COND_BYTES + i] = r[i];
-        }
 
-        store8(&mut sk[32..40], pivots);
+        sk[S_BASE..(S_BASE + SYS_N / 8)].clone_from_slice(&r[0..SYS_N / 8]);
+
+        // storing positions of the 32 pivots
+
+        store8(&mut sk[32..40], pivots); // TODO pivots is 0xFFFFFFFF in the C implementation
 
         break;
     }
@@ -281,7 +263,7 @@ pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
     let mut second_seed = [0u8; 33];
     second_seed[0] = 64;
 
-    randombytes(&mut second_seed[1..], 32);
+    randombytes(&mut second_seed[1..], 32)?;
 
     // call
     crypto_kem_enc(&mut c, &mut ss, &mut pk);
