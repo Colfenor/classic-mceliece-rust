@@ -180,6 +180,10 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 
         // storing the random string s
 
+        //println!("end pk_geeeentz");
+        //print_array(&pk);
+        //println!("finitorz");
+
         sk[S_BASE..(S_BASE + SYS_N / 8)].clone_from_slice(&r[0..SYS_N / 8]);
 
         // storing positions of the 32 pivots
@@ -194,8 +198,6 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::operations_arrays::COMPARE_SK;
-
     use super::*;
 
     #[test]

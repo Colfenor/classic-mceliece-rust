@@ -101,41 +101,46 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
     return (check ^ 1) as u8;
 }
 
-#[test]
-pub fn test_decrypt() {
-    use crate::decrypt_arrays::{C_INPUT, SK_INPUT, TWO_E_COMPARE};
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    //let mut sk = [0u8; CRYPTO_SECRETKEYBYTES]; // + 40
-    let mut sk = SK_INPUT.to_vec();
-    assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
+    #[test]
+    pub fn test_decrypt() {
+        use crate::decrypt_arrays::{C_INPUT, SK_INPUT, TWO_E_COMPARE};
 
-    let mut c = C_INPUT.to_vec();
-    assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
+        //let mut sk = [0u8; CRYPTO_SECRETKEYBYTES]; // + 40
+        let mut sk = SK_INPUT.to_vec();
+        assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 
-    let mut two_e_compare = TWO_E_COMPARE.to_vec();
-    assert_eq!(two_e_compare.len(), 1 + SYS_N / 8);
+        let mut c = C_INPUT.to_vec();
+        assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
 
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+        let mut two_e_compare = TWO_E_COMPARE.to_vec();
+        assert_eq!(two_e_compare.len(), 1 + SYS_N / 8);
 
-    /*println!("skp input: ");
-    for i in 0..sk.len() {
-        println!("{}", sk[i]);
+        let mut two_e = [0u8; 1 + SYS_N / 8];
+        two_e[0] = 2;
+
+        /*println!("skp input: ");
+        for i in 0..sk.len() {
+            println!("{}", sk[i]);
+        }
+        println!("ENDI");*/
+
+        decrypt(&mut two_e[1..], &mut sk[40..], &mut c);
+
+        assert_eq!(two_e.to_vec(), two_e_compare);
+
+        // test crypto_hash
+        let mut conf = [0u8; 32];
+
+        shake256(&mut conf, &two_e[0..1025]);
+
+        /*println!("crypto: ");
+        for i in 0..32 {
+            println!("{}", conf[i]);
+        }
+        println!("ENDI");*/
     }
-    println!("ENDI");*/
-
-    decrypt(&mut two_e[1..], &mut sk[40..], &mut c);
-
-    assert_eq!(two_e.to_vec(), two_e_compare);
-
-    // test crypto_hash
-    let mut conf = [0u8; 32];
-
-    shake256(&mut conf, &two_e[0..1025]);
-
-    /*println!("crypto: ");
-    for i in 0..32 {
-        println!("{}", conf[i]);
-    }
-    println!("ENDI");*/
 }

@@ -290,33 +290,37 @@ pub fn test_mov_columns() {
     }
     mov_columns(&mut mat, &mut pi, &mut pivots);
 }*/
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-pub fn test_pk_gen() {
-    use crate::pk_gen_arrays::{PERM_INPUT, PK_COMPARE};
+    #[test]
+    pub fn test_pk_gen() {
+        use crate::pk_gen_arrays::{PERM_INPUT, PK_COMPARE};
 
-    let mut test_perm = PERM_INPUT.to_vec();
-    assert_eq!(test_perm.len(), 1 << GFBITS);
+        let mut test_perm = PERM_INPUT.to_vec();
+        assert_eq!(test_perm.len(), 1 << GFBITS);
 
-    let mut sk: [u8; SYS_T] = [
-        199, 216, 123, 163, 126, 230, 196, 18, 117, 1, 41, 51, 200, 109, 66, 233, 33, 107, 214, 76,
-        177, 56, 124, 190, 64, 198, 125, 205, 220, 113, 133, 213, 72, 4, 89, 57, 127, 162, 245,
-        223, 83, 11, 34, 11, 74, 69, 23, 140, 117, 16, 115, 109, 153, 135, 125, 9, 121, 90, 117,
-        31, 99, 125, 190, 190, 64, 29, 87, 74, 123, 168, 123, 149, 57, 243, 111, 64, 238, 56, 169,
-        86, 62, 234, 171, 88, 164, 51, 195, 223, 215, 88, 35, 232, 78, 104, 245, 198, 208, 78, 135,
-        127, 13, 30, 239, 167, 182, 210, 40, 252, 162, 64, 120, 166, 216, 120, 160, 69, 181, 82,
-        31, 242, 90, 27, 146, 6, 0, 52, 223, 41,
-    ];
+        let mut sk: [u8; SYS_T] = [
+            199, 216, 123, 163, 126, 230, 196, 18, 117, 1, 41, 51, 200, 109, 66, 233, 33, 107, 214,
+            76, 177, 56, 124, 190, 64, 198, 125, 205, 220, 113, 133, 213, 72, 4, 89, 57, 127, 162,
+            245, 223, 83, 11, 34, 11, 74, 69, 23, 140, 117, 16, 115, 109, 153, 135, 125, 9, 121,
+            90, 117, 31, 99, 125, 190, 190, 64, 29, 87, 74, 123, 168, 123, 149, 57, 243, 111, 64,
+            238, 56, 169, 86, 62, 234, 171, 88, 164, 51, 195, 223, 215, 88, 35, 232, 78, 104, 245,
+            198, 208, 78, 135, 127, 13, 30, 239, 167, 182, 210, 40, 252, 162, 64, 120, 166, 216,
+            120, 160, 69, 181, 82, 31, 242, 90, 27, 146, 6, 0, 52, 223, 41,
+        ];
 
-    let mut pivots = 0u64;
-    let mut pi = [0i16; 1 << GFBITS];
-    let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
-    //let mut perm = [0u32, 1 << GFBITS];
+        let mut pivots = 0u64;
+        let mut pi = [0i16; 1 << GFBITS];
+        let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
+        //let mut perm = [0u32, 1 << GFBITS];
 
-    pk_gen(&mut pk, &mut sk, &mut test_perm, &mut pi, &mut pivots);
+        pk_gen(&mut pk, &mut sk, &mut test_perm, &mut pi, &mut pivots);
 
-    /*for i in 0..400 {
-        println!("{}", pk[i]);
-    }*/
-    assert_eq!(pk, PK_COMPARE);
+        /*for i in 0..400 {
+            println!("{}", pk[i]);
+        }*/
+        assert_eq!(pk, PK_COMPARE);
+    }
 }
