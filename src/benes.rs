@@ -219,29 +219,6 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
     }
 }
 
-#[test]
-fn test_apply_benes() {
-    // Basic testcase
-    let mut L = [31u8; (1 << GFBITS) / 8];
-    let mut bits = [0u8; CRYPTO_SECRETKEYBYTES + 40];
-    bits[0] = 255;
-
-    let mut compare_array = [31u8; (1 << GFBITS) / 8];
-    compare_array[0] = 47;
-    compare_array[1] = 47;
-
-    apply_benes(&mut L, &mut bits, 0);
-
-    assert_eq!(L, compare_array);
-
-    /*for i in 0..L.len() {
-        println!("i:{} res:{}", i, L[i]);
-        if i > 40 {
-            break;
-        }
-    }*/
-}
-
 pub fn support_gen(s: &mut [Gf; SYS_N], c: &mut [u8]) {
     let mut a: Gf;
     let (mut i, mut j): (usize, usize);
@@ -266,5 +243,33 @@ pub fn support_gen(s: &mut [Gf; SYS_N], c: &mut [u8]) {
             s[i] <<= 1;
             s[i] |= ((L[j][i / 8] >> (i % 8)) & 1) as u16;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_benes() {
+        // Basic testcase
+        let mut L = [31u8; (1 << GFBITS) / 8];
+        let mut bits = [0u8; CRYPTO_SECRETKEYBYTES + 40];
+        bits[0] = 255;
+
+        let mut compare_array = [31u8; (1 << GFBITS) / 8];
+        compare_array[0] = 47;
+        compare_array[1] = 47;
+
+        apply_benes(&mut L, &mut bits, 0);
+
+        assert_eq!(L, compare_array);
+
+        /*for i in 0..L.len() {
+            println!("i:{} res:{}", i, L[i]);
+            if i > 40 {
+                break;
+            }
+        }*/
     }
 }

@@ -57,71 +57,76 @@ pub fn int32_sort(x: &mut [i32], n: i64) {
     }
 }
 
-fn gen_random_i32() -> i32 {
-    rand::thread_rng().gen::<i32>()
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_int32_MINMAX() {
-    // basic test-case
-    let x: i32 = 45;
-    let y: i32 = -17;
+    fn gen_random_i32() -> i32 {
+        rand::thread_rng().gen::<i32>()
+    }
 
-    // first parameter should become min
-    // second parameter should become max,
-    let (x, y) = int32_MINMAX(x, y);
+    #[test]
+    fn test_int32_MINMAX() {
+        // basic test-case
+        let x: i32 = 45;
+        let y: i32 = -17;
 
-    assert_eq!(x, -17);
-    assert_eq!(y, 45);
+        // first parameter should become min
+        // second parameter should become max,
+        let (x, y) = int32_MINMAX(x, y);
 
-    //max value testcase
-    let x: i32 = i32::MAX;
-    let y: i32 = 2;
+        assert_eq!(x, -17);
+        assert_eq!(y, 45);
 
-    let (x, y) = int32_MINMAX(x, y);
-
-    assert_eq!(x, 2);
-    assert_eq!(y, 2147483647);
-
-    //min, max
-    let x: i32 = i32::MAX;
-    let y: i32 = i32::MIN;
-
-    let (x, y) = int32_MINMAX(x, y);
-
-    assert_eq!(x, -2147483648);
-    assert_eq!(y, 2147483647);
-
-    for i in 0..=40 {
-        let x: i32 = gen_random_i32();
-        let y: i32 = gen_random_i32();
+        //max value testcase
+        let x: i32 = i32::MAX;
+        let y: i32 = 2;
 
         let (x, y) = int32_MINMAX(x, y);
 
-        if x > y {
-            println!(
-                "erroneous behaviour with inputs: x: 0x{:016X}i32 y: 0x{:016X}i32",
-                x, y
-            );
+        assert_eq!(x, 2);
+        assert_eq!(y, 2147483647);
+
+        //min, max
+        let x: i32 = i32::MAX;
+        let y: i32 = i32::MIN;
+
+        let (x, y) = int32_MINMAX(x, y);
+
+        assert_eq!(x, -2147483648);
+        assert_eq!(y, 2147483647);
+
+        for i in 0..=40 {
+            let x: i32 = gen_random_i32();
+            let y: i32 = gen_random_i32();
+
+            let (x, y) = int32_MINMAX(x, y);
+
+            if x > y {
+                println!(
+                    "erroneous behaviour with inputs: x: 0x{:016X}i32 y: 0x{:016X}i32",
+                    x, y
+                );
+            }
         }
     }
-}
 
-#[test]
-fn test_int32_sort() {
-    let mut array: [i32; 64] = [0; 64];
+    #[test]
+    fn test_int32_sort() {
+        let mut array: [i32; 64] = [0; 64];
 
-    for i in 0..array.len() {
-        array[i] = gen_random_i32();
-        //println!("{}", array[i]);
-    }
+        for i in 0..array.len() {
+            array[i] = gen_random_i32();
+            //println!("{}", array[i]);
+        }
 
-    int32_sort(&mut array, 64);
+        int32_sort(&mut array, 64);
 
-    for i in 0..array.len() {
-        //println!("{}", array[i]);
-        if i >= 1 {
-            assert_eq!(array[i] > array[i - 1], true);
+        for i in 0..array.len() {
+            //println!("{}", array[i]);
+            if i >= 1 {
+                assert_eq!(array[i] > array[i - 1], true);
+            }
         }
     }
 }

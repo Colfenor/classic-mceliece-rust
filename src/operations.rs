@@ -188,7 +188,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 
         // storing positions of the 32 pivots
 
-        store8(&mut sk[32..40], pivots); // TODO pivots is 0xFFFFFFFF in the C implementation
+        store8(&mut sk[32..40], pivots);
 
         break;
     }

@@ -100,7 +100,8 @@ pub fn randombytes(x: &mut [u8], xlen: usize) -> Result<(), Box<dyn error::Error
     drbg_ctx.key.copy_from_slice(&key);
 
     drbg_ctx.reseed_counter += 1;
-    println!("reseedctr:{}", drbg_ctx.reseed_counter);
+
+    //println!("reseedctr:{}", drbg_ctx.reseed_counter);
 
     Ok(())
 }

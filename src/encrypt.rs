@@ -145,47 +145,52 @@ pub fn encrypt(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
 
 // unsigned char two_e[ 1 + SYS_N/8 ] = {2};
 
-#[test]
-pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
-    use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let mut entropy_input = [0u8; 48];
-    let mut personalization_string = [0u8; 48];
+    #[test]
+    pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
+        use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
 
-    /*for i in 0..48u8 {
-        entropy_input[i as usize] = i;
-    }*/
-    // set the same seed as in C implementation
-    entropy_input = [
-        6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36, 204,
-        43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158, 249, 126,
-        208, 133, 65, 219, 210, 225, 255, 161,
-    ];
+        let mut entropy_input = [0u8; 48];
+        let mut personalization_string = [0u8; 48];
 
-    randombytes_init(&entropy_input, &personalization_string, 256)?;
+        /*for i in 0..48u8 {
+            entropy_input[i as usize] = i;
+        }*/
+        // set the same seed as in C implementation
+        entropy_input = [
+            6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
+            204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
+            249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
+        ];
 
-    let mut second_seed = [0u8; 33];
-    second_seed[0] = 64;
+        randombytes_init(&entropy_input, &personalization_string, 256)?;
 
-    randombytes(&mut second_seed[1..], 32);
+        let mut second_seed = [0u8; 33];
+        second_seed[0] = 64;
 
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+        randombytes(&mut second_seed[1..], 32);
 
-    let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut pk = PK_INPUT.to_vec();
-    assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
+        let mut two_e = [0u8; 1 + SYS_N / 8];
+        two_e[0] = 2;
 
-    let mut test_e = TEST_E.to_vec();
-    assert_eq!(test_e.len(), SYS_N / 8);
+        let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut pk = PK_INPUT.to_vec();
+        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-    let mut compare_s = COMPARE_S.to_vec();
-    assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
+        let mut test_e = TEST_E.to_vec();
+        assert_eq!(test_e.len(), SYS_N / 8);
 
-    //inject test e :)
-    encrypt(&mut c, &mut pk, &mut two_e[1..]);
+        let mut compare_s = COMPARE_S.to_vec();
+        assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
 
-    assert_eq!(compare_s, c);
+        //inject test e :)
+        encrypt(&mut c, &mut pk, &mut two_e[1..]);
 
-    Ok(())
+        assert_eq!(compare_s, c);
+
+        Ok(())
+    }
 }

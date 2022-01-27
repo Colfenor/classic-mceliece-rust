@@ -61,67 +61,72 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
     }
 }
 
-// Unit tests
-fn gen_random_u64() -> u64 {
-    rand::thread_rng().gen::<u64>()
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_uint64_minmax() {
-    // basic test-case
-    let x: u64 = 42;
-    let y: u64 = 10;
+    // Unit tests
+    fn gen_random_u64() -> u64 {
+        rand::thread_rng().gen::<u64>()
+    }
 
-    // first parameter should become min
-    // second parameter should become max,
-    let (x, y) = uint64_minmax(x, y);
+    #[test]
+    fn test_uint64_minmax() {
+        // basic test-case
+        let x: u64 = 42;
+        let y: u64 = 10;
 
-    //println!("x is {}", x);
-    //println!("y is {}", y);
+        // first parameter should become min
+        // second parameter should become max,
+        let (x, y) = uint64_minmax(x, y);
 
-    assert_eq!(x, 10);
-    assert_eq!(y, 42);
+        //println!("x is {}", x);
+        //println!("y is {}", y);
 
-    // max value test-case
-    let x: u64 = 0xffffffffffffffff;
-    let y: u64 = 1;
+        assert_eq!(x, 10);
+        assert_eq!(y, 42);
 
-    let (x, y) = uint64_minmax(x, y);
-
-    assert_eq!(x, 1);
-    assert_eq!(y, 0xffffffffffffffff);
-
-    // generator test case
-    for i in 0..=40 {
-        let x: u64 = gen_random_u64();
-        let y: u64 = gen_random_u64();
+        // max value test-case
+        let x: u64 = 0xffffffffffffffff;
+        let y: u64 = 1;
 
         let (x, y) = uint64_minmax(x, y);
 
-        if x > y {
-            println!(
-                "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
-                x, y
-            );
+        assert_eq!(x, 1);
+        assert_eq!(y, 0xffffffffffffffff);
+
+        // generator test case
+        for i in 0..=40 {
+            let x: u64 = gen_random_u64();
+            let y: u64 = gen_random_u64();
+
+            let (x, y) = uint64_minmax(x, y);
+
+            if x > y {
+                println!(
+                    "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
+                    x, y
+                );
+            }
         }
     }
-}
 
-#[test]
-fn test_uint64_sort() {
-    let mut array: [u64; 64] = [0; 64];
+    #[test]
+    fn test_uint64_sort() {
+        let mut array: [u64; 64] = [0; 64];
 
-    for i in 0..array.len() {
-        array[i] = gen_random_u64();
-        //println!("{}", array[i]);
-    }
+        for i in 0..array.len() {
+            array[i] = gen_random_u64();
+            //println!("{}", array[i]);
+        }
 
-    uint64_sort(&mut array, 64);
+        uint64_sort(&mut array, 64);
 
-    for i in 0..array.len() {
-        //println!("{}", array[i]);
-        if i >= 1 {
-            assert_eq!(array[i] > array[i - 1], true);
+        for i in 0..array.len() {
+            //println!("{}", array[i]);
+            if i >= 1 {
+                assert_eq!(array[i] > array[i - 1], true);
+            }
         }
     }
 }
