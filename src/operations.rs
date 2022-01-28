@@ -1,4 +1,3 @@
-use std::mem::size_of;
 use std::{error, fmt::Debug};
 
 use crate::controlbits::controlbitsfrompermutation;
@@ -25,7 +24,7 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
 
     shake256(&mut c[SYND_BYTES..], &two_e);
 
-    for i in 1..SYS_N / 8 {
+    for i in 1..=SYS_N / 8 {
         one_ec[i] = two_e[i];
     }
 

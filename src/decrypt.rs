@@ -80,7 +80,7 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
 
     print!("decrypt e: positions");
     for k in 0..SYS_N {
-        if e[k / 8] & (1 << (k & 7)) == 1 {
+        if e[k / 8] & (1 << (k & 7)) != 0 {
             print!(" {}", k);
         }
     }

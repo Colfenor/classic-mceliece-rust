@@ -4,7 +4,6 @@ use crate::root::eval;
 /* input: Goppa polynomial f, support L, received word r */
 /* output: out, the syndrome of length 2t */
 pub fn synd(out: &mut [Gf; SYS_T * 2], f: &mut [Gf; SYS_T + 1], l: &mut [Gf; SYS_N], r: &[u8]) {
-    let (mut i, mut j): (usize, usize);
     let (mut e, mut e_inv, mut c): (Gf, Gf, Gf);
 
     for j in 0..SYS_T * 2 {

@@ -96,7 +96,7 @@ mod tests {
         assert_eq!(y, 0xffffffffffffffff);
 
         // generator test case
-        for i in 0..=40 {
+        for _i in 0..=40 {
             let x: u64 = gen_random_u64();
             let y: u64 = gen_random_u64();
 
