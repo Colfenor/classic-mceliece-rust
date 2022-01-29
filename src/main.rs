@@ -95,8 +95,8 @@ mod tests {
         let mut ct = [0u8; api::CRYPTO_CIPHERTEXTBYTES];
         let mut ss = [0u8; api::CRYPTO_BYTES];
         let mut ss1 = [0u8; api::CRYPTO_BYTES];
-        let mut pk = [0u8; api::CRYPTO_PUBLICKEYBYTES];
-        let mut sk = [0u8; api::CRYPTO_SECRETKEYBYTES];
+        let mut pk = vec![0u8; api::CRYPTO_PUBLICKEYBYTES];
+        let mut sk = vec![0u8; api::CRYPTO_SECRETKEYBYTES];
 
         randombytes::randombytes_init(seed, &[0u8; 48], 256)?;
 
