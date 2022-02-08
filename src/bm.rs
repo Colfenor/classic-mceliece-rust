@@ -20,7 +20,7 @@ pub fn min(a: usize, b: usize) -> usize {
 /* output: out, minimal polynomial of s */
 
 // out 129, s 256
-pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 256]) {
+pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
     //let N: u64 = 0;
     let mut L: u16 = 0;
     let mut mle: u16;
