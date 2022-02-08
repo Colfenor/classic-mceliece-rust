@@ -199,7 +199,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_crypto_kem_dec() {
         use crate::{
             api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
@@ -224,7 +224,7 @@ mod tests {
         assert_eq!(test_key, compare_key);
     }
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
@@ -282,7 +282,7 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},

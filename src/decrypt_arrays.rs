@@ -1,7 +1,9 @@
+#[cfg(all(feature = "mceliece8192128f", test))]
 use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
+#[cfg(all(feature = "mceliece8192128f", test))]
 use crate::params::SYS_N;
 
-#[cfg(test)]
+#[cfg(all(feature = "mceliece8192128f", test))]
 pub static TWO_E_COMPARE: [u8; 1 + SYS_N / 8] = [
     2, 0, 8, 64, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 128, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0,
@@ -39,7 +41,7 @@ pub static TWO_E_COMPARE: [u8; 1 + SYS_N / 8] = [
     0, 0, 1, 0, 0, 64, 0, 0, 0, 0,
 ];
 
-#[cfg(test)]
+#[cfg(all(feature = "mceliece8192128f", test))]
 pub static C_INPUT: [u8; CRYPTO_CIPHERTEXTBYTES] = [
     242, 32, 240, 115, 213, 142, 119, 195, 175, 92, 54, 108, 148, 206, 223, 242, 89, 228, 20, 76,
     143, 186, 142, 203, 248, 51, 88, 44, 41, 34, 66, 148, 49, 215, 188, 202, 21, 213, 135, 64, 92,
@@ -55,7 +57,7 @@ pub static C_INPUT: [u8; CRYPTO_CIPHERTEXTBYTES] = [
     149, 197, 247, 197, 26, 55, 29, 54, 186, 217, 188, 23, 87, 194,
 ];
 
-#[cfg(test)]
+#[cfg(all(feature = "mceliece8192128f", test))]
 pub static SK_INPUT: [u8; CRYPTO_SECRETKEYBYTES + 40] = [
     124, 153, 53, 160, 176, 118, 148, 170, 12, 109, 16, 228, 219, 107, 26, 221, 47, 216, 26, 37,
     204, 177, 72, 3, 45, 205, 115, 153, 54, 115, 127, 45, 255, 255, 255, 223, 1, 0, 0, 0, 199, 13,

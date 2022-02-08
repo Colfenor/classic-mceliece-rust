@@ -149,7 +149,7 @@ pub fn encrypt(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
         use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
 

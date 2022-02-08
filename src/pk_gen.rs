@@ -294,7 +294,7 @@ pub fn test_mov_columns() {
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_pk_gen() {
         use crate::pk_gen_arrays::{PERM_INPUT, PK_COMPARE};
 

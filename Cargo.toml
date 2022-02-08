@@ -1,10 +1,8 @@
 [package]
-name = "classic-mceliece"
+name = "classic-mceliece-rust"
 version = "0.1.0"
-authors = ["Bernhard <34011017+Colfenor@users.noreply.github.com>"]
+authors = ["Bernhard <34011017+Colfenor@users.noreply.github.com>", "Lukas Prokop <admin@lukas-prokop.at>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rand = "0.8.4"
@@ -13,3 +11,24 @@ lazy_static = "1.4.0"
 aes = "0.7.5"
 hex = "0.4.3"
 block-modes = "0.8.1"
+
+[features]
+default = ['mceliece348864']
+mceliece348864 = []
+mceliece348864f = []
+mceliece460896 = []
+mceliece460896f = []
+mceliece6688128 = []
+mceliece6688128f = []
+mceliece6960119 = []
+mceliece6960119f = []
+mceliece8192128 = []
+mceliece8192128f = []
+
+#[[bench]]
+#name = "kem_api"
+#harness = false
+
+[dev-dependencies]
+criterion = "0.3"
+criterion-cycles-per-byte = "0.1.2"

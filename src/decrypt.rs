@@ -105,7 +105,7 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_decrypt() {
         use crate::decrypt_arrays::{C_INPUT, SK_INPUT, TWO_E_COMPARE};
 
