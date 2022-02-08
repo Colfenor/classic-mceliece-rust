@@ -1,6 +1,7 @@
+#[cfg(all(feature = "mceliece8192128f", test))]
 use crate::params::GFBITS;
 
-#[cfg(test)]
+#[cfg(all(feature = "mceliece8192128f", test))]
 pub static PI_INPUT: [i16; 1 << GFBITS] = [
     2881, 1387, 5863, 5964, 1428, 4910, 694, 3561, 3594, 3876, 2092, 65, 3333, 3430, 6079, 3022,
     1992, 3701, 5808, 3908, 4223, 8106, 4000, 4649, 3867, 4999, 5813, 1231, 5452, 1861, 4874, 1407,

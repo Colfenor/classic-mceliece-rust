@@ -33,7 +33,7 @@ pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &mut [Gf; SYS_N])
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_root() {
         assert_eq!(SYS_N, 8192);
 

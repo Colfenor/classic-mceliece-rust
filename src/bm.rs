@@ -92,7 +92,7 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 256]) {
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_simple_bm() {
         assert_eq!(SYS_T + 1, 129);
 
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(locator, compare_array);
     }
 
-    #[test]
+    #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_first_round_bm() {
         let compare_array: [u16; SYS_T + 1] = [
             250, 2904, 5820, 5817, 2913, 1022, 2568, 7340, 3511, 2713, 85, 4952, 1828, 2015, 7604,
