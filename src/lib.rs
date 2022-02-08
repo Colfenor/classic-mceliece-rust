@@ -23,12 +23,12 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
-fn main() {
-    let a = 65u64;
-    println!("{}", a);
-
-    //test_transpose::test_transpose();
-}
+pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+pub use api::{
+    CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES,
+    CRYPTO_SECRETKEYBYTES, CRYPTO_CIPHERTEXTBYTES,
+    CRYPTO_PRIMITIVE
+};
 
 #[cfg(test)]
 mod tests {
