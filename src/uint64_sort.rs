@@ -1,10 +1,13 @@
-use rand::Rng;
-// side-channel effective overflow check of variable c
-// source: book Hacker's Delight 2–13 Overflow Detection,
-// Section Unsigned Add/Subtract p. 40
-// let (_, c) = b.overflowing_sub(a); shouldn't be used, because this
-// will create a branch on some compilers
-
+/// If `a > b`, swap `a` and `b` in-place. Otherwise keep values.
+/// Implements `(min(a, b), max(a, b))` in constant time.
+///
+/// This differs from the C implementation, because the C implementation
+/// only works for 63-bit integers.
+///
+/// Instead this implementation is based on
+/// “side-channel effective overflow check of variable c”
+/// from the book “Hacker's Delight” 2–13 Overflow Detection,
+/// Section Unsigned Add/Subtract p. 40
 const fn uint64_minmax(mut a: u64, mut b: u64) -> (u64, u64) {
     let d: u64 = (!b & a) | ((!b | a) & (b.wrapping_sub(a)));
     let mut c: u64 = d >> 63;
@@ -16,20 +19,21 @@ const fn uint64_minmax(mut a: u64, mut b: u64) -> (u64, u64) {
     (a, b)
 }
 
+/// Sort a sequence of integers using a sorting network to achieve constant time.
+/// To our understanding, this implements [djbsort](https://sorting.cr.yp.to/).
 pub fn uint64_sort(x: &mut [u64], n: usize) {
-    let (mut top, mut p, mut q, mut r, mut i): (usize, usize, usize, usize, usize);
-
     if n < 2 {
         return;
     }
-    top = 1;
+    let mut top = 1;
     while top < n - top {
         top += top;
     }
 
-    p = top;
+    let mut p = top;
+    // TODO rewrite as for loops
     while p > 0 {
-        i = 0;
+        let mut i = 0;
         while i < n - p {
             if (i & p) == 0 {
                 let (tmp_xi, tmp_xip) = uint64_minmax(x[i], x[i + p]);
@@ -39,12 +43,12 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
             i += 1;
         }
         i = 0;
-        q = top;
+        let mut q = top;
         while q > p {
             while i < n - q {
                 if (i & p) == 0 {
                     let mut a = x[i + p];
-                    r = q;
+                    let mut r = q;
                     while r > p {
                         let (tmp_a, tmp_xir) = uint64_minmax(a, x[i + r]);
                         x[i + r] = tmp_xir;
@@ -64,8 +68,8 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
 
-    // Unit tests
     fn gen_random_u64() -> u64 {
         rand::thread_rng().gen::<u64>()
     }
@@ -96,17 +100,14 @@ mod tests {
         assert_eq!(y, 0xffffffffffffffff);
 
         // generator test case
-        for _i in 0..=40 {
+        for _ in 0..=40 {
             let x: u64 = gen_random_u64();
             let y: u64 = gen_random_u64();
 
             let (x, y) = uint64_minmax(x, y);
 
             if x > y {
-                println!(
-                    "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
-                    x, y
-                );
+                assert!(false, "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64", x, y);
             }
         }
     }
@@ -117,15 +118,13 @@ mod tests {
 
         for i in 0..array.len() {
             array[i] = gen_random_u64();
-            //println!("{}", array[i]);
         }
 
         uint64_sort(&mut array, 64);
 
         for i in 0..array.len() {
-            //println!("{}", array[i]);
             if i >= 1 {
-                assert_eq!(array[i] > array[i - 1], true);
+                assert!(array[i] > array[i - 1]);
             }
         }
     }

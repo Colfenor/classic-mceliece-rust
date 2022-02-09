@@ -1,6 +1,4 @@
-//! Implementation of Nassimi-Sahni algorithm
-//!
-//! rust port of controlbits.c from Classic McEliece.
+//! Implementation of Nassimi-Sahni algorithm[^ns][^cb]
 //!
 //! [^ns]: David Nassimi, Sartaj Sahni "Parallel algorithms to set up the Benes permutationnetwork"
 //! [^cb]: Daniel J. Bernstein "Verified fast formulas for control bits for permutation networks"
@@ -26,7 +24,7 @@ macro_rules! CONTROLBYTES {
 /// `s` configures `stride-2^s` conditional swaps.
 ///
 /// The following requirement is undocumented in C:
-///   assert!(1 << (s + 1) <= n);
+///   `assert!(1 << (s + 1) <= n);`
 pub fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
     assert_eq!(p.len(), n as usize);
     assert!(1 << (s + 1) <= n);
@@ -78,7 +76,7 @@ pub fn cbrecursion(
     assert!(out.len() >= CONTROLBYTES!(w, step));
     assert!(temp.len() >= 2 * n);
     assert!(aux.len() >= n / 2);
-    assert!(0 <= pi_offset && pi_offset <= 3 * n);
+    assert!(pi_offset <= 3 * n);
 
     if w == 1 {
         let first = if pi_offset == 0 {

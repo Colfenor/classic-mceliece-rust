@@ -1,28 +1,32 @@
-use std::{error, fmt::Debug};
+use std::error;
 
 use crate::controlbits::controlbitsfrompermutation;
 use crate::{
     crypto_hash::shake256,
-    decrypt,
     decrypt::decrypt,
     encrypt::encrypt,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
-    randombytes::{randombytes, randombytes_init},
+    randombytes::randombytes,
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
 
-pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
+/// KEM Encapsulation.
+///
+/// Given a public key `pk`, sample a shared key.
+/// This shared key is returned through parameter `key` whereas
+/// the ciphertext (meant to be used for decapsulation) is returned as `c`.
+pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8]) -> Result<(), Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
     one_ec[0] = 1;
 
-    encrypt(c, pk, &mut two_e[1..]);
+    encrypt(c, pk, &mut two_e[1..])?;
 
-    shake256(&mut c[SYND_BYTES..], &two_e);
+    shake256(&mut c[SYND_BYTES..], &two_e)?;
 
     for i in 1..=SYS_N / 8 {
         one_ec[i] = two_e[i];
@@ -34,39 +38,32 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
         j += 1;
     }
 
-    shake256(key, &one_ec);
+    shake256(key, &one_ec)?;
 
-    return 0;
+    Ok(())
 }
 
-// debug function
-pub fn print_array<T: Debug>(input: &[T]) {
-    for i in 0..input.len() {
-        println!("i:{} {:?}", i, input[i]);
-    }
-}
-
-pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
-    let mut ret_confirm: u8 = 0;
-    let mut ret_decrypt: u8 = 0;
-
-    let mut m: u16 = 0;
-
+/// KEM Decapsulation.
+///
+/// Given a secret key `sk` and a ciphertext `c`,
+/// determine the shared text `key` negotiated by both parties.
+pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<(), Box<dyn error::Error>> {
     let mut conf = [0u8; 32];
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
 
-    ret_decrypt = decrypt(&mut two_e[1..], &mut sk[40..], c);
+    let ret_decrypt: u8 = decrypt(&mut two_e[1..], &sk[40..], c);
 
-    shake256(&mut conf, &two_e);
+    shake256(&mut conf, &two_e)?;
 
+    let mut ret_confirm: u8 = 0;
     for i in 0..32 {
         ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
     }
 
-    m = (ret_decrypt | ret_confirm) as u16;
+    let mut m = (ret_decrypt | ret_confirm) as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
@@ -74,7 +71,7 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
     preimage[index] = (m & 1) as u8;
     index += 1;
 
-    let mut s = &mut sk[40 + IRR_BYTES + COND_BYTES..];
+    let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
     for i in 0..SYS_N / 8 {
         preimage[index] = (!m as u8 & s[i]) | (m as u8 & two_e[i + 1]);
@@ -86,19 +83,12 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
         index += 1;
     }
 
-    shake256(key, &preimage);
-
-    /*println!("KEY: ");
-    for i in 0..32 {
-        println!("{}", key[i]);
-    }
-    println!("ENDK");*/
-
-    return 0;
+    shake256(key, &preimage)
 }
 
-// quick custom log2 fn
+/// Compute the logarithm of `x` w.r.t. base 2.
 fn log2(mut x: usize) -> usize {
+    // TODO this does not look efficient
     while x.count_ones() != 1 {
         x += 1;
     }
@@ -110,7 +100,12 @@ fn log2(mut x: usize) -> usize {
     log - 1
 }
 
-pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
+/// KEM Keypair generation.
+///
+/// Generate some public and secret key.
+/// The public key is meant to be shared with any party,
+/// but access to the secret key must be limited to the generating party.
+pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
     let mut seed = [0u8; 33];
     seed[0] = 64;
 
@@ -120,11 +115,8 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     const IRR_POLYS: usize = SYS_N / 8 + (1 << GFBITS) * 4;
     const PERM: usize = SYS_N / 8;
 
-    // ------------------ 1024     +     32768      +  256   +  32
     let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
-    let mut r_len = r.len(); // 34080
     let mut pivots: u64 = 0;
-    let mut index = r_len - 32;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];
@@ -132,14 +124,11 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     let mut perm = [0u32; 1 << GFBITS];
     let mut pi = [0i16; 1 << GFBITS];
 
-    if let Err(e) = randombytes(&mut seed[1..], 32) {
-        eprintln!("{:?}", e);
-        return 1;
-    }
+    randombytes(&mut seed[1..], 32)?;
 
     loop {
         // expanding and updating the seed
-        shake256(&mut r[..], &seed[0..33]);
+        shake256(&mut r[..], &seed[0..33])?;
 
         (&mut sk[..32]).clone_from_slice(&seed[1..]);
         (&mut seed[1..]).clone_from_slice(&r[r.len() - 32..]);
@@ -179,10 +168,6 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 
         // storing the random string s
 
-        //println!("end pk_geeeentz");
-        //print_array(&pk);
-        //println!("finitorz");
-
         sk[S_BASE..(S_BASE + SYS_N / 8)].clone_from_slice(&r[0..SYS_N / 8]);
 
         // storing positions of the 32 pivots
@@ -192,12 +177,15 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
         break;
     }
 
-    return 0;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    #[cfg(all(feature = "mceliece8192128f", test))]
+    use crate::randombytes::randombytes_init;
 
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_crypto_kem_dec() {

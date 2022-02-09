@@ -1,6 +1,5 @@
 use aes::BlockEncrypt;
 use aes::NewBlockCipher;
-use hex;
 use lazy_static::lazy_static;
 use std::error;
 use std::sync;
@@ -13,6 +12,7 @@ pub struct Aes256CtrDrbgStruct {
     pub reseed_counter: i32,
 }
 // global variable holding the RNG state
+// TODO I'd prefer no global state here
 lazy_static! {
     static ref DRBG_CTX: sync::Mutex<Aes256CtrDrbgStruct> = sync::Mutex::new({
         Aes256CtrDrbgStruct {
@@ -23,12 +23,16 @@ lazy_static! {
     });
 }
 
+/// This runs AES256 in ECB mode. Here `key` is a 256-bit AES key,
+/// `ctr` is a 128-bit plaintext value and `buffer` is a 128-bit
+/// ciphertext value.
 fn aes256_ecb(key: &[u8; 32], ctr: &[u8; 16], buffer: &mut [u8; 16]) {
     let cipher = aes::Aes256::new(key.into());
     buffer.copy_from_slice(ctr);
     cipher.encrypt_block(buffer.into());
 }
 
+/// Update `key` and `v` with `provided_data` by running one round of AES in counter mode
 fn aes256_ctr_drbg_update(
     provided_data: &mut Option<[u8; 48]>,
     key: &mut [u8; 32],
@@ -56,6 +60,7 @@ fn aes256_ctr_drbg_update(
     v.copy_from_slice(&temp[2]);
 }
 
+/// Initialize/reset the state based on the seed provided as `entropy_input`
 pub fn randombytes_init(
     entropy_input: &[u8; 48],
     personalization_string: &[u8; 48],
@@ -81,6 +86,8 @@ pub fn randombytes_init(
     Ok(())
 }
 
+/// Fill the buffer `x` with pseudo-random bytes resulting from the
+/// AES run in counter mode updating the object state
 pub fn randombytes(x: &mut [u8], xlen: usize) -> Result<(), Box<dyn error::Error>> {
     assert_eq!(x.len(), xlen);
     let mut drbg_ctx = DRBG_CTX.lock()?;
@@ -101,8 +108,6 @@ pub fn randombytes(x: &mut [u8], xlen: usize) -> Result<(), Box<dyn error::Error
 
     drbg_ctx.reseed_counter += 1;
 
-    //println!("reseedctr:{}", drbg_ctx.reseed_counter);
-
     Ok(())
 }
 
@@ -113,7 +118,7 @@ mod tests {
     #[test]
     fn test_randombytes() -> Result<(), Box<dyn error::Error>> {
         let mut entropy_input = [0u8; 48];
-        let mut personalization_string = [0u8; 48];
+        let personalization_string = [0u8; 48];
 
         for i in 0..48u8 {
             entropy_input[i as usize] = i;

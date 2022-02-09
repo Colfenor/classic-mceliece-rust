@@ -3,14 +3,12 @@ use crate::params::SYS_T;
 
 // out and f both arrays with SYS_T len
 
-/* input: f, element in GF((2^m)^t) */
-/* output: out, minimal polynomial of f */
-/* return: 0 for success and -1 for failure */
-pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &mut [Gf; SYS_T]) -> isize {
+/// Take element `f` in `GF((2^m)^t)` and return minimal polynomial `out` of `f`
+/// Returns 0 for success and -1 for failure
+pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
     let mut mat = [[0u16; SYS_T]; SYS_T + 1];
-    let (mut mask, mut inv, mut t): (Gf, Gf, Gf) = (0, 0, 0);
-
     mat[0][0] = 1;
+    // TODO rewrite while loops as for loops
 
     for i in 1..SYS_T {
         mat[0][i] = 0;
@@ -27,15 +25,12 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &mut [Gf; SYS_T]) -> isize {
         j += 1;
     }
 
-    let mut k = 0;
-    let mut c = 0;
-
     for j in 0..SYS_T {
-        k = j + 1;
+        let mut k = j + 1;
         while k < SYS_T {
-            mask = gf_iszero(mat[j][j]);
+            let mask = gf_iszero(mat[j][j]);
 
-            c = j;
+            let mut c = j;
             while c < SYS_T + 1 {
                 mat[c][j] ^= mat[c][k] & mask;
                 c += 1;
@@ -48,9 +43,9 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &mut [Gf; SYS_T]) -> isize {
             return -1;
         }
 
-        inv = gf_inv(mat[j][j]);
+        let inv = gf_inv(mat[j][j]);
 
-        c = j;
+        let mut c = j;
         while c < SYS_T + 1 {
             mat[c][j] = gf_mul(mat[c][j], inv);
 
@@ -59,7 +54,7 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &mut [Gf; SYS_T]) -> isize {
 
         for k in 0..SYS_T {
             if k != j {
-                t = mat[j][k];
+                let t = mat[j][k];
 
                 c = j;
                 while c < SYS_T + 1 {
@@ -74,7 +69,7 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &mut [Gf; SYS_T]) -> isize {
         out[i] = mat[SYS_T][i];
     }
 
-    return 0;
+    0
 }
 
 #[cfg(test)]

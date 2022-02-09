@@ -7,7 +7,9 @@ use crate::{
     params::{SYS_N, SYS_T},
 };
 
-pub fn eval(f: &mut [Gf; SYS_T + 1], a: Gf) -> Gf {
+/// Evaluate polynomial `f` with argument `a`.
+/// Thus it returns `f(a)` in symbolic notation.
+pub fn eval(f: &[Gf; SYS_T + 1], a: Gf) -> Gf {
     let mut r: Gf = f[SYS_T];
 
     for i in (0..=SYS_T - 1).rev() {
@@ -17,15 +19,11 @@ pub fn eval(f: &mut [Gf; SYS_T + 1], a: Gf) -> Gf {
     r
 }
 
-/* input: polynomial f and list of field elements L */
-/* output: out = [ f(a) for a in L ] */
-pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &mut [Gf; SYS_N]) {
-    let mut i: usize = 0;
-
-    while i < SYS_N {
+/// Given polynomial `f` and a list of field elements `l`,
+/// return the roots `out` satisfying `[ f(a) for a in L ]`
+pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
+    for i in 0..SYS_N {
         out[i] = eval(f, l[i]);
-
-        i += 1;
     }
 }
 

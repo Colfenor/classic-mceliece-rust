@@ -1,27 +1,20 @@
-use crate::{
-    gf::{gf_frac, gf_mul, Gf},
-    params::SYS_T,
-};
+//! This file implements the Berlekamp-Massey algorithm
+//! see <http://crypto.stanford.edu/~mironov/cs359/massey.pdf>
 
-/*
-  This file is for the Berlekamp-Massey algorithm
-  see http://crypto.stanford.edu/~mironov/cs359/massey.pdf
-*/
+use crate::gf::{gf_frac, gf_mul, Gf};
+use crate::params::SYS_T;
 
 pub fn min(a: usize, b: usize) -> usize {
-    let c = (a < b) as isize; // c = 0000_0000_0000_0001
-    let d = c << (isize::BITS - 1); // d = 1000_0000_0000_0000
-    let e = (d >> (isize::BITS - 1)) as usize; // e = 1111_1111_1111_1111
+    let c = (a < b) as isize;
+    let d = c << (isize::BITS - 1);
+    let e = (d >> (isize::BITS - 1)) as usize;
     (a & e) | (b & !e)
 }
 
-/* the Berlekamp-Massey algorithm */
-/* input: s, sequence of field elements */
-/* output: out, minimal polynomial of s */
-
-// out 129, s 256
+/// The Berlekamp-Massey algorithm.
+/// Uses `s` as input (sequence of field elements)
+/// and `out` as output (minimal polynomial of `s`)
 pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
-    //let N: u64 = 0;
     let mut L: u16 = 0;
     let mut mle: u16;
     let mut mne: u16;
@@ -37,11 +30,11 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
     B[1] = 1;
     C[0] = 1;
 
-    for N in 0..(2 * SYS_T) {
+    for n in 0..(2 * SYS_T) {
         d = 0;
         //println!("ROUND N: {}", N);
-        for i in 0..=min(N, SYS_T) {
-            d ^= gf_mul(C[i], s[N - i]);
+        for i in 0..=min(n, SYS_T) {
+            d ^= gf_mul(C[i], s[n - i]);
             //println!("mul:{} C:{} s:{} i:{} N:{}", gf_mul(C[i], s[ N-i]), C[i], s[ N-i], i, N);
         }
         mne = d;
@@ -49,7 +42,7 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mne >>= 15;
         mne = mne.wrapping_sub(1);
 
-        mle = N as u16;
+        mle = n as u16;
         mle = mle.wrapping_sub(2 * L);
         mle >>= 15;
         mle = mle.wrapping_sub(1);
@@ -65,7 +58,7 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
             C[i] ^= gf_mul(f, B[i]) & mne;
         }
 
-        L = (L & !mle) | ((N as u16 + 1 - L) & mle);
+        L = (L & !mle) | ((n as u16 + 1 - L) & mle);
 
         for i in 0..=SYS_T {
             B[i] = (B[i] & !mle) | (T[i] & mle);
@@ -90,6 +83,7 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
 
     #[cfg(all(feature = "mceliece8192128f", test))]

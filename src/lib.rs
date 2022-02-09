@@ -39,11 +39,11 @@ mod tests {
     use std::fmt;
 
     #[derive(Debug)]
-    struct CryptoError<'a>(&'a str, i32);
+    struct CryptoError<'a>(&'a str, String);
 
     impl<'a> fmt::Display for CryptoError<'a> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{} returned <{}>", self.0, self.1)
+            write!(f, "{} failed: {}", self.0, self.1)
         }
     }
 
@@ -103,30 +103,27 @@ mod tests {
         writeln!(fp_rsp, "count = {}", i)?;
         writeln!(fp_rsp, "seed = {}", repr_binary_str(seed))?;
 
-        let ret_kp = operations::crypto_kem_keypair(&mut pk, &mut sk);
-        if ret_kp != 0 {
-            return Err(Box::new(CryptoError("crypto_kem_keypair", ret_kp)));
+        if let Err(ret_kp) = operations::crypto_kem_keypair(&mut pk, &mut sk) {
+            return Err(Box::new(CryptoError("crypto_kem_keypair", ret_kp.to_string())));
         }
 
         writeln!(fp_rsp, "pk = {}", repr_binary_str(&pk))?;
         writeln!(fp_rsp, "sk = {}", repr_binary_str(&sk))?;
 
-        let ret_enc = operations::crypto_kem_enc(&mut ct, &mut ss, &mut pk);
-        if ret_enc != 0 {
-            return Err(Box::new(CryptoError("crypto_kem_enc", ret_enc)));
+        if let Err(ret_enc) = operations::crypto_kem_enc(&mut ct, &mut ss, &mut pk) {
+            return Err(Box::new(CryptoError("crypto_kem_enc", ret_enc.to_string())));
         }
 
         writeln!(fp_rsp, "ct = {}", repr_binary_str(&ct))?;
         writeln!(fp_rsp, "ss = {}", repr_binary_str(&ss))?;
         writeln!(fp_rsp, "")?;
 
-        let ret_dec = operations::crypto_kem_dec(&mut ss1, &mut ct, &mut sk);
-        if ret_dec != 0 {
-            return Err(Box::new(CryptoError("crypto_kem_dec", ret_dec)));
+        if let Err(ret_dec) = operations::crypto_kem_dec(&mut ss1, &mut ct, &mut sk) {
+            return Err(Box::new(CryptoError("crypto_kem_dec", ret_dec.to_string())));
         }
 
         if ss != ss1 {
-            return Err(Box::new(CryptoError("crypto_kem_dec ss cmp", 1)));
+            return Err(Box::new(CryptoError("crypto_kem_dec", "shared keys of both parties do not match".to_string())));
         }
 
         Ok(())

@@ -1,45 +1,31 @@
 use std::error;
 
 use crate::{
-    api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
-    operations::print_array,
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
-    randombytes::{self, randombytes, randombytes_init},
+    randombytes::randombytes,
     util::load_gf,
 };
 
+/// Takes two 16-bit integers and determines whether they are equal (u8::MAX) or different (0)
 fn same_mask_u8(x: u16, y: u16) -> u8 {
-    let mut mask = 0u32;
-
-    mask = (x ^ y) as u32;
+    let mut mask = (x ^ y) as u32;
     mask = mask.wrapping_sub(1);
-    //mask >>= 31;
-    mask = mask.overflowing_shr(31).0;
+    mask = mask.wrapping_shr(31);
     mask = 0u32.wrapping_sub(mask);
-    // return value either 0 or u8::MAX
 
-    (mask & 0xFF) as u8
+    (mask & 0xFF) as u8 // ∈ {0, u8::MAX}
 }
 
-/* output: e, an error vector of weight t */
-fn gen_e(e: &mut [u8]) {
+/// Generation of `e`, an error vector of weight `t`.
+/// Does not take any input arguments.
+/// If generation of pseudo-random numbers fails, an error is returned.
+fn gen_e(e: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
-    let mut mask: u8 = 0;
-
-    let mut eq = 0;
-    let mut countr = 0;
 
     loop {
-        countr += 1;
-        match randombytes(&mut bytes, SYS_T * 2) {
-            Err(e) => {
-                println!("{:?}", e);
-                break;
-            }
-            Ok(()) => {}
-        }
+        randombytes(&mut bytes, SYS_T * 2)?;
 
         let mut i = 0;
         for chunk in bytes.chunks_mut((i + 1) * 2) {
@@ -50,11 +36,7 @@ fn gen_e(e: &mut [u8]) {
             }
         }
 
-        /*for i in 0..SYS_T {
-            ind[i] = load_gf(&bytes[i*2..]);
-        }*/
-
-        eq = 0;
+        let mut eq = 0;
 
         for i in 1..SYS_T {
             for j in 0..i {
@@ -65,36 +47,34 @@ fn gen_e(e: &mut [u8]) {
         }
 
         if eq == 0 {
-            //println!("countr:{}", countr);
             break;
         }
     }
 
     for j in 0..SYS_T {
         val[j] = 1 << (ind[j] & 7);
-        //println!("j:{} val:{}", j, val[j])
     }
 
     for i in 0..SYS_N / 8 {
         e[i] = 0;
 
         for j in 0..SYS_T {
-            mask = same_mask_u8(i as u16, ind[j] >> 3);
-            //println!("i:{} j:{} mask:{}", i, j, mask);
+            let mask: u8 = same_mask_u8(i as u16, ind[j] >> 3);
 
             e[i] |= val[j] & mask;
-            //println!("i:{} j:{} e:{}", i, j, e[i]);
         }
     }
+
+    Ok(())
 }
 
-/* input: public key pk, error vector e */
-/* output: syndrome s */
-fn syndrome(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
-    let mut b: u8 = 0;
+/// Syndrome computation.
+///
+/// Computes syndrome `s` based on public key `pk` and error vector `e`.
+fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
     let mut row = [0u8; SYS_N / 8];
 
-    let mut pk_ptr = pk;
+    let mut pk_segment = pk;
 
     for i in 0..SYND_BYTES {
         s[i] = 0;
@@ -106,13 +86,12 @@ fn syndrome(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
         }
 
         for j in 0..PK_ROW_BYTES {
-            row[SYS_N / 8 - PK_ROW_BYTES + j] = pk_ptr[j];
+            row[SYS_N / 8 - PK_ROW_BYTES + j] = pk_segment[j];
         }
 
         row[i / 8] |= 1 << (i % 8);
-        //println!("i:{} r:{}", i, row[i/8]);
 
-        b = 0;
+        let mut b = 0u8;
         for j in 0..SYS_N / 8 {
             b ^= row[j] & e[j];
         }
@@ -121,33 +100,28 @@ fn syndrome(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
         b ^= b >> 2;
         b ^= b >> 1;
         b &= 1;
-        //println!("i:{} b:{}", i, b);
 
         s[i / 8] |= b << (i % 8);
 
-        pk_ptr = &mut pk_ptr[PK_ROW_BYTES..];
+        pk_segment = &pk_segment[PK_ROW_BYTES..];
     }
 }
 
-pub fn encrypt(s: &mut [u8], pk: &mut [u8], e: &mut [u8]) {
-    gen_e(e);
-
-    print!("encrypt e: positions");
-    for k in 0..SYS_N {
-        if e[k / 8] & (1 << (k & 7)) != 0 {
-            print!(" {}", k);
-        }
-    }
-    println!("");
-
+/// Encryption routine.
+/// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
+pub fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
+    gen_e(e)?;
     syndrome(s, pk, e);
+    Ok(())
 }
-
-// unsigned char two_e[ 1 + SYS_N/8 ] = {2};
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    use crate::api::CRYPTO_CIPHERTEXTBYTES;
+    use crate::api::CRYPTO_PUBLICKEYBYTES;
+    use crate::randombytes::randombytes_init;
 
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
@@ -156,9 +130,6 @@ mod tests {
         let mut entropy_input = [0u8; 48];
         let mut personalization_string = [0u8; 48];
 
-        /*for i in 0..48u8 {
-            entropy_input[i as usize] = i;
-        }*/
         // set the same seed as in C implementation
         entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,

@@ -1,19 +1,16 @@
-use crate::{
-    api::CRYPTO_SECRETKEYBYTES,
-    gf::Gf,
-    params::GFBITS,
-    params::SYS_N,
-    transpose,
-    util::{bitrev, load8, store8},
-};
-/*
-  This file is for Benes network related functions
+//! This file is for Beneš network related functions
+//!
+//! For the implementation strategy, see
+//! “McBits Revisited” by Tung Chou (2017)
+//! <https://eprint.iacr.org/2017/793.pdf>
 
-  For the implementation strategy, see
-  https://eprint.iacr.org/2017/793.pdf
-*/
+use crate::gf::Gf;
+use crate::params::GFBITS;
+use crate::params::SYS_N;
+use crate::transpose::transpose;
+use crate::util::{bitrev, load8, store8};
 
-/* middle layers of the benes network */
+/// Inner layers of the Beneš network
 fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     let (mut i, mut j, mut s): (usize, usize, usize) = (0, 0, 0);
     let mut d: u64;
@@ -43,6 +40,9 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
         i += s * 2;
     }
 }
+
+/// Exterior layers of the Beneš network
+// TODO this implementation is quite different from the C implementation
 // attempt maybe iterators
 // for item in 2darray.iter().flatten() { … }
 // or try https://docs.rs/bytemuck/1.7.2/bytemuck/ crate
@@ -87,18 +87,13 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     }
 }
 
-/* input: r, sequence of bits to be permuted */
-/*        bits, condition bits of the Benes network */
-/*        rev, 0 for normal application; !0 for inverse */
-/* output: r, permuted bits */
-// todo fixe größe angeben, und rückgabewert neues array mit fixer größe
-//#define crypto_kem_mceliece8192128f_ref_SECRETKEYBYTES 14120 -> sk
-//ret_decrypt = decrypt(e, sk + 40, c);
 
-//let mut subbits = [0u8; 3584];
-//subbits.copy_from_slice(&bits[0..3584]);
 
-pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize) {
+/// Apply Beneš network in-place to array `r` based on configuration `bits` and `rev`.
+/// Here, `r` is a sequence of bits to be permuted.
+/// `bits` defines the condition bits configuring the Beneš network and
+/// `rev` toggles between normal application (0) or its inverse (!0).
+pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -106,14 +101,6 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
 
     let mut calc_index = if rev == 0 { 0 } else { 12288 };
 
-    /*for i in 0..64 {
-        let mut r_ptr: Vec<u8> = Vec::with_capacity(i*16 + 0);
-        let mut x = r_ptr.copy_from_slice(&r[0..i*16]);
-        function(x); // accepts &[u8]
-
-        r_int_v[0][i] = load8();
-        //r_int_v[1][i] = load8();
-    }*/
     let mut i: usize = 0;
     for chunk in r.chunks_mut(16) {
         let (subchunk1, subchunk2) = chunk.split_at_mut(8);
@@ -123,8 +110,8 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
         i += 1;
     }
 
-    transpose::transpose(&mut r_int_h[0], r_int_v[0]);
-    transpose::transpose(&mut r_int_h[1], r_int_v[1]);
+    transpose(&mut r_int_h[0], r_int_v[0]);
+    transpose(&mut r_int_h[1], r_int_v[1]);
 
     let mut iter = 0;
     while iter <= 6 {
@@ -143,22 +130,20 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
             calc_index - 1024
         };
 
-        transpose::transpose(&mut b_int_h, b_int_v);
+        transpose(&mut b_int_h, b_int_v);
 
         layer_ex(&mut r_int_h, &mut b_int_h, iter);
 
         iter += 1;
     }
 
-    transpose::transpose(&mut r_int_v[0], r_int_h[0]);
-    transpose::transpose(&mut r_int_v[1], r_int_h[1]);
+    transpose(&mut r_int_v[0], r_int_h[0]);
+    transpose(&mut r_int_v[1], r_int_h[1]);
 
     let mut iter: usize = 0;
     while iter <= 5 {
-        i = 0;
-        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
+        for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
             b_int_v[i] = load8(chunk);
-            i += 1;
         }
 
         calc_index = if rev == 0 {
@@ -173,10 +158,8 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
     }
 
     for iter in (0..=4).rev() {
-        i = 0;
-        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
+        for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
             b_int_v[i] = load8(chunk);
-            i += 1;
         }
         calc_index = if rev == 0 {
             calc_index + 512
@@ -187,14 +170,12 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
         layer_in(&mut r_int_v, &mut b_int_v, iter);
     }
 
-    transpose::transpose(&mut r_int_h[0], r_int_v[0]);
-    transpose::transpose(&mut r_int_h[1], r_int_v[1]);
+    transpose(&mut r_int_h[0], r_int_v[0]);
+    transpose(&mut r_int_h[1], r_int_v[1]);
 
     for iter in (0..=6).rev() {
-        i = 0;
-        for chunk in bits[calc_index..(calc_index + 512)].chunks(8) {
+        for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
             b_int_v[i] = load8(chunk);
-            i += 1;
         }
         calc_index = if rev == 0 {
             calc_index + 512
@@ -202,28 +183,25 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &mut [u8], rev: usize)
             calc_index - 1024
         };
 
-        transpose::transpose(&mut b_int_h, b_int_v);
+        transpose(&mut b_int_h, b_int_v);
 
         layer_ex(&mut r_int_h, &mut b_int_h, iter);
     }
 
-    transpose::transpose(&mut r_int_v[0], r_int_h[0]);
-    transpose::transpose(&mut r_int_v[1], r_int_h[1]);
+    transpose(&mut r_int_v[0], r_int_h[0]);
+    transpose(&mut r_int_v[1], r_int_h[1]);
 
-    i = 0;
-    for chunk in r.chunks_mut(16) {
+    for (i, chunk) in r.chunks_mut(16).enumerate() {
         let (subchunk1, subchunk2) = chunk.split_at_mut(8);
         store8(subchunk1, r_int_v[0][i]);
         store8(subchunk2, r_int_v[1][i]);
-        i += 1;
     }
 }
 
-pub fn support_gen(s: &mut [Gf; SYS_N], c: &mut [u8]) {
+pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
     let mut a: Gf;
     let (mut i, mut j): (usize, usize);
     let mut L = [[0u8; (1 << GFBITS) / 8]; GFBITS];
-    //println!("L");
 
     for i in 0..(1 << GFBITS) {
         a = bitrev(i as Gf);
@@ -249,6 +227,7 @@ pub fn support_gen(s: &mut [Gf; SYS_N], c: &mut [u8]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::CRYPTO_SECRETKEYBYTES;
 
     #[test]
     fn test_apply_benes() {

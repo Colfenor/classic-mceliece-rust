@@ -1,44 +1,41 @@
-use std::num::Wrapping;
+//! Module to implement Galois field operations
 
 use crate::params::{GFBITS, GFMASK, SYS_T};
-
 pub type Gf = u16;
 
+/// Does Gf element `a` have value 0? Returns yes (8191 = `u16::MAX/8`) or no (0) as Gf element.
 pub fn gf_iszero(a: Gf) -> Gf {
-    let mut t: Wrapping<u32> = Wrapping(a as u32);
-
-    t -= Wrapping(1u32);
+    let mut t = (a as u32).wrapping_sub(1u32);
     t >>= 19;
-
-    t.0 as u16
+    t as u16
 }
 
-// 0 .. 65.535
-// binary addition mod 2^1 is eq. to the XOR operation
+/// Add Gf elements stored bitwise in `in0` and `in1`. Thus, the LSB of `in0` is added to the LSB of `in1` w.r.t. Gf(2).
+/// This continues for all 16 bits. Since addition in Gf(2) corresponds to a XOR operation, the implementation uses a
+/// simple XOR instruction.
 pub fn gf_add(in0: Gf, in1: Gf) -> Gf {
     in0 ^ in1
 }
 
+/// Multiplication of two Gf elements.
 pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
-    let (mut tmp, t0, t1, mut t): (u64, u64, u64, u64);
+    let t0 = in0 as u64;
+    let t1 = in1 as u64;
 
-    t0 = in0 as u64;
-    t1 = in1 as u64;
+    let mut tmp: u64 = t0 * (t1 & 1); // if LSB 0, tmp will be 0, otherwise value of t0
 
-    tmp = t0 * (t1 & 1); // if LSB 0, tmp will be 0, otherwise value of t0
-
-    // (t1 & (1 << i)) -> is either t1 ^ i or zero
+    // (t1 & (1 << i))  ∈ {0, t1 ^ i}
     for i in 1..GFBITS {
+        // implements the convolution, thus the actual multiplication
         tmp ^= t0 * (t1 & (1 << i));
     }
-    // actually a multiplication tmp = t0 * t1 ...
 
-    // multiplication in a polynomial ring
-    // example of polynomial multiplication,
-    // (x^2 + 1) * (x + 2)
-    // polynomial division
+    // TODO I think this is code specific for kem/mceliece8192128f
 
-    t = tmp & 0x1FF0000;
+    // polynomial reduction according to the field polynomial
+    // specified for the variant follows
+
+    let mut t: u64 = tmp & 0x1FF0000;
     tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
 
     t = tmp & 0x000E000;
@@ -47,8 +44,7 @@ pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
     (tmp & GFMASK as u64) as u16
 }
 
-/* input: field element in */
-/* return: (in^2)^2 */
+/// Computes the double-square `(input^2)^2` for Gf element `input`
 #[inline]
 fn gf_sq2(input: Gf) -> Gf {
     const B: [u64; 4] = [
@@ -81,8 +77,7 @@ fn gf_sq2(input: Gf) -> Gf {
     (x & GFMASK as u64) as u16
 }
 
-/* input: field element in, m */
-/* return: (in^2)*m */
+/// Computes the square `input^2` multiplied by `m` for Gf elements `input` and `m`. Thus `(input^2)*m`.
 #[inline]
 fn gf_sqmul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
@@ -114,8 +109,8 @@ fn gf_sqmul(input: Gf, m: Gf) -> Gf {
     (x & GFMASK as u64) as u16
 }
 
-/* input: field element in, m */
-/* return: ((in^2)^2)*m */
+/// Computes the double-square `(input^2)^2` multiplied by `m`
+/// for Gf elements `input` and `m`. Thus `((in^2)^2)*m`.
 #[inline]
 fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
@@ -154,8 +149,7 @@ fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
     (x & GFMASK as u64) as u16
 }
 
-/* input: field element den, num */
-/* return: (num/den) */
+/// Computes the division `num/den` for Gf elements `den` and `num`
 pub fn gf_frac(den: Gf, num: Gf) -> Gf {
     let tmp_11: Gf;
     let tmp_1111: Gf;
@@ -171,13 +165,13 @@ pub fn gf_frac(den: Gf, num: Gf) -> Gf {
     gf_sqmul(out, num) // ^1111111111110 = ^-1
 }
 
+/// Computes the inverse element of `den` in the Galois field.
 pub fn gf_inv(den: Gf) -> Gf {
     gf_frac(den, 1 as Gf)
 }
 
-/* input: in0, in1 in GF((2^m)^t)*/
-/* output: out = in0*in1 */
-pub fn GF_mul(out: &mut [Gf; SYS_T], in0: &mut [Gf; SYS_T], in1: &mut [Gf; SYS_T]) {
+/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
+pub fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
     let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
 
     for i in 0..SYS_T {
