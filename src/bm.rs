@@ -62,11 +62,8 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 
         base = (base & !mle) | (d & mle);
 
-        let mut i = SYS_T;
-        while i >= 1 {  // TODO rewrite as for loop
+        for i in (1..=SYS_T).rev() {
             b[i] = b[i - 1];
-
-            i -= 1;
         }
 
         b[0] = 0;
@@ -107,10 +104,6 @@ mod tests {
         }
 
         bm(&mut locator, &mut s);
-
-        /*for i in 0..locator.len() {
-            println!("i:{} loc:{}", i, locator[i]);
-        }*/
 
         assert_eq!(locator, compare_array);
     }

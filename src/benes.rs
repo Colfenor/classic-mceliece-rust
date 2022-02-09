@@ -19,8 +19,7 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 
     let mut i = 0usize;
     while i < 64 {
-        let mut j = i;
-        while j < i + s {
+        for j in i..(i + s) {
             d = data[0][j + 0] ^ data[0][j + s];
             d &= bits[index];
             index += 1;
@@ -34,8 +33,6 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 
             data[1][j + 0] ^= d;
             data[1][j + s] ^= d;
-
-            j += 1;
         }
         i += s * 2;
     }
@@ -64,8 +61,7 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
     } else {
         let mut i: usize = 0;
         while i < 64 {
-            let mut j = i;
-            while j < i + s { // TODO rewrite as for loop
+            for j in i..(i + s) {
                 d = data[0][j + 0] ^ data[0][j + s];
                 d &= bits[index];
                 index += 1;
@@ -79,8 +75,6 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 
                 data[1][j + 0] ^= d;
                 data[1][j + s] ^= d;
-
-                j += 1;
             }
             i += s * 2;
         }

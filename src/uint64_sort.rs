@@ -31,21 +31,17 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
     }
 
     let mut p = top;
-    // TODO rewrite as for loops
     while p > 0 {
-        let mut i = 0;
-        while i < n - p {
+        for i in 0..(n - p) {
             if (i & p) == 0 {
                 let (tmp_xi, tmp_xip) = uint64_minmax(x[i], x[i + p]);
                 x[i] = tmp_xi;
                 x[i + p] = tmp_xip;
             }
-            i += 1;
         }
-        i = 0;
         let mut q = top;
         while q > p {
-            while i < n - q {
+            for i in 0..(n - q) {
                 if (i & p) == 0 {
                     let mut a = x[i + p];
                     let mut r = q;
@@ -57,7 +53,6 @@ pub fn uint64_sort(x: &mut [u64], n: usize) {
                     }
                     x[i + p] = a;
                 }
-                i += 1;
             }
             q >>= 1;
         }

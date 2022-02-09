@@ -8,7 +8,6 @@ use crate::params::SYS_T;
 pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
     let mut mat = [[0u16; SYS_T]; SYS_T + 1];
     mat[0][0] = 1;
-    // TODO rewrite while loops as for loops
 
     for i in 1..SYS_T {
         mat[0][i] = 0;
@@ -18,16 +17,13 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
         mat[1][i] = f[i];
     }
 
-    let mut j = 2;
-    while j <= SYS_T {
+    for j in 2..=SYS_T {
         let (left, right) = mat.split_at_mut(j);
         GF_mul(&mut right[0], &mut left[j - 1], f);
-        j += 1;
     }
 
     for j in 0..SYS_T {
-        let mut k = j + 1;
-        while k < SYS_T {
+        for k in (j + 1)..SYS_T {
             let mask = gf_iszero(mat[j][j]);
 
             let mut c = j;
@@ -35,8 +31,6 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
                 mat[c][j] ^= mat[c][k] & mask;
                 c += 1;
             }
-
-            k += 1;
         }
 
         if mat[j][j] == 0 {
@@ -45,21 +39,16 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
         let inv = gf_inv(mat[j][j]);
 
-        let mut c = j;
-        while c < SYS_T + 1 {
+        for c in j..(SYS_T + 1) {
             mat[c][j] = gf_mul(mat[c][j], inv);
-
-            c += 1;
         }
 
         for k in 0..SYS_T {
             if k != j {
                 let t = mat[j][k];
 
-                c = j;
-                while c < SYS_T + 1 {
+                for c in j..(SYS_T + 1) {
                     mat[c][k] ^= gf_mul(mat[c][j], t);
-                    c += 1;
                 }
             }
         }
