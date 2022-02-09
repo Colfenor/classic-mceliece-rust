@@ -15,27 +15,23 @@ pub fn min(a: usize, b: usize) -> usize {
 /// Uses `s` as input (sequence of field elements)
 /// and `out` as output (minimal polynomial of `s`)
 pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
-    let mut L: u16 = 0;
+    let mut l: u16 = 0;
     let mut mle: u16;
     let mut mne: u16;
 
-    let mut T = [0u16; SYS_T + 1];
-    let mut C = [0u16; SYS_T + 1];
-    let mut B = [0u16; SYS_T + 1];
+    let mut t = [0u16; SYS_T + 1];
+    let mut c = [0u16; SYS_T + 1];
+    let mut b = [0u16; SYS_T + 1];
 
-    let mut b: Gf = 1;
-    let mut d: Gf;
-    let mut f: Gf;
+    let mut base: Gf = 1;
 
-    B[1] = 1;
-    C[0] = 1;
+    b[1] = 1;
+    c[0] = 1;
 
     for n in 0..(2 * SYS_T) {
-        d = 0;
-        //println!("ROUND N: {}", N);
+        let mut d: Gf = 0;
         for i in 0..=min(n, SYS_T) {
-            d ^= gf_mul(C[i], s[n - i]);
-            //println!("mul:{} C:{} s:{} i:{} N:{}", gf_mul(C[i], s[ N-i]), C[i], s[ N-i], i, N);
+            d ^= gf_mul(c[i], s[n - i]);
         }
         mne = d;
         mne = mne.wrapping_sub(1);
@@ -43,41 +39,41 @@ pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mne = mne.wrapping_sub(1);
 
         mle = n as u16;
-        mle = mle.wrapping_sub(2 * L);
+        mle = mle.wrapping_sub(2 * l);
         mle >>= 15;
         mle = mle.wrapping_sub(1);
         mle &= mne;
 
         for i in 0..=SYS_T {
-            T[i] = C[i];
+            t[i] = c[i];
         }
 
-        f = gf_frac(b, d);
+        let f: Gf = gf_frac(base, d);
 
         for i in 0..=SYS_T {
-            C[i] ^= gf_mul(f, B[i]) & mne;
+            c[i] ^= gf_mul(f, b[i]) & mne;
         }
 
-        L = (L & !mle) | ((n as u16 + 1 - L) & mle);
+        l = (l & !mle) | ((n as u16 + 1 - l) & mle);
 
         for i in 0..=SYS_T {
-            B[i] = (B[i] & !mle) | (T[i] & mle);
+            b[i] = (b[i] & !mle) | (t[i] & mle);
         }
 
-        b = (b & !mle) | (d & mle);
+        base = (base & !mle) | (d & mle);
 
         let mut i = SYS_T;
-        while i >= 1 {
-            B[i] = B[i - 1];
+        while i >= 1 {  // TODO rewrite as for loop
+            b[i] = b[i - 1];
 
             i -= 1;
         }
 
-        B[0] = 0;
+        b[0] = 0;
     }
 
     for i in 0..=SYS_T {
-        out[i] = C[SYS_T - i];
+        out[i] = c[SYS_T - i];
     }
 }
 

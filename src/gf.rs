@@ -317,9 +317,4 @@ mod tests {
         result_var = gf_inv(5);
         assert_eq!(result_var, 5467);
     }
-
-    #[test]
-    fn test_GF_mul() {
-        //todo
-    }
 }

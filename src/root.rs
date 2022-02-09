@@ -29,6 +29,7 @@ pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
 
     #[cfg(all(feature = "mceliece8192128f", test))]

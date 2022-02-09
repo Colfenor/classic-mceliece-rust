@@ -32,9 +32,10 @@ pub fn shake256(output: &mut [u8], input: &[u8]) -> Result<(), Box<dyn error::Er
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error;
 
     #[test]
-    pub fn test_shake256() {
+    pub fn test_shake256() -> Result<(), Box<dyn error::Error>> {
         let compare_array: [u8; 448] = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -58,7 +59,9 @@ mod tests {
         let mut two_e = [0u8; 1025];
         two_e[0] = 2;
 
-        shake256(&mut c[208..=239], &two_e[0..1025]);
+        shake256(&mut c[208..=239], &two_e[0..1025])?;
         assert_eq!(c, compare_array);
+
+        Ok(())
     }
 }

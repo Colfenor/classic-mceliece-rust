@@ -74,6 +74,7 @@ pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
 
     #[cfg(all(feature = "mceliece8192128f", test))]

@@ -12,14 +12,14 @@ use crate::util::{bitrev, load8, store8};
 
 /// Inner layers of the Beneš network
 fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
-    let (mut i, mut j, mut s): (usize, usize, usize) = (0, 0, 0);
     let mut d: u64;
     let mut index = 0;
 
-    s = 1 << lgs;
+    let s = 1 << lgs;
 
+    let mut i = 0usize;
     while i < 64 {
-        j = i;
+        let mut j = i;
         while j < i + s {
             d = data[0][j + 0] ^ data[0][j + s];
             d &= bits[index];
@@ -47,12 +47,11 @@ fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 // for item in 2darray.iter().flatten() { … }
 // or try https://docs.rs/bytemuck/1.7.2/bytemuck/ crate
 fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
-    let (mut i, mut j, mut s): (usize, usize, usize) = (0, 0, 0);
     let mut d: u64;
     let mut index = 0;
     let mut index2 = 32;
 
-    s = 1 << lgs;
+    let s = 1 << lgs;
     if s == 64 {
         for j in 0..64 {
             d = data[0][j + 0] ^ data[1][j];
@@ -63,9 +62,10 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
             data[1][j] ^= d;
         }
     } else {
+        let mut i: usize = 0;
         while i < 64 {
-            j = i;
-            while j < i + s {
+            let mut j = i;
+            while j < i + s { // TODO rewrite as for loop
                 d = data[0][j + 0] ^ data[0][j + s];
                 d &= bits[index];
                 index += 1;
@@ -200,26 +200,25 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
 
 pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
     let mut a: Gf;
-    let (mut i, mut j): (usize, usize);
-    let mut L = [[0u8; (1 << GFBITS) / 8]; GFBITS];
+    let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 
     for i in 0..(1 << GFBITS) {
         a = bitrev(i as Gf);
 
         for j in 0..GFBITS {
-            L[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
+            l[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
     }
 
     for j in 0..GFBITS {
-        apply_benes(&mut L[j], c, 0);
+        apply_benes(&mut l[j], c, 0);
     }
 
     for i in 0..SYS_N {
         s[i] = 0;
         for j in (0..=(GFBITS - 1)).rev() {
             s[i] <<= 1;
-            s[i] |= ((L[j][i / 8] >> (i % 8)) & 1) as u16;
+            s[i] |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
 }
@@ -232,7 +231,7 @@ mod tests {
     #[test]
     fn test_apply_benes() {
         // Basic testcase
-        let mut L = [31u8; (1 << GFBITS) / 8];
+        let mut l = [31u8; (1 << GFBITS) / 8];
         let mut bits = [0u8; CRYPTO_SECRETKEYBYTES + 40];
         bits[0] = 255;
 
@@ -240,15 +239,8 @@ mod tests {
         compare_array[0] = 47;
         compare_array[1] = 47;
 
-        apply_benes(&mut L, &mut bits, 0);
+        apply_benes(&mut l, &mut bits, 0);
 
-        assert_eq!(L, compare_array);
-
-        /*for i in 0..L.len() {
-            println!("i:{} res:{}", i, L[i]);
-            if i > 40 {
-                break;
-            }
-        }*/
+        assert_eq!(l, compare_array);
     }
 }

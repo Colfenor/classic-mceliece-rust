@@ -119,8 +119,11 @@ pub fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8]) -> Result<(), Box<dyn erro
 mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_CIPHERTEXTBYTES;
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::randombytes::randombytes_init;
 
     #[cfg(all(feature = "mceliece8192128f", test))]

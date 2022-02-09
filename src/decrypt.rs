@@ -13,14 +13,13 @@ use crate::{
 /// It takes as input the secret key `sk` and a ciphertext `c`.
 /// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
 pub fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
-    let mut check: u16 = 0;
-    let mut t: u16 = 0;
+    let mut t: u16;
     let mut w: i32 = 0;
 
     let mut r = [0u8; SYS_N / 8];
 
     let mut g = [0u16; SYS_T + 1];
-    let mut L = [0u16; SYS_N];
+    let mut l = [0u16; SYS_N];
 
     let mut s = [0u16; SYS_T * 2];
     let mut s_cmp = [0u16; SYS_T * 2];
@@ -46,13 +45,13 @@ pub fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
     g[SYS_T] = 1;
     sk = &sk[256..];
 
-    support_gen(&mut L, sk);
+    support_gen(&mut l, sk);
 
-    synd(&mut s, &mut g, &mut L, &r);
+    synd(&mut s, &mut g, &mut l, &r);
 
     bm(&mut locator, &mut s);
 
-    root(&mut images, &mut locator, &mut L);
+    root(&mut images, &mut locator, &mut l);
 
     for i in 0..SYS_N / 8 {
         e[i] = 0;
@@ -65,9 +64,9 @@ pub fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
         w += t as i32;
     }
 
-    synd(&mut s_cmp, &mut g, &mut L, e);
+    synd(&mut s_cmp, &mut g, &mut l, e);
 
-    check = w as u16;
+    let mut check = w as u16;
     check ^= SYS_T as u16;
 
     for i in 0..SYS_T * 2 {
@@ -84,7 +83,9 @@ pub fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
 mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::crypto_hash::shake256;
 
     #[cfg(all(feature = "mceliece8192128f", test))]
