@@ -31,6 +31,153 @@ pub use api::{
 };
 
 #[cfg(test)]
+struct TestData {
+    data: &'static [u8],
+}
+
+#[cfg(test)]
+impl TestData {
+    fn new() -> TestData {
+        let bytes = include_bytes!("../data/testdata.txt");
+        TestData { data: bytes }
+    }
+
+    /// Parses a line of the testdata file.
+    ///
+    /// Given the index of the first character of the line (start-of-line)
+    /// and the last character of the line (end-of-line, linebreak or EOF),
+    /// return (a, b, c, d) such that `self.data[a..b]` gives the key and
+    /// `self.data[c..d]` gives the value.
+    /*fn parse_line(&self, sol: usize, eol: usize) -> (usize, usize, usize, usize) {
+        assert!(sol <= eol);
+
+        let mut key_start = sol;
+        let mut key_end = sol;
+        let mut value_start = sol;
+        let mut value_end = sol;
+        let mut state = 0;
+
+        for idx in sol..eol {
+            match state {
+                // skip whitespace before key
+                0 => {
+                    if !self.data[key_start].is_ascii_whitespace() {
+                        key_end = key_start;
+                        state = 1;
+                    } else {
+                        key_start += 1;
+                    }
+                },
+                // read key
+                1 => {
+                    if self.data[key_end].is_ascii_whitespace() || self.data[key_end] == b'=' {
+                        value_start = key_end;
+                        state = 2;
+                    } else {
+                        key_end += 1;
+                    }
+                },
+                // skip delimiter
+                2 => {
+                    if self.data[key_end].is_ascii_whitespace() || self.data[key_end] == b'=' {
+                        value_start = key_end;
+                        state = 3;
+                    } else {
+                        key_end += 1;
+                    }
+                }
+                …
+            }
+        }
+
+        (key_start, key_end, value_start, value_end)
+    }*/
+
+    /// Parses a testdata file and returns a vector of u16 stored for the given `search_key`.
+    /// The value is parsed in big-endian order.
+    ///
+    /// I started to write a zero-allocation parser, but it takes many lines of code.
+    /// This design allocates, but can be comprehended much easier.
+    fn u16vec(&self, search_key: &str) -> Vec<u16> {
+        use std::str;
+        use std::convert::TryInto;
+
+        let content = match str::from_utf8(self.data) {
+            Ok(v) => v,
+            Err(e) => panic!("testdata.txt contains invalid UTF-8 data: {}", e),
+        };
+
+        for (lineno, line) in content.lines().enumerate() {
+            let inner_line = line.trim();
+            if inner_line.starts_with('#') {
+                continue;
+            }
+            let mut key = "";
+            let mut value = "";
+            for (f, field) in inner_line.split('=').enumerate() {
+                match f {
+                    0 => key = field.trim(),
+                    1 => value = field.trim(),
+                    _ => {},
+                }
+            }
+            if key != search_key {
+                continue;
+            }
+            if value == "" {
+                panic!("empty value for key '{}' at line {}", search_key, lineno);
+            }
+            let u8_array = hex::decode(value).expect("invalid hex data in value");
+            let mut u16_array = Vec::<u16>::with_capacity(u8_array.len());
+            for idx in 0..(u8_array.len() / 2) {
+                u16_array[idx] = u16::from_be_bytes(u8_array[2*idx .. 2*idx + 2].try_into().expect("invalid slice length"));
+            }
+            return u16_array;
+        }
+
+        panic!("search_key '{}' not found in testdata.txt", search_key);
+    }
+
+    /// Parses a testdata file and returns a vector of u8 stored for the given `search_key`.
+    ///
+    /// I started to write a zero-allocation parser, but it takes many lines of code.
+    /// This design allocates, but can be comprehended much easier.
+    fn u8vec(&self, search_key: &str) -> Vec<u8> {
+        use std::str;
+
+        let content = match str::from_utf8(self.data) {
+            Ok(v) => v,
+            Err(e) => panic!("testdata.txt contains invalid UTF-8 data: {}", e),
+        };
+
+        for (lineno, line) in content.lines().enumerate() {
+            let inner_line = line.trim();
+            if inner_line.starts_with('#') {
+                continue;
+            }
+            let mut key = "";
+            let mut value = "";
+            for (f, field) in inner_line.split('=').enumerate() {
+                match f {
+                    0 => key = field.trim(),
+                    1 => value = field.trim(),
+                    _ => {},
+                }
+            }
+            if key != search_key {
+                continue;
+            }
+            if value == "" {
+                panic!("empty value for key '{}' at line {}", search_key, lineno);
+            }
+            return hex::decode(value).expect("invalid hex data in value");
+        }
+
+        panic!("search_key '{}' not found in testdata.txt", search_key);
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::fs::File;
@@ -141,5 +288,10 @@ mod tests {
         }
 
         s
+    }
+
+    #[test]
+    fn test_value() {
+        assert_eq!(TestData::new().u8vec("hello"), [0x01, 0x23, 0x45, 0x67].to_vec());
     }
 }
