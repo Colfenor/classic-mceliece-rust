@@ -2,7 +2,7 @@ use std::error;
 
 use crate::{
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
-    randombytes::randombytes,
+    randombytes::RNGState,
     util::load_gf,
 };
 
@@ -19,13 +19,13 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Generation of `e`, an error vector of weight `t`.
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
-fn gen_e(e: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
+fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
 
     loop {
-        randombytes(&mut bytes, SYS_T * 2)?;
+        rng.randombytes(&mut bytes)?;
 
         let mut i = 0;
         for chunk in bytes.chunks_mut((i + 1) * 2) {
@@ -109,8 +109,8 @@ fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
 
 /// Encryption routine.
 /// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
-pub fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
-    gen_e(e)?;
+pub fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+    gen_e(e, rng)?;
     syndrome(s, pk, e);
     Ok(())
 }

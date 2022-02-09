@@ -1,13 +1,13 @@
 use std::error;
 
 use crate::controlbits::controlbitsfrompermutation;
+use crate::randombytes::RNGState;
 use crate::{
     crypto_hash::shake256,
     decrypt::decrypt,
     encrypt::encrypt,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
-    randombytes::randombytes,
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
@@ -17,14 +17,14 @@ use crate::{
 /// Given a public key `pk`, sample a shared key.
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
-pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8]) -> Result<(), Box<dyn error::Error>> {
+pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
     one_ec[0] = 1;
 
-    encrypt(c, pk, &mut two_e[1..])?;
+    encrypt(c, pk, &mut two_e[1..], rng)?;
 
     shake256(&mut c[SYND_BYTES..], &two_e)?;
 
@@ -105,7 +105,7 @@ fn log2(mut x: usize) -> usize {
 /// Generate some public and secret key.
 /// The public key is meant to be shared with any party,
 /// but access to the secret key must be limited to the generating party.
-pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8]) -> Result<(), Box<dyn error::Error>> {
+pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut seed = [0u8; 33];
     seed[0] = 64;
 
@@ -124,7 +124,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8]) -> Result<(), Box<dyn er
     let mut perm = [0u32; 1 << GFBITS];
     let mut pi = [0i16; 1 << GFBITS];
 
-    randombytes(&mut seed[1..], 32)?;
+    rng.randombytes(&mut seed[1..])?;
 
     loop {
         // expanding and updating the seed

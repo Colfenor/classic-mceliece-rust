@@ -23,6 +23,7 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
+pub use randombytes::{AesState, RNGState};
 pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 pub use api::{
     CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES,
@@ -179,6 +180,8 @@ impl TestData {
 
 #[cfg(test)]
 mod tests {
+    use aes::Aes128;
+
     use super::*;
     use std::fs::File;
     use std::io::Write;
@@ -199,6 +202,7 @@ mod tests {
     #[test]
     fn test_kat_tests() -> Result<(), Box<dyn Error>> {
         const KATNUM: usize = 10;
+        let mut rng = AesState::new();
 
         let mut entropy_input = [0u8; 48];
         let mut seed = [[0u8; 48]; KATNUM];
@@ -206,10 +210,10 @@ mod tests {
         for i in 0..48 {
             entropy_input[i] = i as u8;
         }
-        randombytes::randombytes_init(&mut entropy_input, &[0u8; 48], 256)?;
+        rng.randombytes_init(entropy_input);
 
         for i in 0..KATNUM {
-            randombytes::randombytes(&mut seed[i], 48)?;
+            rng.randombytes(&mut seed[i])?;
         }
 
         let fp_req = &mut File::create("kat_kem.req")?;
@@ -222,7 +226,7 @@ mod tests {
         writeln!(fp_rsp, "# kem/{}\n", api::CRYPTO_PRIMITIVE)?;
 
         for i in 0..KATNUM {
-            kat_test_response(fp_rsp, i, &seed[i])?;
+            kat_test_response(fp_rsp, i, seed[i])?;
         }
 
         Ok(())
@@ -238,26 +242,27 @@ mod tests {
         Ok(())
     }
 
-    fn kat_test_response(fp_rsp: &mut File, i: usize, seed: &[u8; 48]) -> Result<(), Box<dyn Error>> {
+    fn kat_test_response(fp_rsp: &mut File, i: usize, seed: [u8; 48]) -> Result<(), Box<dyn Error>> {
         let mut ct = [0u8; api::CRYPTO_CIPHERTEXTBYTES];
         let mut ss = [0u8; api::CRYPTO_BYTES];
         let mut ss1 = [0u8; api::CRYPTO_BYTES];
         let mut pk = vec![0u8; api::CRYPTO_PUBLICKEYBYTES];
         let mut sk = vec![0u8; api::CRYPTO_SECRETKEYBYTES];
+        let mut rng = AesState::new();
 
-        randombytes::randombytes_init(seed, &[0u8; 48], 256)?;
+        rng.randombytes_init(seed);
 
         writeln!(fp_rsp, "count = {}", i)?;
-        writeln!(fp_rsp, "seed = {}", repr_binary_str(seed))?;
+        writeln!(fp_rsp, "seed = {}", repr_binary_str(&seed))?;
 
-        if let Err(ret_kp) = operations::crypto_kem_keypair(&mut pk, &mut sk) {
+        if let Err(ret_kp) = operations::crypto_kem_keypair(&mut pk, &mut sk, &mut rng) {
             return Err(Box::new(CryptoError("crypto_kem_keypair", ret_kp.to_string())));
         }
 
         writeln!(fp_rsp, "pk = {}", repr_binary_str(&pk))?;
         writeln!(fp_rsp, "sk = {}", repr_binary_str(&sk))?;
 
-        if let Err(ret_enc) = operations::crypto_kem_enc(&mut ct, &mut ss, &mut pk) {
+        if let Err(ret_enc) = operations::crypto_kem_enc(&mut ct, &mut ss, &mut pk, &mut rng) {
             return Err(Box::new(CryptoError("crypto_kem_enc", ret_enc.to_string())));
         }
 
