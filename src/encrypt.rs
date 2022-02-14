@@ -124,7 +124,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
     #[cfg(all(feature = "mceliece8192128f", test))]
-    use crate::randombytes::randombytes_init;
+    use crate::randombytes::AesState;
 
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
@@ -140,12 +140,13 @@ mod tests {
             249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
         ];
 
-        randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
 
         let mut second_seed = [0u8; 33];
         second_seed[0] = 64;
 
-        randombytes(&mut second_seed[1..], 32);
+        rng_state.randombytes(&mut second_seed[1..])?;
 
         let mut two_e = [0u8; 1 + SYS_N / 8];
         two_e[0] = 2;
@@ -160,8 +161,7 @@ mod tests {
         let mut compare_s = COMPARE_S.to_vec();
         assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
 
-        //inject test e :)
-        encrypt(&mut c, &mut pk, &mut two_e[1..]);
+        encrypt(&mut c, &mut pk, &mut two_e[1..], &mut rng_state)?;
 
         assert_eq!(compare_s, c);
 

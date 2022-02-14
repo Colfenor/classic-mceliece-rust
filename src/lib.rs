@@ -32,6 +32,60 @@ pub use api::{
 };
 
 #[cfg(test)]
+macro_rules! impl_parser_per_type {
+    ($name:ident, $bitsize:expr, $t:ty) => {
+        /// Parses a testdata file and returns a vector of $ty stored for the given `search_key`.
+        /// The value is parsed in big-endian order.
+        ///
+        /// I started to write a zero-allocation parser, but it takes many lines of code.
+        /// This design allocates, but can be comprehended much easier.
+        fn $name(&self, search_key: &str) -> Vec<$t> {
+            use std::str;
+            use std::convert::TryInto;
+
+            let content = match str::from_utf8(self.data) {
+                Ok(v) => v,
+                Err(e) => panic!("testdata.txt contains invalid UTF-8 data: {}", e),
+            };
+
+            for (lineno, line) in content.lines().enumerate() {
+                let inner_line = line.trim();
+                if inner_line.starts_with('#') {
+                    continue;
+                }
+                let mut key = "";
+                let mut value = "";
+                for (f, field) in inner_line.split('=').enumerate() {
+                    match f {
+                        0 => key = field.trim(),
+                        1 => value = field.trim(),
+                        _ => {},
+                    }
+                }
+                if key != search_key {
+                    continue;
+                }
+                if value == "" {
+                    panic!("empty value for key '{}' at line {}", search_key, lineno);
+                }
+                let bytes = hex::decode(value).expect("invalid hex data in value");
+                let bytes_per_element = $bitsize / 8;
+                let elements_count = bytes.len() / bytes_per_element;
+                let mut elements = Vec::<$t>::with_capacity(elements_count);
+                for idx in 0..elements_count {
+                    let element = &bytes[bytes_per_element*idx .. bytes_per_element*(idx + 1)];
+                    elements.push(<$t>::from_be_bytes(element.try_into().expect("invalid slice length")));
+                }
+                return elements;
+            }
+
+            panic!("search_key '{}' not found in testdata.txt", search_key);
+        }
+    }
+}
+
+
+#[cfg(test)]
 struct TestData {
     data: &'static [u8],
 }
@@ -43,13 +97,14 @@ impl TestData {
         TestData { data: bytes }
     }
 
+    /*
     /// Parses a line of the testdata file.
     ///
     /// Given the index of the first character of the line (start-of-line)
     /// and the last character of the line (end-of-line, linebreak or EOF),
     /// return (a, b, c, d) such that `self.data[a..b]` gives the key and
     /// `self.data[c..d]` gives the value.
-    /*fn parse_line(&self, sol: usize, eol: usize) -> (usize, usize, usize, usize) {
+    fn parse_line(&self, sol: usize, eol: usize) -> (usize, usize, usize, usize) {
         assert!(sol <= eol);
 
         let mut key_start = sol;
@@ -94,6 +149,7 @@ impl TestData {
         (key_start, key_end, value_start, value_end)
     }*/
 
+    /*
     /// Parses a testdata file and returns a vector of u16 stored for the given `search_key`.
     /// The value is parsed in big-endian order.
     ///
@@ -137,7 +193,11 @@ impl TestData {
         }
 
         panic!("search_key '{}' not found in testdata.txt", search_key);
-    }
+    }*/
+
+    impl_parser_per_type!(u16vec, 16, u16);
+    impl_parser_per_type!(u32vec, 32, u32);
+    impl_parser_per_type!(u64vec, 64, u64);
 
     /// Parses a testdata file and returns a vector of u8 stored for the given `search_key`.
     ///
@@ -180,8 +240,6 @@ impl TestData {
 
 #[cfg(test)]
 mod tests {
-    use aes::Aes128;
-
     use super::*;
     use std::fs::File;
     use std::io::Write;
@@ -296,7 +354,9 @@ mod tests {
     }
 
     #[test]
-    fn test_value() {
-        assert_eq!(TestData::new().u8vec("hello"), [0x01, 0x23, 0x45, 0x67].to_vec());
+    fn testdata_sanity_check() {
+        assert_eq!(TestData::new().u8vec("sanity_check"), [0x01, 0x23, 0x45, 0x67].to_vec());
+        assert_eq!(TestData::new().u16vec("sanity_check"), [0x0123, 0x4567].to_vec());
+        assert_eq!(TestData::new().u32vec("sanity_check"), [0x01234567].to_vec());
     }
 }

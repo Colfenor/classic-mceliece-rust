@@ -185,7 +185,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
     #[cfg(all(feature = "mceliece8192128f", test))]
-    use crate::randombytes::randombytes_init;
+    use crate::randombytes::AesState;
 
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_crypto_kem_dec() {
@@ -253,15 +253,16 @@ mod tests {
             249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
         ];
 
-        randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
 
         let mut second_seed = [0u8; 33];
         second_seed[0] = 64;
 
-        randombytes(&mut second_seed[1..], 32)?;
+        rng_state.randombytes(&mut second_seed[1..])?;
 
         // call
-        crypto_kem_enc(&mut c, &mut ss, &mut pk);
+        crypto_kem_enc(&mut c, &mut ss, &mut pk, &mut rng_state)?;
 
         assert_eq!(ss, compare_key);
 
@@ -297,9 +298,10 @@ mod tests {
         let compare_pk = COMPARE_PK.to_vec();
         assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
 
-        crypto_kem_keypair(&mut pk_input, &mut sk_input);
+        crypto_kem_keypair(&mut pk_input, &mut sk_input, &mut rng_state)?;
 
         assert_eq!(compare_sk, sk_input);
         assert_eq!(compare_pk, pk_input);

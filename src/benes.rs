@@ -11,7 +11,7 @@ use crate::transpose::transpose;
 use crate::util::{bitrev, load8, store8};
 
 /// Inner layers of the Beneš network
-fn layer_in(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
+fn layer_in(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
     let mut d: u64;
     let mut index = 0;
 
@@ -220,6 +220,7 @@ pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::convert::TryFrom;
     use crate::api::CRYPTO_SECRETKEYBYTES;
 
     #[test]
@@ -236,5 +237,18 @@ mod tests {
         apply_benes(&mut l, &mut bits, 0);
 
         assert_eq!(l, compare_array);
+    }
+
+    #[test]
+    fn test_layer_in() {
+        #[cfg(feature = "mceliece8192128f")]
+        {
+            let expected_data0 = <[u64; 64]>::try_from(crate::TestData::new().u64vec("mceliece8192128f_layer_in_data0").as_slice());
+            let expected_data1 = <[u64; 64]>::try_from(crate::TestData::new().u64vec("mceliece8192128f_layer_in_data1").as_slice());
+            let expected_data = [expected_data0, expected_data1];
+            let mut actual_data = [[0u64; 64]; 2];
+            let bits = crate::TestData::new().u64vec("mceliece8192128f_layer_in_bits");
+            layer_in(&mut actual_data, &bits, 0);
+        }
     }
 }
