@@ -126,15 +126,11 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::randombytes::AesState;
 
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[test]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
-        use crate::encrypt_array::{COMPARE_S, PK_INPUT, TEST_E};
+        use crate::encrypt_array::{PK_INPUT, TEST_E};
 
-        let mut entropy_input = [0u8; 48];
-        let mut personalization_string = [0u8; 48];
-
-        // set the same seed as in C implementation
-        entropy_input = [
+        let mut entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
             249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
@@ -155,10 +151,10 @@ mod tests {
         let mut pk = PK_INPUT.to_vec();
         assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        let mut test_e = TEST_E.to_vec();
+        let test_e = TEST_E.to_vec();
         assert_eq!(test_e.len(), SYS_N / 8);
 
-        let mut compare_s = COMPARE_S.to_vec();
+        let compare_s = crate::TestData::new().u8vec("COMPARE_S");
         assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
 
         encrypt(&mut c, &mut pk, &mut two_e[1..], &mut rng_state)?;

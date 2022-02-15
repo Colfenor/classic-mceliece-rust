@@ -187,7 +187,8 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::randombytes::AesState;
 
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
     pub fn test_crypto_kem_dec() {
         use crate::{
             api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
@@ -212,7 +213,8 @@ mod tests {
         assert_eq!(test_key, compare_key);
     }
 
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
     pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
@@ -271,7 +273,8 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
     pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},

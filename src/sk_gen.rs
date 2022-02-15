@@ -66,6 +66,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
 
+    #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);

@@ -79,6 +79,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
 
+    #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_simple_bm() {
         assert_eq!(SYS_T + 1, 129);
@@ -108,6 +109,7 @@ mod tests {
         assert_eq!(locator, compare_array);
     }
 
+    #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_first_round_bm() {
         let compare_array: [u16; SYS_T + 1] = [
