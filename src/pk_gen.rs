@@ -247,22 +247,13 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
 
+    #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
     pub fn test_pk_gen() {
-        use crate::pk_gen_arrays::{PERM_INPUT, PK_COMPARE};
-
-        let mut test_perm = PERM_INPUT.to_vec();
+        let mut test_perm = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
         assert_eq!(test_perm.len(), 1 << GFBITS);
 
-        let mut sk: [u8; SYS_T] = [
-            199, 216, 123, 163, 126, 230, 196, 18, 117, 1, 41, 51, 200, 109, 66, 233, 33, 107, 214,
-            76, 177, 56, 124, 190, 64, 198, 125, 205, 220, 113, 133, 213, 72, 4, 89, 57, 127, 162,
-            245, 223, 83, 11, 34, 11, 74, 69, 23, 140, 117, 16, 115, 109, 153, 135, 125, 9, 121,
-            90, 117, 31, 99, 125, 190, 190, 64, 29, 87, 74, 123, 168, 123, 149, 57, 243, 111, 64,
-            238, 56, 169, 86, 62, 234, 171, 88, 164, 51, 195, 223, 215, 88, 35, 232, 78, 104, 245,
-            198, 208, 78, 135, 127, 13, 30, 239, 167, 182, 210, 40, 252, 162, 64, 120, 166, 216,
-            120, 160, 69, 181, 82, 31, 242, 90, 27, 146, 6, 0, 52, 223, 41,
-        ];
+        let mut sk = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_perm_sk");
 
         let mut pivots = 0u64;
         let mut pi = [0i16; 1 << GFBITS];
@@ -270,6 +261,7 @@ mod tests {
 
         pk_gen(&mut pk, &mut sk, &mut test_perm, &mut pi, &mut pivots);
 
-        assert_eq!(pk, PK_COMPARE);
+        let pk_compare = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
+        assert_eq!(pk, pk_compare);
     }
 }

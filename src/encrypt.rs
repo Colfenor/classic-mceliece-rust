@@ -127,8 +127,9 @@ mod tests {
     use crate::randombytes::AesState;
 
     #[test]
+    #[cfg(feature = "mceliece8192128f")]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
-        let mut entropy_input = [
+        let entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
             249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
@@ -146,18 +147,15 @@ mod tests {
         two_e[0] = 2;
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-        let mut pk = crate::TestData::new().u8vec("PK_INPUT");
+        let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
         assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        let test_e = crate::TestData::new().u8vec("TEST_E");
-        assert_eq!(test_e.len(), SYS_N / 8);
-
-        let compare_s = crate::TestData::new().u8vec("COMPARE_S");
-        assert_eq!(compare_s.len(), CRYPTO_CIPHERTEXTBYTES);
+        let compare_ct = crate::TestData::new().u8vec("mceliece8192128f_encrypt_ct");
+        assert_eq!(compare_ct.len(), CRYPTO_CIPHERTEXTBYTES);
 
         encrypt(&mut c, &mut pk, &mut two_e[1..], &mut rng_state)?;
 
-        assert_eq!(compare_s, c);
+        assert_eq!(compare_ct, c);
 
         Ok(())
     }

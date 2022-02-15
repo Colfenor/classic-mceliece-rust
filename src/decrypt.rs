@@ -87,31 +87,30 @@ mod tests {
     use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::crypto_hash::shake256;
+    use std::error;
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
-    pub fn test_decrypt() {
-        use crate::decrypt_arrays::{C_INPUT, SK_INPUT, TWO_E_COMPARE};
-
-        let mut sk = SK_INPUT.to_vec();
+    pub fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
+        let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
         assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 
-        let mut c = C_INPUT.to_vec();
+        let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
         assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
 
-        let mut two_e_compare = TWO_E_COMPARE.to_vec();
-        assert_eq!(two_e_compare.len(), 1 + SYS_N / 8);
+        let expected_error_vector = crate::TestData::new().u8vec("mceliece8192128f_decrypt_errvec");
+        assert_eq!(expected_error_vector.len(), 1 + SYS_N / 8);
 
-        let mut two_e = [0u8; 1 + SYS_N / 8];
-        two_e[0] = 2;
+        let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
+        actual_error_vector[0] = 2;
 
-        decrypt(&mut two_e[1..], &mut sk[40..], &mut c);
+        decrypt(&mut actual_error_vector[1..], &mut sk[40..], &mut c);
 
-        assert_eq!(two_e.to_vec(), two_e_compare);
+        assert_eq!(actual_error_vector.to_vec(), expected_error_vector);
 
         // test crypto_hash
         let mut conf = [0u8; 32];
 
-        shake256(&mut conf, &two_e[0..1025]);
+        shake256(&mut conf, &actual_error_vector[0..1025])
     }
 }

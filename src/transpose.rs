@@ -358,6 +358,10 @@ mod tests {
         for i in 0..2 {
             transpose(&mut test_output, testcases[i].input);
             assert_eq!(test_output, testcases[i].output);
+
+            let mut data = testcases[i].input;
+            transpose_64x64_inplace(&mut data);
+            assert_eq!(data, testcases[i].output);
         }
     }
 }

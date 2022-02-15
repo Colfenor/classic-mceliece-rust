@@ -347,7 +347,7 @@ pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
 mod tests {
     use super::*;
     use std::convert::TryFrom;
-    use crate::api::CRYPTO_SECRETKEYBYTES;
+    use crate::api::{CRYPTO_SECRETKEYBYTES, CRYPTO_PRIMITIVE};
 
     #[test]
     fn test_apply_benes() {
@@ -367,145 +367,35 @@ mod tests {
 
     #[test]
     fn test_layer_in() {
-        let get = |name| { <[u64; 64]>::try_from(crate::TestData::new().u64vec(name).as_slice()).unwrap() };
-        #[cfg(feature = "mceliece348864")]
+        let get = |name: &str| {
+            let fullname = format!("{}_{}", CRYPTO_PRIMITIVE, name);
+            crate::TestData::new().u64vec(&fullname)
+        };
+        let get64 = |name: &str| {
+            <[u64; 64]>::try_from(get(name).as_slice()).unwrap()
+        };
+        #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
-            let mut data_arg = get("mceliece348864_layer_data_before");
-            let bits_arg = crate::TestData::new().u64vec("mceliece348864_layer_bits");
+            let mut data_arg = get64("benes_layer_data_before");
+            let bits_arg = get("benes_layer_bits");
             layer(&mut data_arg, &bits_arg, 0);
             let actual_data = data_arg;
 
-            let expected_data = get("mceliece348864_layer_data_after");
+            let expected_data = get64("benes_layer_data_after");
 
             assert_eq!(actual_data, expected_data);
         }
-        #[cfg(feature = "mceliece348864f")]
+        #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            let mut data_arg = get("mceliece348864f_layer_data_before");
-            let bits_arg = crate::TestData::new().u64vec("mceliece348864f_layer_bits");
-            layer(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data = get("mceliece348864f_layer_data_after");
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece460896")]
-        {
-            let data0_arg = get("mceliece460896_layer_in_data0_before");
-            let data1_arg = get("mceliece460896_layer_in_data1_before");
+            let data0_arg = get64("benes_layer_in_data0_before");
+            let data1_arg = get64("benes_layer_in_data1_before");
             let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece460896_layer_in_bits");
+            let bits_arg = get("benes_layer_in_bits");
             layer_in(&mut data_arg, &bits_arg, 0);
             let actual_data = data_arg;
 
-            let expected_data0 = get("mceliece460896_layer_in_data0_after");
-            let expected_data1 = get("mceliece460896_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece460896f")]
-        {
-            let data0_arg = get("mceliece460896f_layer_in_data0_before");
-            let data1_arg = get("mceliece460896f_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece460896f_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece460896f_layer_in_data0_after");
-            let expected_data1 = get("mceliece460896f_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece6688128")]
-        {
-            let data0_arg = get("mceliece6688128_layer_in_data0_before");
-            let data1_arg = get("mceliece6688128_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece6688128_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece6688128_layer_in_data0_after");
-            let expected_data1 = get("mceliece6688128_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece6688128f")]
-        {
-            let data0_arg = get("mceliece6688128f_layer_in_data0_before");
-            let data1_arg = get("mceliece6688128f_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece6688128f_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece6688128f_layer_in_data0_after");
-            let expected_data1 = get("mceliece6688128f_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece6960119")]
-        {
-            let data0_arg = get("mceliece6960119_layer_in_data0_before");
-            let data1_arg = get("mceliece6960119_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece6960119_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece6960119_layer_in_data0_after");
-            let expected_data1 = get("mceliece6960119_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece6960119f")]
-        {
-            let data0_arg = get("mceliece6960119f_layer_in_data0_before");
-            let data1_arg = get("mceliece6960119f_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece6960119f_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece6960119f_layer_in_data0_after");
-            let expected_data1 = get("mceliece6960119f_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece8192128")]
-        {
-            let data0_arg = get("mceliece8192128_layer_in_data0_before");
-            let data1_arg = get("mceliece8192128_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece8192128_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece8192128_layer_in_data0_after");
-            let expected_data1 = get("mceliece8192128_layer_in_data1_after");
-            let expected_data = [expected_data0, expected_data1];
-
-            assert_eq!(actual_data, expected_data);
-        }
-        #[cfg(feature = "mceliece8192128f")]
-        {
-            let data0_arg = get("mceliece8192128f_layer_in_data0_before");
-            let data1_arg = get("mceliece8192128f_layer_in_data1_before");
-            let mut data_arg = [data0_arg, data1_arg];
-            let bits_arg = crate::TestData::new().u64vec("mceliece8192128f_layer_in_bits");
-            layer_in(&mut data_arg, &bits_arg, 0);
-            let actual_data = data_arg;
-
-            let expected_data0 = get("mceliece8192128f_layer_in_data0_after");
-            let expected_data1 = get("mceliece8192128f_layer_in_data1_after");
+            let expected_data0 = get64("benes_layer_in_data0_after");
+            let expected_data1 = get64("benes_layer_in_data1_after");
             let expected_data = [expected_data0, expected_data1];
 
             assert_eq!(actual_data, expected_data);

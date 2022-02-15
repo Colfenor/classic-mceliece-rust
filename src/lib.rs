@@ -2,18 +2,14 @@ mod api;
 mod benes;
 mod bm;
 mod controlbits;
-mod controlbits_arrays;
 mod crypto_hash;
 mod decrypt;
-mod decrypt_arrays;
 mod encrypt;
 mod gf;
 mod int32_sort;
 mod operations;
-mod operations_arrays;
 mod params;
 mod pk_gen;
-mod pk_gen_arrays;
 mod randombytes;
 mod root;
 mod sk_gen;
@@ -100,6 +96,10 @@ impl TestData {
     impl_parser_per_type!(u16vec, 16, u16);
     impl_parser_per_type!(u32vec, 32, u32);
     impl_parser_per_type!(u64vec, 64, u64);
+    impl_parser_per_type!(i8vec, 8, i8);
+    impl_parser_per_type!(i16vec, 16, i16);
+    impl_parser_per_type!(i32vec, 32, i32);
+    impl_parser_per_type!(i64vec, 64, i64);
 }
 
 #[cfg(test)]
