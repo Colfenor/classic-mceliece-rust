@@ -218,12 +218,11 @@ mod tests {
     pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
-            encrypt_array::PK_INPUT,
         };
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
         let mut ss = [0u8; CRYPTO_BYTES];
-        let mut pk = PK_INPUT.to_vec();
+        let mut pk = crate::TestData::new().u8vec("PK_INPUT");
         assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
         let mut compare_key: [u8; 32] = [

@@ -128,8 +128,6 @@ mod tests {
 
     #[test]
     pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
-        use crate::encrypt_array::{PK_INPUT, TEST_E};
-
         let mut entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
@@ -148,10 +146,10 @@ mod tests {
         two_e[0] = 2;
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-        let mut pk = PK_INPUT.to_vec();
+        let mut pk = crate::TestData::new().u8vec("PK_INPUT");
         assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        let test_e = TEST_E.to_vec();
+        let test_e = crate::TestData::new().u8vec("TEST_E");
         assert_eq!(test_e.len(), SYS_N / 8);
 
         let compare_s = crate::TestData::new().u8vec("COMPARE_S");

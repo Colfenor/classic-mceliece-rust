@@ -7,7 +7,6 @@ mod crypto_hash;
 mod decrypt;
 mod decrypt_arrays;
 mod encrypt;
-mod encrypt_array;
 mod gf;
 mod int32_sort;
 mod operations;
