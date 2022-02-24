@@ -102,7 +102,7 @@ fn cbrecursion(
             temp[x] = ((high ^ 1) << 16) | (low & 0xffff);
         }
     }
-    int32_sort(temp, n as i64); /* A = (id<<16)+pibar */
+    int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+pibar */
 
     for x in 0..n {
         let ax: i32 = temp[x];
@@ -118,12 +118,12 @@ fn cbrecursion(
     for x in 0..n {
         temp[x] = (temp[x] << 16) | (x as i32); /* A = (pibar<<16)+id */
     }
-    int32_sort(temp, n as i64); /* A = (id<<16)+pibar^-1 */
+    int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+pibar^-1 */
 
     for x in 0..n {
         temp[x] = (temp[x] << 16) + (temp[n + x] >> 16); /* A = (pibar^(-1)<<16)+pibar */
     }
-    int32_sort(temp, n as i64); /* A = (id<<16)+pibar^2 */
+    int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+pibar^2 */
 
     if w <= 10 {
         for x in 0..n {
@@ -136,12 +136,12 @@ fn cbrecursion(
             for x in 0..n {
                 temp[x] = ((temp[n + x] & (0xfffffc << 8)) << 6) | (x as i32); /* A = (p<<16)+id */
             }
-            int32_sort(temp, n as i64); /* A = (id<<16)+p^{-1} */
+            int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+p^{-1} */
 
             for x in 0..n {
                 temp[x] = (temp[x] << 20) | temp[n + x]; /* A = (p^{-1}<<20)+(p<<10)+c */
             }
-            int32_sort(temp, n as i64); /* A = (id<<20)+(pp<<10)+cp */
+            int32_sort(&mut temp[0..n], n as i64); /* A = (id<<20)+(pp<<10)+cp */
 
             for x in 0..n {
                 let ppcpx: i32 = temp[x] & 0xfffff;
@@ -165,7 +165,7 @@ fn cbrecursion(
             for x in 0..n {
                 temp[x] = (temp[n + x] & (0xffff << 16)) | (x as i32);
             }
-            int32_sort(temp, n as i64); /* A = (id<<16)+p^(-1) */
+            int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+p^(-1) */
 
             for x in 0..n {
                 temp[x] = (temp[x] << 16) | (temp[n + x] & 0xffff);
@@ -177,14 +177,14 @@ fn cbrecursion(
                     temp[n + x] = (temp[x] & (0xffff << 16)) | (temp[n + x] >> 16);
                 }
                 /* B = (p^(-1)<<16)+p */
-                int32_sort(&mut temp[n..], n as i64); /* B = (id<<16)+p^(-2) */
+                int32_sort(&mut temp[n..2*n], n as i64); /* B = (id<<16)+p^(-2) */
                 for x in 0..n {
                     temp[n + x] = (temp[n + x] << 16) | (temp[x] & 0xffff);
                 }
                 /* B = (p^(-2)<<16)+c */
             }
 
-            int32_sort(temp, n as i64);
+            int32_sort(&mut temp[0..n], n as i64);
             /* A = id<<16+cp */
             for x in 0..n {
                 let cpx: i32 = (temp[n + x] & (0xffff << 16)) | (temp[x] & 0xffff);
@@ -210,7 +210,7 @@ fn cbrecursion(
             temp[x] = (perm & (0xffff << 16)) + (x as i32);
         }
     }
-    int32_sort(temp, n as i64); /* A = (id<<16)+pi^(-1) */
+    int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+pi^(-1) */
 
     for j in 0..(n / 2) {
         let x = 2 * j as i32;
@@ -226,7 +226,7 @@ fn cbrecursion(
     }
     /* B = (pi^(-1)<<16)+F */
 
-    int32_sort(&mut temp[n..], n as i64); /* B = (id<<16)+F(pi) */
+    int32_sort(&mut temp[n..2*n], n as i64); /* B = (id<<16)+F(pi) */
 
     pos += (2 * w - 3) * step * (n / 2);
 
@@ -244,7 +244,7 @@ fn cbrecursion(
     }
     /* A = (L<<16)+F(pi) */
 
-    int32_sort(temp, n as i64); /* A = (id<<16)+F(pi(L)) = (id<<16)+M */
+    int32_sort(&mut temp[0..n], n as i64); /* A = (id<<16)+F(pi(L)) = (id<<16)+M */
 
     pos -= (2 * w - 2) * step * (n / 2);
 
