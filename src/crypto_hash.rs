@@ -18,7 +18,7 @@ impl fmt::Display for ShakeIOError {
 }
 
 /// Utilizes the SHAKE256 hash function. Input and output is of arbitrary length.
-pub fn shake256(output: &mut [u8], input: &[u8]) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn shake256(output: &mut [u8], input: &[u8]) -> Result<(), Box<dyn error::Error>> {
     let mut shake_hash_fn = Shake256::default();
     shake_hash_fn.update(input);
 
@@ -35,7 +35,7 @@ mod tests {
     use std::error;
 
     #[test]
-    pub fn test_shake256() -> Result<(), Box<dyn error::Error>> {
+    fn test_shake256() -> Result<(), Box<dyn error::Error>> {
         let compare_array = crate::TestData::new().u8vec("shake256_digest_expected");
 
         let mut c = [0u8; 448];

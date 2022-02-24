@@ -1,10 +1,10 @@
 //! Module to implement Galois field operations
 
 use crate::params::{GFBITS, GFMASK, SYS_T};
-pub type Gf = u16;
+pub(crate) type Gf = u16;
 
 /// Does Gf element `a` have value 0? Returns yes (8191 = `u16::MAX/8`) or no (0) as Gf element.
-pub fn gf_iszero(a: Gf) -> Gf {
+pub(crate) fn gf_iszero(a: Gf) -> Gf {
     let mut t = (a as u32).wrapping_sub(1u32);
     t >>= 19;
     t as u16
@@ -13,12 +13,12 @@ pub fn gf_iszero(a: Gf) -> Gf {
 /// Add Gf elements stored bitwise in `in0` and `in1`. Thus, the LSB of `in0` is added to the LSB of `in1` w.r.t. Gf(2).
 /// This continues for all 16 bits. Since addition in Gf(2) corresponds to a XOR operation, the implementation uses a
 /// simple XOR instruction.
-pub fn gf_add(in0: Gf, in1: Gf) -> Gf {
+pub(crate) fn gf_add(in0: Gf, in1: Gf) -> Gf {
     in0 ^ in1
 }
 
 /// Multiplication of two Gf elements.
-pub fn gf_mul(in0: Gf, in1: Gf) -> Gf {
+pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
     let t0 = in0 as u64;
     let t1 = in1 as u64;
 
@@ -150,7 +150,7 @@ fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
 }
 
 /// Computes the division `num/den` for Gf elements `den` and `num`
-pub fn gf_frac(den: Gf, num: Gf) -> Gf {
+pub(crate) fn gf_frac(den: Gf, num: Gf) -> Gf {
     let tmp_11: Gf;
     let tmp_1111: Gf;
     let mut out: Gf;
@@ -166,12 +166,12 @@ pub fn gf_frac(den: Gf, num: Gf) -> Gf {
 }
 
 /// Computes the inverse element of `den` in the Galois field.
-pub fn gf_inv(den: Gf) -> Gf {
+pub(crate) fn gf_inv(den: Gf) -> Gf {
     gf_frac(den, 1 as Gf)
 }
 
 /// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
-pub fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
+pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
     let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
 
     for i in 0..SYS_T {

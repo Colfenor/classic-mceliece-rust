@@ -110,7 +110,7 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &mut [u64], lgs: usize) {
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
+fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
     let mut bs = [0u64; 64];
     let mut cond = [0u64; 64];
 
@@ -213,7 +213,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
-pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
+fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -318,7 +318,7 @@ pub fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
     }
 }
 
-pub fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
+pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8]) {
     let mut a: Gf;
     let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 

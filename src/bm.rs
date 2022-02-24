@@ -4,7 +4,7 @@
 use crate::gf::{gf_frac, gf_mul, Gf};
 use crate::params::SYS_T;
 
-pub fn min(a: usize, b: usize) -> usize {
+fn min(a: usize, b: usize) -> usize {
     let c = (a < b) as isize;
     let d = c << (isize::BITS - 1);
     let e = (d >> (isize::BITS - 1)) as usize;
@@ -14,7 +14,7 @@ pub fn min(a: usize, b: usize) -> usize {
 /// The Berlekamp-Massey algorithm.
 /// Uses `s` as input (sequence of field elements)
 /// and `out` as output (minimal polynomial of `s`)
-pub fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
+pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
     let mut l: u16 = 0;
     let mut mle: u16;
     let mut mne: u16;

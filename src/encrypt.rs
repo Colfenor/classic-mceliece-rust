@@ -109,7 +109,7 @@ fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
 
 /// Encryption routine.
 /// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
-pub fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     gen_e(e, rng)?;
     syndrome(s, pk, e);
     Ok(())
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    pub fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
+    fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
         let entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,

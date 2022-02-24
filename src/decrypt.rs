@@ -12,7 +12,7 @@ use crate::{
 ///
 /// It takes as input the secret key `sk` and a ciphertext `c`.
 /// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
-pub fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
+pub(crate) fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
     let mut t: u16;
     let mut w: i32 = 0;
 
@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
-    pub fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
+    fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
         let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
         assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 

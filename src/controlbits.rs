@@ -25,7 +25,7 @@ macro_rules! CONTROLBYTES {
 ///
 /// The following requirement is undocumented in C:
 ///   `assert!(1 << (s + 1) <= n);`
-pub fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
+fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
     assert_eq!(p.len(), n as usize);
     assert!(1 << (s + 1) <= n);
 
@@ -63,7 +63,7 @@ pub fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
 ///
 /// But the following descriptions still hold true:
 ///   out is filled with (2m-1)n/2 control bits at positions pos, pos+step, …
-pub fn cbrecursion(
+fn cbrecursion(
     out: &mut [u8],
     mut pos: usize,
     step: usize,
@@ -284,7 +284,7 @@ pub fn cbrecursion(
 /// The control bits provide the configuration for a Beneš network in order
 /// to implement the permutation specified by `pi`. The first control bit is
 /// the LSB of out[0].
-pub fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n: usize) {
+pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n: usize) {
     assert_eq!(n, 1 << w);
     assert_eq!(pi.len(), n);
     assert_eq!(out.len(), (((2 * w - 1) * n / 2) + 7) / 8);

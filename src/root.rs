@@ -9,7 +9,7 @@ use crate::{
 
 /// Evaluate polynomial `f` with argument `a`.
 /// Thus it returns `f(a)` in symbolic notation.
-pub fn eval(f: &[Gf; SYS_T + 1], a: Gf) -> Gf {
+pub(crate) fn eval(f: &[Gf; SYS_T + 1], a: Gf) -> Gf {
     let mut r: Gf = f[SYS_T];
 
     for i in (0..=SYS_T - 1).rev() {
@@ -21,7 +21,7 @@ pub fn eval(f: &[Gf; SYS_T + 1], a: Gf) -> Gf {
 
 /// Given polynomial `f` and a list of field elements `l`,
 /// return the roots `out` satisfying `[ f(a) for a in L ]`
-pub fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
+pub(crate) fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
     for i in 0..SYS_N {
         out[i] = eval(f, l[i]);
     }
@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    pub fn test_root() {
+    fn test_root() {
         let mut g = [1u16; SYS_T + 1];
         let mut l = [0u16; SYS_N];
         let mut inv = [0u16; SYS_N];

@@ -111,7 +111,7 @@ fn mov_columns(
 /// Public key generation. Generate the public key `pk`,
 /// permutation `pi` and pivot element `pivots` based on the 
 /// secret key `sk` and permutation `perm` provided.
-pub fn pk_gen(
+pub(crate) fn pk_gen(
     pk: &mut [u8],
     sk: &[u8],
     perm: &[u32],
@@ -249,7 +249,7 @@ mod tests {
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
-    pub fn test_pk_gen() {
+    fn test_pk_gen() {
         let mut test_perm = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
         assert_eq!(test_perm.len(), 1 << GFBITS);
 

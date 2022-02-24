@@ -5,7 +5,7 @@ use crate::params::SYS_T;
 
 /// Take element `f` in `GF((2^m)^t)` and return minimal polynomial `out` of `f`
 /// Returns 0 for success and -1 for failure
-pub fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
+pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
     let mut mat = [[0u16; SYS_T]; SYS_T + 1];
     mat[0][0] = 1;
 
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
-    pub fn test_genpoly_gen() {
+    fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
         let input_src = crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");

@@ -1,5 +1,5 @@
 /// Compute transposition of `input` and store it in `output`
-pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
+pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
     let masks: [[u64; 2]; 6] = [
         [0x5555555555555555, 0xAAAAAAAAAAAAAAAA],
         [0x3333333333333333, 0xCCCCCCCCCCCCCCCC],
@@ -36,7 +36,7 @@ pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
 /// input argument == output argument. Because we cannot create a
 /// shared and mutable reference simultaneously, we can only generate
 /// one argument.
-pub fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
+pub(crate) fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
     let masks = [
         [0x5555555555555555u64, 0xAAAAAAAAAAAAAAAAu64],
         [0x3333333333333333, 0xCCCCCCCCCCCCCCCC],
@@ -72,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_transpose() {
+    fn test_transpose() {
         let mut test_output: [u64; 64] = [0; 64];
 
         let mut testcases: [TestMatrix; 2] = [

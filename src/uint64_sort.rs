@@ -21,7 +21,7 @@ const fn uint64_minmax(mut a: u64, mut b: u64) -> (u64, u64) {
 
 /// Sort a sequence of integers using a sorting network to achieve constant time.
 /// To our understanding, this implements [djbsort](https://sorting.cr.yp.to/).
-pub fn uint64_sort(x: &mut [u64], n: usize) {
+pub(crate) fn uint64_sort(x: &mut [u64], n: usize) {
     if n < 2 {
         return;
     }

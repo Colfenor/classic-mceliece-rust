@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    pub fn test_crypto_kem_dec() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_dec() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
         };
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
         };
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
         use crate::{
             api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
         };
