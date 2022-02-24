@@ -86,20 +86,6 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<(), Box<dyn
     shake256(key, &preimage)
 }
 
-/// Compute the logarithm of `x` w.r.t. base 2.
-fn log2(mut x: usize) -> usize {
-    // TODO this does not look efficient
-    while x.count_ones() != 1 {
-        x += 1;
-    }
-    let mut log = 0;
-    while x != 0 {
-        x >>= 1;
-        log += 1;
-    }
-    log - 1
-}
-
 /// KEM Keypair generation.
 ///
 /// Generate some public and secret key.
@@ -157,8 +143,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
             continue;
         }
 
-        let m = log2(pi.len());
-        let count = (((2 * m - 1) * (1 << (m - 1))) + 7) / 8;
+        let count = (((2 * GFBITS - 1) * (1 << GFBITS) / 2) + 7) / 8;
         controlbitsfrompermutation(
             &mut sk[(32 + 8 + IRR_BYTES)..(32 + 8 + IRR_BYTES + count)],
             &mut pi,
