@@ -423,12 +423,12 @@ mod tests {
     #[test]
     #[cfg(feature = "mceliece348864")]
     fn test_controlbitsfrompermutation_kat3_mceliece348864() {
-        let pi = crate::TestData::new().i16vec("mceliece348864_controlbits_kat3_pi");
+        let pi = crate::TestData::new().i16vec("controlbits_kat3_mceliece348864_pi");
         let mut out = [0u8; 5888];
 
         controlbitsfrompermutation(&mut out, &pi, 12, 4096);
 
-        let out_ref = crate::TestData::new().u8vec("mceliece348864_controlbits_kat3_out_ref");
+        let out_ref = crate::TestData::new().u8vec("controlbits_kat3_mceliece348864_out_ref");
         assert_eq!(&out, out_ref.as_slice());
     }
 
@@ -438,11 +438,11 @@ mod tests {
     #[cfg(feature = "mceliece348864")]
     fn test_controlbitsfrompermutation_kat8_mceliece348864() {
         let mut out = [0u8; 5888];
-        let pi = crate::TestData::new().i16vec("mceliece348864_controlbits_pi_kat8");
+        let pi = crate::TestData::new().i16vec("controlbits_kat8_mceliece348864_pi");
 
         controlbitsfrompermutation(&mut out, &pi, 12, 4096);
 
-        let out_ref = crate::TestData::new().u8vec("mceliece348864_controlbits_kat8_out_ref");
+        let out_ref = crate::TestData::new().u8vec("controlbits_kat8_mceliece348864_out_ref");
         assert_eq!(out, out_ref.as_slice());
     }
 
@@ -452,11 +452,11 @@ mod tests {
     #[cfg(feature = "mceliece348864")]
     fn test_controlbitsfrompermutation_kat9_mceliece348864() {
         let mut out = [0u8; 5888];
-        let pi = crate::TestData::new().i16vec("mceliece348864_controlbits_kat9_pi");
+        let pi = crate::TestData::new().i16vec("controlbits_kat9_mceliece348864_pi");
 
         controlbitsfrompermutation(&mut out, &pi, 12, 4096);
 
-        let out_ref = crate::TestData::new().u8vec("mceliece348864_controlbits_kat9_out_ref");
+        let out_ref = crate::TestData::new().u8vec("controlbits_kat9_mceliece348864_out_ref");
         assert_eq!(out, out_ref.as_slice());
     }
 
@@ -469,10 +469,10 @@ mod tests {
 
         let mut out = [0u8; 12800];
 
-        let pi = crate::TestData::new().i16vec("mceliece6960119_controlbits_kat3_pi");
+        let pi = crate::TestData::new().i16vec("controlbits_kat3_mceliece6960119_pi");
         controlbitsfrompermutation(&mut out, &pi, 13, 8192);
 
-        let out_ref = crate::TestData::new().u8vec("mceliece6960119_controlbits_kat3_out_ref");
+        let out_ref = crate::TestData::new().u8vec("controlbits_kat3_mceliece6960119_out_ref");
         assert_eq!(out, out_ref.as_slice());
     }
 }
