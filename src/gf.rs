@@ -203,38 +203,46 @@ mod tests {
     // Unit tests
     #[test]
     fn test_gf_iszero() {
-        let mut result_var = gf_iszero(0);
-        assert_eq!(result_var, 8191);
+        const YES: u16 = 8191;
+        const NO: u16 = 0;
 
-        result_var = gf_iszero(1);
-        assert_eq!(result_var, 0);
-
-        result_var = gf_iszero(65535);
-        assert_eq!(result_var, 0);
+        assert_eq!(gf_iszero(0), YES);
+        assert_eq!(gf_iszero(1), NO);
+        assert_eq!(gf_iszero(2), NO);
+        assert_eq!(gf_iszero(3), NO);
+        assert_eq!(gf_iszero(1024), NO);
+        assert_eq!(gf_iszero(1025), NO);
+        assert_eq!(gf_iszero(65535), NO);
     }
 
     #[test]
     fn test_gf_add() {
-        let mut result_var = gf_add(0, 1);
-        assert_eq!(result_var, 1);
-
-        result_var = gf_add(1, 0);
-        assert_eq!(result_var, 1);
-
-        result_var = gf_add(1, 1);
-        assert_eq!(result_var, 0);
-
-        result_var = gf_add(0, 0);
-        assert_eq!(result_var, 0);
+        assert_eq!(gf_add(0x0000, 0x0000), 0x0000);
+        assert_eq!(gf_add(0x0000, 0x0001), 0x0001);
+        assert_eq!(gf_add(0x0001, 0x0000), 0x0001);
+        assert_eq!(gf_add(0x0001, 0x0001), 0x0000);
+        assert_eq!(gf_add(0x000F, 0x0000), 0x000F);
+        assert_eq!(gf_add(0x000F, 0x0001), 0x000E); // 0b1111 + 0b0001 = 0b1110
+        assert_eq!(gf_add(0x00FF, 0x0100), 0x01FF);
+        assert_eq!(gf_add(0xF0F0, 0x0F0F), 0xFFFF);
     }
 
     #[test]
     fn test_gf_mul() {
-        let mut result_var = gf_mul(0, 5);
-        assert_eq!(result_var, 0);
-
-        result_var = gf_mul(2, 6);
-        assert_eq!(result_var, 12);
+        assert_eq!(gf_mul(0, 0), 0);
+        assert_eq!(gf_mul(0, 0), 0);
+        assert_eq!(gf_mul(0, 1), 0);
+        assert_eq!(gf_mul(1, 0), 0);
+        assert_eq!(gf_mul(0, 5), 0);
+        assert_eq!(gf_mul(5, 0), 0);
+        assert_eq!(gf_mul(0, 1024), 0);
+        assert_eq!(gf_mul(1024, 0), 0);
+        assert_eq!(gf_mul(2, 6), 12);
+        assert_eq!(gf_mul(6, 2), 12);
+        assert_eq!(gf_mul(3, 8), 24);
+        assert_eq!(gf_mul(8, 3), 24);
+        assert_eq!(gf_mul(2, 6), 12);
+        assert_eq!(gf_mul(2, 6), 12);
     }
 
     #[test]
