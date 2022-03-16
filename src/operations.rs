@@ -139,6 +139,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
             perm[i] = load4(chunk);
         }
 
+        // TODO this operation runs forever in the KAT KEM setting
         if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
             continue;
         }

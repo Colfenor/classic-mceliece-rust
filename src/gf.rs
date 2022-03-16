@@ -3,6 +3,9 @@
 use crate::params::{GFBITS, GFMASK, SYS_T};
 pub(crate) type Gf = u16;
 
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+const GFBITMASK: u64 = ((1 << GFBITS) - 1) as u64;
+
 /// Does Gf element `a` have value 0? Returns yes (8191 = `u16::MAX/8`) or no (0) as Gf element.
 pub(crate) fn gf_iszero(a: Gf) -> Gf {
     let mut t = (a as u32).wrapping_sub(1u32);
@@ -18,33 +21,79 @@ pub(crate) fn gf_add(in0: Gf, in1: Gf) -> Gf {
 }
 
 /// Multiplication of two Gf elements.
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
-    let t0 = in0 as u64;
-    let t1 = in1 as u64;
+    let (mut tmp, t0, t1, mut t): (u64, u64, u64, u64);
 
+    t0 = in0 as u64;
+    t1 = in1 as u64;
+
+    tmp = t0 * (t1 & 1); // if LSB 0, tmp will be 0, otherwise value of t0
+
+    // (t1 & (1 << i)) ⇒ is either t1 to the power of i or zero
+    for i in 1..GFBITS {
+        tmp ^= t0 * (t1 & (1 << i));
+    }
+
+    // polynomial reduction
+    t = tmp & 0x7FC000;
+	tmp ^= t >> 9;
+	tmp ^= t >> 12;
+
+	t = tmp & 0x3000;
+	tmp ^= t >> 9;
+	tmp ^= t >> 12;
+
+	(tmp & GFBITMASK) as u16
+}
+
+/// Multiplication of two Gf elements.
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
+    let t0: u64 = in0 as u64;
+    let t1: u64 = in1 as u64;
     let mut tmp: u64 = t0 * (t1 & 1); // if LSB 0, tmp will be 0, otherwise value of t0
 
-    // (t1 & (1 << i))  ∈ {0, t1 ^ i}
+    // (t1 & (1 << i)) ∈ {0, t1 ^ i}
     for i in 1..GFBITS {
         // implements the convolution, thus the actual multiplication
         tmp ^= t0 * (t1 & (1 << i));
     }
 
-    // TODO I think this is code specific for kem/mceliece8192128f
-
     // polynomial reduction according to the field polynomial
-    // specified for the variant follows
-
     let mut t: u64 = tmp & 0x1FF0000;
     tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
 
     t = tmp & 0x000E000;
     tmp ^= (t >> 9) ^ (t >> 10) ^ (t >> 12) ^ (t >> 13);
 
-    (tmp & GFMASK as u64) as u16
+    tmp as u16 & GFMASK as u16
 }
 
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+pub(crate) fn gf_sq(in0: Gf) -> Gf {
+	let b = [0x55555555u32, 0x33333333, 0x0F0F0F0F, 0x00FF00FF];
+
+	let mut x: u32 = in0 as u32; 
+	x = (x | (x << 8)) & b[3];
+	x = (x | (x << 4)) & b[2];
+	x = (x | (x << 2)) & b[1];
+	x = (x | (x << 1)) & b[0];
+
+	let mut t = x & 0x7FC000;
+	x ^= t >> 9;
+	x ^= t >> 12;
+
+	t = x & 0x3000;
+	x ^= t >> 9;
+	x ^= t >> 12;
+
+	x as u16 & GFBITMASK as u16
+}
+
+
 /// Computes the double-square `(input^2)^2` for Gf element `input`
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 #[inline]
 fn gf_sq2(input: Gf) -> Gf {
     const B: [u64; 4] = [
@@ -78,6 +127,7 @@ fn gf_sq2(input: Gf) -> Gf {
 }
 
 /// Computes the square `input^2` multiplied by `m` for Gf elements `input` and `m`. Thus `(input^2)*m`.
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 #[inline]
 fn gf_sqmul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
@@ -111,6 +161,7 @@ fn gf_sqmul(input: Gf, m: Gf) -> Gf {
 
 /// Computes the double-square `(input^2)^2` multiplied by `m`
 /// for Gf elements `input` and `m`. Thus `((in^2)^2)*m`.
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 #[inline]
 fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
     let mut x: u64;
@@ -150,6 +201,14 @@ fn gf_sq2mul(input: Gf, m: Gf) -> Gf {
 }
 
 /// Computes the division `num/den` for Gf elements `den` and `num`
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+pub(crate) fn gf_frac(den: Gf, num: Gf) -> Gf {
+	gf_mul(gf_inv(den), num)
+}
+
+
+/// Computes the division `num/den` for Gf elements `den` and `num`
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 pub(crate) fn gf_frac(den: Gf, num: Gf) -> Gf {
     let tmp_11: Gf;
     let tmp_1111: Gf;
@@ -166,11 +225,116 @@ pub(crate) fn gf_frac(den: Gf, num: Gf) -> Gf {
 }
 
 /// Computes the inverse element of `den` in the Galois field.
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+pub(crate) fn gf_inv(in0: Gf) -> Gf {
+	let mut out = gf_sq(in0);
+	let tmp_11 = gf_mul(out, in0); // 11
+
+	out = gf_sq(tmp_11);
+	out = gf_sq(out);
+	let tmp_1111 = gf_mul(out, tmp_11); // 1111
+
+	out = gf_sq(tmp_1111);
+	out = gf_sq(out);
+	out = gf_sq(out);
+	out = gf_sq(out);
+	out = gf_mul(out, tmp_1111); // 11111111
+
+	out = gf_sq(out);
+	out = gf_sq(out);
+	out = gf_mul(out, tmp_11); // 1111111111
+
+	out = gf_sq(out);
+	out = gf_mul(out, in0); // 11111111111
+
+	gf_sq(out) // 111111111110
+}
+
+/// Computes the inverse element of `den` in the Galois field.
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 pub(crate) fn gf_inv(den: Gf) -> Gf {
     gf_frac(den, 1 as Gf)
 }
+/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
+    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
+
+    for i in 0..SYS_T {
+        for j in 0..SYS_T {
+            prod[i + j] ^= gf_mul(in0[i], in1[j]);
+        }
+    }
+
+    let mut i = (SYS_T - 1) * 2;
+
+    while i >= SYS_T {
+        prod[i - SYS_T + 3] ^= prod[i];
+        prod[i - SYS_T + 1] ^= prod[i];
+        prod[i - SYS_T + 0] ^= prod[i];
+
+        i -= 1;
+    }
+
+    for i in 0..SYS_T {
+        out[i] = prod[i];
+    }
+}
 
 /// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
+#[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
+pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
+    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
+
+    for i in 0..SYS_T {
+        for j in 0..SYS_T {
+            prod[i + j] ^= gf_mul(in0[i], in1[j]);
+        }
+    }
+
+    let mut i = (SYS_T - 1) * 2;
+
+    while i >= SYS_T {
+        prod[i - SYS_T + 10] ^= prod[i];
+        prod[i - SYS_T + 9] ^= prod[i];
+        prod[i - SYS_T + 6] ^= prod[i];
+        prod[i - SYS_T + 0] ^= prod[i];
+
+        i -= 1;
+    }
+
+    for i in 0..SYS_T {
+        out[i] = prod[i];
+    }
+}
+
+/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
+    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
+
+    for i in 0..SYS_T {
+        for j in 0..SYS_T {
+            prod[i + j] ^= gf_mul(in0[i], in1[j]);
+        }
+    }
+
+    let mut i = (SYS_T - 1) * 2;
+
+    while i >= SYS_T {
+        prod[i - SYS_T + 8] ^= prod[i];
+        prod[i - SYS_T + 0] ^= prod[i];
+
+        i -= 1;
+    }
+
+    for i in 0..SYS_T {
+        out[i] = prod[i];
+    }
+}
+
+/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
+#[cfg(any(feature = "mceliece6688128", feature = "mceliece6688128f", feature = "mceliece8192128", feature = "mceliece8192128f"))]
 pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
     let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
 
@@ -195,6 +359,7 @@ pub(crate) fn GF_mul(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]
         out[i] = prod[i];
     }
 }
+
 
 #[cfg(test)]
 mod tests {
