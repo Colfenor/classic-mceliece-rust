@@ -1,10 +1,9 @@
 //! Module to implement Galois field operations
 
-use crate::params::{GFBITS, GFMASK, SYS_T};
-pub(crate) type Gf = u16;
-
+use crate::params::{GFBITS, SYS_T};
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-const GFBITMASK: u64 = ((1 << GFBITS) - 1) as u64;
+use crate::params::GFMASK;
+pub(crate) type Gf = u16;
 
 /// Does Gf element `a` have value 0? Returns yes (8191 = `u16::MAX/8`) or no (0) as Gf element.
 pub(crate) fn gf_iszero(a: Gf) -> Gf {
@@ -44,7 +43,7 @@ pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
 	tmp ^= t >> 9;
 	tmp ^= t >> 12;
 
-	(tmp & GFBITMASK) as u16
+	tmp as u16 & GFMASK as u16
 }
 
 /// Multiplication of two Gf elements.
@@ -88,7 +87,7 @@ pub(crate) fn gf_sq(in0: Gf) -> Gf {
 	x ^= t >> 9;
 	x ^= t >> 12;
 
-	x as u16 & GFBITMASK as u16
+	x as u16 & GFMASK as u16
 }
 
 
@@ -392,6 +391,13 @@ mod tests {
         assert_eq!(gf_add(0xF0F0, 0x0F0F), 0xFFFF);
     }
 
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    #[test]
+    fn test_gf_mul() {
+        // TODO
+    }
+
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_gf_mul() {
         assert_eq!(gf_mul(0, 0), 0);
@@ -410,6 +416,13 @@ mod tests {
         assert_eq!(gf_mul(2, 6), 12);
     }
 
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    #[test]
+    fn test_gf_sq() {
+        // TODO
+    }
+
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_gf_sq2() {
         let mut result_var = gf_sq2(2);
@@ -422,6 +435,7 @@ mod tests {
         assert_eq!(result_var, 0);
     }
 
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_gf_sqmul() {
         let mut result_var = gf_sqmul(2, 2);
@@ -440,6 +454,7 @@ mod tests {
         assert_eq!(result_var, 0);
     }
 
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_gf_sq2mul() {
         let mut result_var = gf_sq2mul(2, 2);
@@ -464,6 +479,7 @@ mod tests {
         assert_eq!(result_var, 0);
     }
 
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
     #[test]
     fn test_gf_frac() {
         let mut result_var = gf_frac(0, 2);
@@ -476,6 +492,19 @@ mod tests {
         assert_eq!(result_var, 4109);
     }
 
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+    #[test]
+    fn test_gf_frac() {
+        // TODO
+    }
+
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    #[test]
+    fn test_gf_inv() {
+        // TODO
+    }
+
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_gf_inv() {
         let mut result_var = gf_inv(0);
@@ -489,5 +518,29 @@ mod tests {
 
         result_var = gf_inv(5);
         assert_eq!(result_var, 5467);
+    }
+
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    #[test]
+    fn test_GF_mul() {
+        // TODO
+    }
+
+    #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
+    #[test]
+    fn test_GF_mul() {
+        // TODO
+    }
+
+    #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+    #[test]
+    fn test_GF_mul() {
+        // TODO
+    }
+
+    #[cfg(any(feature = "mceliece6688128", feature = "mceliece6688128f", feature = "mceliece8192128", feature = "mceliece8192128f"))]
+    #[test]
+    fn test_GF_mul() {
+        // TODO
     }
 }
