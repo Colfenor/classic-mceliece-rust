@@ -1,4 +1,4 @@
-use crate::gf::{gf_inv, gf_iszero, gf_mul, GF_mul, Gf};
+use crate::gf::{gf_inv, gf_iszero, gf_mul, gf_mul_inplace, Gf};
 use crate::params::SYS_T;
 
 // out and f both arrays with SYS_T len
@@ -19,7 +19,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
     for j in 2..=SYS_T {
         let (left, right) = mat.split_at_mut(j);
-        GF_mul(&mut right[0], &mut left[j - 1], f);
+        gf_mul_inplace(&mut right[0], &mut left[j - 1], f);
     }
 
     for j in 0..SYS_T {
