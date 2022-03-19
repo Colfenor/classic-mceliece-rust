@@ -116,6 +116,7 @@ pub(crate) fn pk_gen(
     sk: &[u8],
     perm: &[u32],
     pi: &mut [i16; 1 << GFBITS],
+    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
     pivots: &mut u64,
 ) -> i32 {
     let mut buf = [0u64; 1 << GFBITS];
@@ -199,8 +200,11 @@ pub(crate) fn pk_gen(
                 break;
             }
 
-            if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
-                return -1;
+            #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+            {
+                if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
+                    return -1;
+                }
             }
 
             for k in (row + 1)..PK_NROWS {

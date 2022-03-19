@@ -62,5 +62,12 @@ pub(crate) fn bitrev(mut a: Gf) -> Gf {
     a = ((a & 0x3333) << 2) | ((a & 0xCCCC) >> 2);
     a = ((a & 0x5555) << 1) | ((a & 0xAAAA) >> 1);
 
-    a >> 3
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    {
+        a >> 4
+    }
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+    {
+        a >> 3
+    }
 }

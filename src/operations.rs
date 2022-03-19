@@ -12,11 +12,36 @@ use crate::{
     util::{load4, load_gf, store8, store_gf},
 };
 
+/// This function determines (in a constant-time manner) whether the padding bits of `pk` are all zero.
+/// `pk` must have a length of `PK_NROWS * PK_ROW_BYTES` bytes.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+fn check_pk_padding(pk: &[u8]) -> u8 {
+	let mut b = 0u8;
+	for i in 0..PK_NROWS {
+		b |= pk[i * PK_ROW_BYTES + PK_ROW_BYTES - 1];
+    }
+
+	b >>= PK_NCOLS % 8;
+	b -= 1;
+	b >>= 7;
+	b - 1
+}
+
+/// This function determines (in a constant-time manner) whether the padding bits of `c` are all zero.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+fn check_c_padding(c: &[u8; SYND_BYTES]) -> u8 {
+	let mut b = c[ SYND_BYTES-1 ] >> (PK_NROWS % 8);
+	b -= 1;
+	b >>= 7;
+	b - 1
+}
+
 /// KEM Encapsulation.
 ///
 /// Given a public key `pk`, sample a shared key.
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
+#[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
 pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -43,11 +68,51 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RN
     Ok(())
 }
 
+/// KEM Encapsulation.
+///
+/// Given a public key `pk`, sample a shared key.
+/// This shared key is returned through parameter `key` whereas
+/// the ciphertext (meant to be used for decapsulation) is returned as `c`.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RNGState) -> Result<u8, Box<dyn error::Error>> {
+    let mut two_e = [0u8; 1 + SYS_N / 8];
+    two_e[0] = 2;
+
+    let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    one_ec[0] = 1;
+
+    let padding_ok = check_pk_padding(pk);
+
+    encrypt(c, pk, &mut two_e[1..], rng)?;
+
+    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
+
+    one_ec[1..].copy_from_slice(&two_e[1..(SYS_N/8) + 1]);
+    one_ec[1 + (SYS_N / 8)..].copy_from_slice(&c[0..SYND_BYTES + 32]);
+
+    shake256(&mut key[0..32], &one_ec)?;
+
+	// clear outputs (set to all 0's) if padding bits are not all zero
+
+    let mask = padding_ok ^ 0xFF;
+
+    for i in 0..SYND_BYTES + 32 {
+        c[i] &= mask;
+    }
+
+    for i in 0..32 {
+        key[i] &= mask;
+    }
+
+    Ok(padding_ok)
+}
+
 /// KEM Decapsulation.
 ///
 /// Given a secret key `sk` and a ciphertext `c`,
 /// determine the shared text `key` negotiated by both parties.
-pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<(), Box<dyn error::Error>> {
+#[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
+pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<u8, Box<dyn error::Error>> {
     let mut conf = [0u8; 32];
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -83,7 +148,61 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<(), Box<dyn
         index += 1;
     }
 
-    shake256(key, &preimage)
+    shake256(key, &preimage)?;
+
+    Ok(0)
+}
+
+/// KEM Decapsulation.
+///
+/// Given a secret key `sk` and a ciphertext `c`,
+/// determine the shared text `key` negotiated by both parties.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<u8, Box<dyn error::Error>> {
+    let mut conf = [0u8; 32];
+    let mut two_e = [0u8; 1 + SYS_N / 8];
+    two_e[0] = 2;
+
+    let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+
+    let padding_ok = check_c_padding(<&[u8; SYND_BYTES]>::try_from(c)?);
+
+    let ret_decrypt: u8 = decrypt(&mut two_e[1..], &sk[40..], c);
+
+    shake256(&mut conf[0..32], &two_e)?;
+
+    let mut ret_confirm: u8 = 0;
+    for i in 0..32 {
+        ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
+    }
+
+    let mut m = (ret_decrypt | ret_confirm) as u16;
+    m = m.wrapping_sub(1);
+    m >>= 8;
+
+    preimage[0] = (m & 1) as u8;
+
+    let s = &sk[40 + IRR_BYTES + COND_BYTES..];
+
+    for i in 0..SYS_N / 8 {
+        preimage[i + 1] = (!m as u8 & s[i]) | (m as u8 & two_e[i + 1]);
+    }
+
+    for i in 0..SYND_BYTES + 32 {
+        preimage[i + 1 + (SYS_N / 8)] = c[i];
+    }
+
+    shake256(&mut key[0..32], &preimage);
+
+	// clear outputs (set to all 1's) if padding bits are not all zero
+
+	let mask = padding_ok;
+
+	for i in 0..32 {
+		key[i] |= mask;
+    }
+
+	Ok(padding_ok)
 }
 
 /// KEM Keypair generation.
@@ -140,8 +259,17 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
         }
 
         // TODO this operation runs forever in the KAT KEM setting
-        if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
-            continue;
+        #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+        {
+            if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
+                continue;
+            }
+        }
+        #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
+        {
+            if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi) != 0 {
+                continue;
+            }
         }
 
         let count = (((2 * GFBITS - 1) * (1 << GFBITS) / 2) + 7) / 8;
@@ -157,6 +285,11 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
         sk[S_BASE..(S_BASE + SYS_N / 8)].clone_from_slice(&r[0..SYS_N / 8]);
 
         // storing positions of the 32 pivots
+
+        #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
+        {
+            pivots = 0xFFFFFFFF;
+        }
 
         store8(&mut sk[32..40], pivots);
 

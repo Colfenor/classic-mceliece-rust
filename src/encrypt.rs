@@ -71,6 +71,52 @@ fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Err
 /// Syndrome computation.
 ///
 /// Computes syndrome `s` based on public key `pk` and error vector `e`.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
+    let mut row = [0u8; SYS_N / 8];
+
+    let mut pk_segment = pk;
+    let tail = PK_NROWS % 8;
+
+    for i in 0..SYND_BYTES {
+        s[i] = 0;
+    }
+
+    for i in 0..PK_NROWS {
+        for j in 0..SYS_N / 8 {
+            row[j] = 0;
+        }
+
+        for j in 0..PK_ROW_BYTES {
+            row[SYS_N / 8 - PK_ROW_BYTES + j] = pk_segment[j];
+        }
+
+        for j in ((SYS_N/8 - PK_ROW_BYTES)..SYS_N/8).rev() {
+			row[j] = (row[j] << tail) | (row[j-1] >> (8-tail));
+        }
+
+        row[i / 8] |= 1 << (i % 8);
+
+        let mut b = 0u8;
+        for j in 0..SYS_N / 8 {
+            b ^= row[j] & e[j];
+        }
+
+        b ^= b >> 4;
+        b ^= b >> 2;
+        b ^= b >> 1;
+        b &= 1;
+
+        s[i / 8] |= b << (i % 8);
+
+        pk_segment = &pk_segment[PK_ROW_BYTES..];
+    }
+}
+
+/// Syndrome computation.
+///
+/// Computes syndrome `s` based on public key `pk` and error vector `e`.
+#[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
 fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
     let mut row = [0u8; SYS_N / 8];
 
