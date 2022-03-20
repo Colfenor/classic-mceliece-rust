@@ -212,7 +212,7 @@ fn apply_benes(r: &mut [u8; (1 << GFBITS) / 8], bits: &[u8], rev: usize) {
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(&bits[(2 * GFBITS - 2 - 6 - 6 - 5) * 256 - (5-low) * 265 +  i*4..]) as u64;
+                cond[i] = util::load4(&bits[(2 * GFBITS - 2 - 6 - 6 - 5) * 256 - (5-low) * 256 +  i*4..]) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
