@@ -1,5 +1,8 @@
 use std::error;
 
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+use std::convert::TryFrom;
+
 use crate::controlbits::controlbitsfrompermutation;
 use crate::randombytes::RNGState;
 use crate::{
@@ -11,6 +14,8 @@ use crate::{
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+use crate::params::{PK_NCOLS, PK_NROWS, PK_ROW_BYTES};
 
 /// This function determines (in a constant-time manner) whether the padding bits of `pk` are all zero.
 /// `pk` must have a length of `PK_NROWS * PK_ROW_BYTES` bytes.
@@ -221,7 +226,8 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
     const PERM: usize = SYS_N / 8;
 
     let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
-    let mut pivots: u64 = 0;
+
+    let mut pivots = 0u64;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];

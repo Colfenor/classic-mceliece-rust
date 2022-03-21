@@ -3,10 +3,13 @@ use crate::{
     params::{GFBITS, GFMASK, PK_NROWS, PK_ROW_BYTES, SYS_N, SYS_T},
     root::root,
     uint64_sort::uint64_sort,
-    util::{bitrev, load8, load_gf, store8},
+    util::{bitrev, load_gf},
 };
+#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+use crate::util::{load8, store8};
 
 /// Return number of trailing zeros of the non-zero input `input`
+#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
 fn ctz(input: u64) -> i32 {
     let (mut m, mut r) = (0i32, 0i32);
 
@@ -20,7 +23,8 @@ fn ctz(input: u64) -> i32 {
 }
 
 /// Takes two 16-bit integers and determines whether they are equal (u64::MAX) or different (0)
-fn same_mask(x: u16, y: u16) -> u64 {
+
+#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]fn same_mask(x: u16, y: u16) -> u64 {
     let mut mask = (x ^ y) as u64;
     mask = mask.wrapping_sub(1);
     mask >>= 63;
@@ -30,6 +34,7 @@ fn same_mask(x: u16, y: u16) -> u64 {
 }
 
 /// Move columns in matrix `mat`
+#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
 fn mov_columns(
     mat: &mut [[u8; SYS_N / 8]; PK_NROWS],
     pi: &mut [i16; 1 << GFBITS],
