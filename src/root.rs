@@ -21,7 +21,7 @@ pub(crate) fn eval(f: &[Gf; SYS_T + 1], a: Gf) -> Gf {
 
 /// Given polynomial `f` and a list of field elements `l`,
 /// return the roots `out` satisfying `[ f(a) for a in L ]`
-pub(crate) fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
+pub(crate) fn root(out: &mut [Gf; SYS_N], f: &[Gf; SYS_T + 1], l: &[Gf; SYS_N]) {
     for i in 0..SYS_N {
         out[i] = eval(f, l[i]);
     }
@@ -29,12 +29,12 @@ pub(crate) fn root(out: &mut [Gf; SYS_N], f: &mut [Gf; SYS_T + 1], l: &[Gf; SYS_
 
 #[cfg(test)]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    use crate::api::CRYPTO_PRIMITIVE;
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_root() {
+    fn test_root_simple() {
         let mut g = [1u16; SYS_T + 1];
         let mut l = [0u16; SYS_N];
         let mut inv = [0u16; SYS_N];
@@ -44,9 +44,32 @@ mod tests {
             inv[i] = 0;
         }
 
-        root(&mut inv, &mut g, &mut l);
+        root(&mut inv, &g, &l);
 
         let expected = crate::TestData::new().u16vec("mceliece8192128f_root_inv_expected");
         assert_eq!(expected, inv);
+    }
+
+    #[test]
+    fn test_root() {
+        let mut out = [0u16; SYS_N];
+        let mut f = [0u16; SYS_T + 1];
+        let mut l = [0u16; SYS_N];
+
+        for i in 0..SYS_N {
+            out[i] = (i as Gf).wrapping_add(3);
+            l[i] = (i as Gf).wrapping_add(7);
+        }
+        for i in 0..(SYS_T + 1) {
+            f[i] = (i as Gf).wrapping_mul(3);
+        }
+
+        root(&mut out, &f, &l);
+
+        let mut name = format!("{}_root_out_expected", CRYPTO_PRIMITIVE);
+        // NOTE the f-variants equals the non-f variants. We only stored the non-f variants
+        name = name.replace("f_root_out", "_root_out");
+        let expected = crate::TestData::new().u16vec(&name);
+        assert_eq!(expected, out);
     }
 }

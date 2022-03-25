@@ -1,6 +1,5 @@
 use std::error;
 
-#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 use std::convert::TryFrom;
 
 use crate::controlbits::controlbitsfrompermutation;
@@ -267,13 +266,13 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
         // TODO this operation runs forever in the KAT KEM setting
         #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
         {
-            if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
+            if pk_gen(pk, <&mut [u8; SYS_T]>::try_from(&mut sk[(32 + 8)..(SYS_T + 40)])?, &mut perm, &mut pi, &mut pivots) != 0 {
                 continue;
             }
         }
         #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
         {
-            if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi) != 0 {
+            if pk_gen(pk, <&mut [u8; SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + SYS_T)])?, &mut perm, &mut pi) != 0 {
                 continue;
             }
         }

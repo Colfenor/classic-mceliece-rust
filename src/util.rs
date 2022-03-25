@@ -71,3 +71,27 @@ pub(crate) fn bitrev(mut a: Gf) -> Gf {
         a >> 3
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_gf() {
+        assert_eq!(load_gf(&[0xAB, 0x42]), 0x02AB);
+    }
+
+    #[test]
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+    fn test_bitrev() {
+        assert_eq!(bitrev(0b1011_0111_0111_1011), 0b0000_1101_1110_1110);
+        assert_eq!(bitrev(0b0110_1010_0101_1011), 0b0000_1101_1010_0101);
+    }
+
+    #[test]
+    #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+    fn test_bitrev() {
+        assert_eq!(bitrev(0b1011_0111_0111_1011), 0b0001_1011_1101_1101);
+        assert_eq!(bitrev(0b0110_1010_0101_1011), 0b0001_1011_0100_1010);
+    }
+}
