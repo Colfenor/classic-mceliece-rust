@@ -12,7 +12,7 @@ use classic_mceliece_rust::{
 use classic_mceliece_rust::{crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec};
 use classic_mceliece_rust::{AesState, RNGState};
 
-const KATNUM: usize = 2;
+const KATNUM: usize = 100;
 
 #[derive(Debug)]
 struct InvalidFileFormat(String, usize);
