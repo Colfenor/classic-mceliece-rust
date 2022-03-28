@@ -21,20 +21,33 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// If generation of pseudo-random numbers fails, an error is returned.
 fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
-    let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
 
     loop {
+        let mut bytes = [0u8; SYS_T * 4];
         rng.randombytes(&mut bytes)?;
 
-        let mut i = 0;
-        for chunk in bytes.chunks_mut((i + 1) * 2) {
-            ind[i] = load_gf(chunk);
-            i += 1;
-            if i == SYS_T {
-                break;
+        let mut nums = [0u16; SYS_T * 2];
+        for (i, chunk) in bytes.chunks(2).enumerate() {
+            nums[i] = load_gf(chunk);
+        }
+
+        // moving and counting indices in the correct range
+
+        let mut count = 0;
+        for i in 0..(SYS_T * 2) {
+            if count >= SYS_T { break }
+            if nums[i] < SYS_N as u16 {
+                ind[count] = nums[i];
+                count += 1;
             }
         }
+
+        if count < SYS_T {
+            continue;
+        }
+
+        // check for repetition
 
         let mut eq = 0;
 
