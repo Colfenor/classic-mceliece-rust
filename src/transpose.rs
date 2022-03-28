@@ -36,6 +36,7 @@ pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
 /// input argument == output argument. Because we cannot create a
 /// shared and mutable reference simultaneously, we can only generate
 /// one argument.
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
     let masks = [
         [0x5555555555555555u64, 0xAAAAAAAAAAAAAAAAu64],
