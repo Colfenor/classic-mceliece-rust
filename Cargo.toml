@@ -13,7 +13,7 @@ hex = "0.4.3"
 block-modes = "0.8.1"
 
 [features]
-default = ['mceliece8192128f']
+default = []
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []
