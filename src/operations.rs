@@ -26,18 +26,18 @@ fn check_pk_padding(pk: &[u8]) -> u8 {
     }
 
 	b >>= PK_NCOLS % 8;
-	b -= 1;
+	b = b.wrapping_sub(1);
 	b >>= 7;
-	b - 1
+	b.wrapping_sub(1)
 }
 
 /// This function determines (in a constant-time manner) whether the padding bits of `c` are all zero.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 fn check_c_padding(c: &[u8; SYND_BYTES]) -> u8 {
 	let mut b = c[ SYND_BYTES-1 ] >> (PK_NROWS % 8);
-	b -= 1;
+	b = b.wrapping_sub(1);
 	b >>= 7;
-	b - 1
+	b.wrapping_sub(1)
 }
 
 /// KEM Encapsulation.
@@ -84,8 +84,8 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RN
 
     shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
 
-    one_ec[1..].copy_from_slice(&two_e[1..(SYS_N/8) + 1]);
-    one_ec[1 + (SYS_N / 8)..].copy_from_slice(&c[0..SYND_BYTES + 32]);
+    one_ec[1..(SYS_N/8) + 1].copy_from_slice(&two_e[1..(SYS_N/8) + 1]);
+    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
     shake256(&mut key[0..32], &one_ec)?;
 
@@ -189,7 +189,7 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<u8, Box<dyn
         preimage[i + 1 + (SYS_N / 8)] = c[i];
     }
 
-    shake256(&mut key[0..32], &preimage);
+    shake256(&mut key[0..32], &preimage)?;
 
 	// clear outputs (set to all 1's) if padding bits are not all zero
 
@@ -222,7 +222,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
     let mut pivots = 0u64;
     #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
-    let mut pivots: u64;
+    let pivots: u64;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];
@@ -305,6 +305,7 @@ mod tests {
     use super::*;
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::randombytes::AesState;
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use std::convert::TryFrom;
 
     #[test]

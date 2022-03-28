@@ -9,6 +9,7 @@ use crate::params::GFBITS;
 use crate::params::SYS_N;
 use crate::transpose;
 use crate::util;
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 use std::convert::TryFrom;
 
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
