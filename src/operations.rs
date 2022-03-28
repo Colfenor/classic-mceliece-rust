@@ -55,19 +55,12 @@ pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &[u8], rng: &mut impl RN
 
     encrypt(c, pk, &mut two_e[1..], rng)?;
 
-    shake256(&mut c[SYND_BYTES..], &two_e)?;
+    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e)?;
 
-    for i in 1..=SYS_N / 8 {
-        one_ec[i] = two_e[i];
-    }
+    one_ec[1..1 + SYS_N/8].copy_from_slice(&two_e[1..1 + SYS_N/8]);
+    one_ec[1 + SYS_N/8..1 + SYS_N/8 + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    let mut j = 0;
-    for i in (1 + SYS_N / 8)..(1 + SYS_N / 8 + SYND_BYTES + 32) {
-        one_ec[i] = c[j];
-        j += 1;
-    }
-
-    shake256(key, &one_ec)?;
+    shake256(&mut key[0..32], &one_ec)?;
 
     Ok(())
 }
@@ -226,7 +219,10 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
 
     let mut r = [0u8; SEED + 32];
 
+    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
     let mut pivots = 0u64;
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
+    let mut pivots: u64;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];
