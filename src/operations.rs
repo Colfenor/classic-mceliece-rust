@@ -162,7 +162,7 @@ pub fn crypto_kem_dec(key: &mut [u8], c: &[u8], sk: &[u8]) -> Result<u8, Box<dyn
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
 
-    let padding_ok = check_c_padding(<&[u8; SYND_BYTES]>::try_from(c)?);
+    let padding_ok = check_c_padding(<&[u8; SYND_BYTES]>::try_from(&c[0..SYND_BYTES])?);
 
     let ret_decrypt: u8 = decrypt(&mut two_e[1..], &sk[40..], c);
 
