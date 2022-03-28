@@ -12,6 +12,8 @@ use classic_mceliece_rust::{
 use classic_mceliece_rust::{crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec};
 use classic_mceliece_rust::{AesState, RNGState};
 
+const KATNUM: usize = 2;
+
 #[derive(Debug)]
 struct InvalidFileFormat(String, usize);
 
@@ -36,11 +38,13 @@ struct Testcase {
 }
 
 fn is_zero(x: &[u8]) -> bool {
-    if x.is_empty() {
-        true
-    } else {
-        x[0] == 0 && is_zero(&x[1..])
+    for b in x.iter() {
+        if *b != 0 {
+            return false;
+        }
     }
+
+    true
 }
 
 impl Testcase {
@@ -57,7 +61,7 @@ impl Testcase {
 
     fn with_seed(count: usize, seed: &[u8; 48]) -> Testcase {
         Testcase {
-            count: count,
+            count,
             seed: *seed,
             pk: [0u8; CRYPTO_PUBLICKEYBYTES],
             sk: [0u8; CRYPTO_SECRETKEYBYTES],
@@ -71,16 +75,16 @@ impl Testcase {
             if is_zero(&bytes) {
                 "".to_string()
             } else {
-                hex::encode_upper(bytes)
+                format!(" {}", hex::encode_upper(bytes))
             }
         };
 
         writeln!(fd, "count = {}", self.count)?;
         writeln!(fd, "seed = {}", hex::encode_upper(self.seed))?;
-        writeln!(fd, "pk = {}", repr_bytes(&self.pk).as_str())?;
-        writeln!(fd, "sk = {}", repr_bytes(&self.sk).as_str())?;
-        writeln!(fd, "ct = {}", repr_bytes(&self.ct).as_str())?;
-        writeln!(fd, "ss = {}\n", repr_bytes(&self.ss).as_str())?;
+        writeln!(fd, "pk ={}", repr_bytes(&self.pk).as_str())?;
+        writeln!(fd, "sk ={}", repr_bytes(&self.sk).as_str())?;
+        writeln!(fd, "ct ={}", repr_bytes(&self.ct).as_str())?;
+        writeln!(fd, "ss ={}\n", repr_bytes(&self.ss).as_str())?;
 
         Ok(())
     }
@@ -145,16 +149,16 @@ impl fmt::Display for Testcase {
             if is_zero(&bytes) {
                 "".to_string()
             } else {
-                hex::encode_upper(bytes)
+                format!(" {}", hex::encode_upper(bytes))
             }
         };
 
         writeln!(f, "count = {}", self.count)?;
         writeln!(f, "seed = {}", hex::encode_upper(self.seed))?;
-        writeln!(f, "pk = {}", repr_bytes(&self.pk).as_str())?;
-        writeln!(f, "sk = {}", repr_bytes(&self.sk).as_str())?;
-        writeln!(f, "ct = {}", repr_bytes(&self.ct).as_str())?;
-        writeln!(f, "ss = {}\n", repr_bytes(&self.ss).as_str())
+        writeln!(f, "pk ={}", repr_bytes(&self.pk).as_str())?;
+        writeln!(f, "sk ={}", repr_bytes(&self.sk).as_str())?;
+        writeln!(f, "ct ={}", repr_bytes(&self.ct).as_str())?;
+        writeln!(f, "ss ={}\n", repr_bytes(&self.ss).as_str())
     }
 }
 
@@ -168,8 +172,8 @@ fn create_request_file(filepath: &str, rng: &mut impl RNGState) -> R {
     }
     rng.randombytes_init(entropy_input);
 
-    // create 100 testcase seeds
-    for t in 0..100 {
+    // create KATNUM testcase seeds
+    for t in 0..KATNUM {
         let mut tc = Testcase::new();
         tc.count = t;
         rng.randombytes(&mut tc.seed)?;
@@ -182,7 +186,7 @@ fn create_request_file(filepath: &str, rng: &mut impl RNGState) -> R {
 
 fn create_response_file(filepath: &str, rng: &mut impl RNGState) -> R {
     let mut fd = fs::File::create(filepath)?;
-    writeln!(&mut fd, "# {}\n", CRYPTO_PRIMITIVE)?;
+    writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
 
     // initialize RNG
     let mut entropy_input = [0u8; 48];
@@ -191,8 +195,8 @@ fn create_response_file(filepath: &str, rng: &mut impl RNGState) -> R {
     }
     rng.randombytes_init(entropy_input);
 
-    // create 100 testcase seeds
-    for t in 0..100 {
+    // create KATNUM testcase seeds
+    for t in 0..KATNUM {
         let mut tc = Testcase::new();
         tc.count = t;
         rng.randombytes(&mut tc.seed)?;
@@ -222,8 +226,8 @@ fn verify(filepath: &str) -> R {
     let mut expected = Testcase::new();
     expected.read_from_file(&mut reader)?;
 
-    // create 100 testcase seeds
-    for t in 0..100 {
+    // create KATNUM testcase seeds
+    for t in 0..KATNUM {
         let mut expected = Testcase::new();
         expected.read_from_file(&mut reader)?;
 

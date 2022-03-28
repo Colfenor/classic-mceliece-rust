@@ -117,10 +117,8 @@ mod tests {
 
         uint64_sort(&mut array, 64);
 
-        for i in 0..array.len() {
-            if i >= 1 {
-                assert!(array[i] > array[i - 1]);
-            }
+        for i in 1..array.len() {
+            assert!(array[i] >= array[i - 1]);
         }
     }
 }

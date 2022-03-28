@@ -35,7 +35,7 @@ mod tests {
     #[test]
     #[cfg(feature = "mceliece8192128f")]
     fn test_root_simple() {
-        let mut g = [1u16; SYS_T + 1];
+        let g = [1u16; SYS_T + 1];
         let mut l = [0u16; SYS_N];
         let mut inv = [0u16; SYS_N];
 

@@ -224,7 +224,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
     const IRR_POLYS: usize = SYS_N / 8 + (1 << GFBITS) * 4;
     const PERM: usize = SYS_N / 8;
 
-    let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
+    let mut r = [0u8; SEED + 32];
 
     let mut pivots = 0u64;
 
@@ -240,8 +240,8 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
         // expanding and updating the seed
         shake256(&mut r[..], &seed[0..33])?;
 
-        (&mut sk[..32]).clone_from_slice(&seed[1..]);
-        (&mut seed[1..]).clone_from_slice(&r[r.len() - 32..]);
+        sk[..32].clone_from_slice(&seed[1..]);
+        seed[1..].clone_from_slice(&r[r.len() - 32..]);
 
         // generating irreducible polynomial
 
@@ -263,16 +263,15 @@ pub fn crypto_kem_keypair(pk: &mut [u8], sk: &mut [u8], rng: &mut impl RNGState)
             perm[i] = load4(chunk);
         }
 
-        // TODO this operation runs forever in the KAT KEM setting
         #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
         {
-            if pk_gen(pk, <&mut [u8; SYS_T]>::try_from(&mut sk[(32 + 8)..(SYS_T + 40)])?, &mut perm, &mut pi, &mut pivots) != 0 {
+            if pk_gen(pk, <&mut [u8; 2 * SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + 2 * SYS_T)])?, &mut perm, &mut pi, &mut pivots) != 0 {
                 continue;
             }
         }
         #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
         {
-            if pk_gen(pk, <&mut [u8; SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + SYS_T)])?, &mut perm, &mut pi) != 0 {
+            if pk_gen(pk, <&mut [u8; 2 * SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + 2 * SYS_T)])?, &mut perm, &mut pi) != 0 {
                 continue;
             }
         }

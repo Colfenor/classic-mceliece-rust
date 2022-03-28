@@ -32,3 +32,6 @@ mceliece8192128f = []
 [dev-dependencies]
 criterion = "0.3"
 criterion-cycles-per-byte = "0.1.2"
+
+[profile.dev]
+opt-level = 1  # reduces runtime for KATNUM=2 from 281s to 11s

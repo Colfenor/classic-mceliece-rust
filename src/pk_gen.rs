@@ -161,10 +161,10 @@ fn mov_columns(
 /// secret key `sk` and permutation `perm` provided.
 /// `pk` has `max(1 << GFBITS, SYS_N)` elements which is
 /// 4096 for mceliece348864 and 8192 for mceliece8192128.
-/// `sk` has `SYS_T` elements and perm `1 << GFBITS`.
+/// `sk` has `2 * SYS_T` elements and perm `1 << GFBITS`.
 pub(crate) fn pk_gen(
     pk: &mut [u8],
-    sk: &[u8; SYS_T],
+    sk: &[u8; 2 * SYS_T],
     perm: &[u32; 1 << GFBITS],
     pi: &mut [i16; 1 << GFBITS],
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
@@ -197,7 +197,7 @@ pub(crate) fn pk_gen(
     }
 
     for i in 0..(1 << GFBITS) {
-        pi[i] = (buf[i] & GFMASK as u64) as i16;
+        pi[i] = buf[i] as i16 & GFMASK as i16;
     }
 
     for i in 0..SYS_N {
@@ -240,6 +240,7 @@ pub(crate) fn pk_gen(
     // gaussian elimination
     for i in 0..(PK_NROWS + 7) / 8 {
         for j in 0..8 {
+            // TODO this loop is much slower than in C
             let row = i * 8 + j;
 
             if row >= PK_NROWS {
@@ -248,8 +249,10 @@ pub(crate) fn pk_gen(
 
             #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
             {
-                if row == PK_NROWS - 32 && mov_columns(&mut mat, pi, pivots) != 0 {
-                    return -1;
+                if row == PK_NROWS - 32 {
+                    if mov_columns(&mut mat, pi, pivots) != 0 {
+                        return -1;
+                    }
                 }
             }
 
@@ -295,8 +298,9 @@ pub(crate) fn pk_gen(
 mod tests {
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
     use super::*;
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
+    use std::convert::TryFrom;
 
     #[test]
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
@@ -320,16 +324,60 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "mceliece8192128f", test))]
-    fn test_pk_gen() {
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_mov_columns() {
+        const COLS: usize = SYS_N / 8;
+
+        // input data
+        let mut mat = vec![[0u8; COLS]; PK_NROWS];
+        let mat_data = crate::TestData::new().u8vec("mceliece8192128f_mat_before");
+        assert_eq!(mat_data.len(), PK_NROWS * COLS);
+
+        for row in 0..PK_NROWS {
+            for col in 0..COLS {
+                mat[row][col] = mat_data[row * COLS + col];
+            }
+        }
+
+        let mut pi = crate::TestData::new().i16vec("mceliece8192128f_pi_before");
+        let mut pivots = 0u64;
+
+        // generated actual result
+        mov_columns(<&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat).unwrap(), <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice()).unwrap(), &mut pivots);
+
+        // expected data
+        let mut mat_expected = Box::new([[0u8; COLS]; PK_NROWS]);
+        let mat_expected_data = crate::TestData::new().u8vec("mceliece8192128f_mat_expected");
+
+        for row in 0..PK_NROWS {
+            for col in 0..COLS {
+                mat_expected[row][col] = mat_expected_data[row * COLS + col];
+            }
+        }
+
+        let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pi_expected");
+        let pivots_expected = 8053063679u64;
+
+        // comparison
+        assert_eq!(*mat.into_boxed_slice(), *mat_expected);
+        assert_eq!(pi, pi_expected);
+        assert_eq!(pivots, pivots_expected);
+    }
+
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_pk_gen_1() {
         let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_input");
         let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
 
         let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
-        let mut sk = [0u8; SYS_T];
+        let mut sk = [0u8; 2 * SYS_T];
         let mut perm = [0u32; 1 << GFBITS];
-        let mut pi = [0i16; if 1 << GFBITS > SYS_N { 1 << GFBITS } else { SYS_N }];
+        let mut pi = [0i16; if (1 << GFBITS) > SYS_N { 1 << GFBITS } else { SYS_N }];
         let mut pivots = 0u64;
+
+        assert_eq!(sk_data.len(), sk.len());
+        assert_eq!(perm_data.len(), perm.len());
 
         sk.copy_from_slice(sk_data.as_slice());
         perm.copy_from_slice(perm_data.as_slice());
@@ -345,6 +393,46 @@ mod tests {
         assert_eq!(sk, sk_expected.as_slice());
         assert_eq!(perm, perm_expected.as_slice());
         assert_eq!(pi, pi_expected.as_slice());
-        assert_eq!(pivots, 0x17FFFFFFF);
+        assert_eq!(pivots, 0x1DFFFFFFF);
+    }
+
+
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_pk_gen_2() {
+        // NOTE expected pk_data of previous testcase becomes input for this one
+        let pk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
+        let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_input");
+        let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_input");
+        let pi_data = crate::TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_input");
+
+        let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk = [0u8; 2 * SYS_T];
+        let mut perm = [0u32; 1 << GFBITS];
+        let mut pi = [0i16; if (1 << GFBITS) > SYS_N { 1 << GFBITS } else { SYS_N }];
+        let mut pivots = 0x1DFFFFFFF_u64;
+
+        assert_eq!(pk_data.len(), pk.len());
+        assert_eq!(sk_data.len(), sk.len());
+        assert_eq!(perm_data.len(), perm.len());
+        assert_eq!(pi_data.len(), pi.len());
+
+        pk.copy_from_slice(pk_data.as_slice());
+        sk.copy_from_slice(sk_data.as_slice());
+        perm.copy_from_slice(perm_data.as_slice());
+        pi.copy_from_slice(pi_data.as_slice());
+
+        pk_gen(&mut pk, &mut sk, &mut perm, &mut pi, &mut pivots);
+
+        let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
+        let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");
+        let perm_expected = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_expected");
+        let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_expected");
+
+        assert_eq!(pivots, 0xffffffff);
+        assert_eq!(sk, sk_expected.as_slice());
+        assert_eq!(pi, pi_expected.as_slice());
+        assert_eq!(perm, perm_expected.as_slice());
+        assert_eq!(pk, pk_expected.as_slice());
     }
 }
