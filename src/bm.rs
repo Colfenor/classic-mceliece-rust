@@ -39,7 +39,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mne = mne.wrapping_sub(1);
 
         mle = n as u16;
-        mle = mle.wrapping_sub(2 * l);
+        mle = mle.wrapping_sub(l.wrapping_mul(2));
         mle >>= 15;
         mle = mle.wrapping_sub(1);
         mle &= mne;
@@ -78,7 +78,6 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
-    use std::convert::TryFrom;
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]

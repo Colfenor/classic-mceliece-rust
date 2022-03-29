@@ -85,5 +85,6 @@ pub const CRYPTO_PRIMITIVE: &str = "mceliece8192128";
 /// Name of the variant
 pub const CRYPTO_PRIMITIVE: &str = "mceliece8192128f";
 
+/// The number of bytes required to store the shared secret negotiated between both parties
 // this value is uniform
 pub const CRYPTO_BYTES: usize = 32;

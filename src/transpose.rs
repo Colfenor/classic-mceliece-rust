@@ -1,4 +1,5 @@
 /// Compute transposition of `input` and store it in `output`
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
     let masks: [[u64; 2]; 6] = [
         [0x5555555555555555, 0xAAAAAAAAAAAAAAAA],
@@ -74,8 +75,6 @@ mod tests {
 
     #[test]
     fn test_transpose() {
-        let mut test_output: [u64; 64] = [0; 64];
-
         let mut testcases: [TestMatrix; 2] = [
             TestMatrix {
                 input: [0u64; 64],
@@ -357,12 +356,19 @@ mod tests {
         };
 
         for i in 0..2 {
-            transpose(&mut test_output, testcases[i].input);
-            assert_eq!(test_output, testcases[i].output);
+            #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+            {
+                let mut test_output: [u64; 64] = [0; 64];
+                transpose(&mut test_output, testcases[i].input);
+                assert_eq!(test_output, testcases[i].output);
+            }
 
-            let mut data = testcases[i].input;
-            transpose_64x64_inplace(&mut data);
-            assert_eq!(data, testcases[i].output);
+            #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+            {
+                let mut data = testcases[i].input;
+                transpose_64x64_inplace(&mut data);
+                assert_eq!(data, testcases[i].output);
+            }
         }
     }
 }

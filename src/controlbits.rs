@@ -2,7 +2,7 @@
 //!
 //! [^ns]: David Nassimi, Sartaj Sahni "Parallel algorithms to set up the Benes permutationnetwork"
 //! [^cb]: Daniel J. Bernstein "Verified fast formulas for control bits for permutation networks"
-//!        https://cr.yp.to/papers/controlbits-20200923.pdf
+//!        <https://cr.yp.to/papers/controlbits-20200923.pdf>
 
 use crate::int32_sort::int32_sort;
 use crate::params::GFBITS;

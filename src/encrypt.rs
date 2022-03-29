@@ -1,6 +1,8 @@
 use std::error;
 
 use crate::{
+    api::CRYPTO_CIPHERTEXTBYTES,
+    macros::sub,
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
     randombytes::RNGState,
     util::load_gf,
@@ -19,7 +21,7 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Generation of `e`, an error vector of weight `t`.
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
-fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+fn gen_e(e: &mut [u8; SYS_N/8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut val = [0u8; SYS_T];
 
@@ -29,7 +31,7 @@ fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Err
 
         let mut nums = [0u16; SYS_T * 2];
         for (i, chunk) in bytes.chunks(2).enumerate() {
-            nums[i] = load_gf(chunk);
+            nums[i] = load_gf(sub!(chunk, 0, 2));
         }
 
         // moving and counting indices in the correct range
@@ -85,7 +87,7 @@ fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Err
 ///
 /// Computes syndrome `s` based on public key `pk` and error vector `e`.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
+fn syndrome(s: &mut [u8; (PK_NROWS + 7) / 8], pk: &[u8; PK_NROWS * PK_ROW_BYTES], e: &[u8; SYS_N / 8]) {
     let mut row = [0u8; SYS_N / 8];
 
     let mut pk_segment = pk;
@@ -130,10 +132,10 @@ fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
 ///
 /// Computes syndrome `s` based on public key `pk` and error vector `e`.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
+fn syndrome(s: &mut [u8; (PK_NROWS + 7) / 8], pk: &[u8; PK_NROWS * PK_ROW_BYTES], e: &[u8; SYS_N / 8]) {
     let mut row = [0u8; SYS_N / 8];
 
-    let mut pk_segment = pk;
+    let mut pk_segment = &pk[..];
 
     for i in 0..SYND_BYTES {
         s[i] = 0;
@@ -168,9 +170,9 @@ fn syndrome(s: &mut [u8], pk: &[u8], e: &[u8]) {
 
 /// Encryption routine.
 /// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
-pub(crate) fn encrypt(s: &mut [u8], pk: &[u8], e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn encrypt(s: &mut [u8; CRYPTO_CIPHERTEXTBYTES], pk: &[u8; PK_NROWS * PK_ROW_BYTES], e: &mut [u8; SYS_N/8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     gen_e(e, rng)?;
-    syndrome(s, pk, e);
+    syndrome(sub!(mut s, 0, (PK_NROWS + 7) / 8), pk, e);
     Ok(())
 }
 

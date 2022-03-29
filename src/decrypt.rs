@@ -2,17 +2,19 @@ use crate::{
     benes::support_gen,
     bm::bm,
     gf::gf_iszero,
+    macros::sub,
     params::{SYND_BYTES, SYS_N, SYS_T},
     root::root,
     synd::synd,
     util::load_gf,
 };
+use std::error;
 
 /// Niederreiter decryption with the Berlekamp decoder.
 ///
 /// It takes as input the secret key `sk` and a ciphertext `c`.
 /// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
-pub(crate) fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
+pub(crate) fn decrypt(e: &mut [u8; SYS_N/8], sk: &[u8; SYS_T*2], c: &[u8; SYND_BYTES]) -> Result<u8, Box<dyn error::Error>> {
     let mut t: u16;
     let mut w: i32 = 0;
 
@@ -34,18 +36,12 @@ pub(crate) fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
         r[i] = 0;
     }
 
-    let mut i = 0;
-    for chunk in sk.chunks(2) {
-        g[i] = load_gf(chunk);
-        i += 1;
-        if i == SYS_T + 1 {
-            break;
-        }
+    for (i, chunk) in sk.chunks(2).enumerate() {
+        g[i] = load_gf(sub!(chunk, 0, 2));
     }
     g[SYS_T] = 1;
-    sk = &sk[256..];
 
-    support_gen(&mut l, sk);
+    support_gen(&mut l, sub!(sk, 2 * SYS_T, 2 * SYS_T))?;
 
     synd(&mut s, &mut g, &mut l, &r);
 
@@ -76,21 +72,17 @@ pub(crate) fn decrypt(e: &mut [u8], mut sk: &[u8], c: &[u8]) -> u8 {
     check = check.wrapping_sub(1);
     check >>= 15;
 
-    (check ^ 1) as u8
+    Ok((check ^ 1) as u8)
 }
 
 #[cfg(test)]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::crypto_hash::shake256;
     use std::error;
 
     #[test]
-    #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
         let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
         assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
@@ -104,7 +96,7 @@ mod tests {
         let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
         actual_error_vector[0] = 2;
 
-        decrypt(&mut actual_error_vector[1..], &mut sk[40..], &mut c);
+        decrypt(sub!(mut actual_error_vector, 1, SYS_N/8), sub!(mut sk, 40, 2 * SYS_T), sub!(mut c, 0, SYND_BYTES))?;
 
         assert_eq!(actual_error_vector.to_vec(), expected_error_vector);
 

@@ -65,7 +65,6 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
-    use std::convert::TryFrom;
 
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]

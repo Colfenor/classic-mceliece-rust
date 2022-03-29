@@ -1,10 +1,13 @@
 use crate::{
     gf::{gf_inv, gf_mul},
+    macros::sub,
     params::{GFBITS, GFMASK, PK_NROWS, PK_ROW_BYTES, SYS_N, SYS_T},
     root::root,
     uint64_sort::uint64_sort,
     util::{bitrev, load_gf},
 };
+use std::error;
+
 #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
 use crate::util::{load8, store8};
 
@@ -163,13 +166,13 @@ fn mov_columns(
 /// 4096 for mceliece348864 and 8192 for mceliece8192128.
 /// `sk` has `2 * SYS_T` elements and perm `1 << GFBITS`.
 pub(crate) fn pk_gen(
-    pk: &mut [u8],
+    pk: &mut [u8; PK_NROWS * PK_ROW_BYTES],
     sk: &[u8; 2 * SYS_T],
     perm: &[u32; 1 << GFBITS],
     pi: &mut [i16; 1 << GFBITS],
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
     pivots: &mut u64,
-) -> i32 {
+) -> Result<i32, Box<dyn error::Error>> {
     let mut buf = [0u64; 1 << GFBITS];
     let mut mat = [[0u8; SYS_N / 8]; PK_NROWS];
 
@@ -179,7 +182,7 @@ pub(crate) fn pk_gen(
 
     g[SYS_T] = 1;
     for (i, chunk) in sk.chunks(2).take(SYS_T).enumerate() {
-        g[i] = load_gf(chunk);
+        g[i] = load_gf(sub!(chunk, 0, 2));
     }
 
     for i in 0..(1 << GFBITS) {
@@ -192,7 +195,7 @@ pub(crate) fn pk_gen(
 
     for i in 1..(1 << GFBITS) {
         if buf[i - 1] >> 31 == buf[i] >> 31 {
-            return -1;
+            return Ok(-1);
         }
     }
 
@@ -251,7 +254,7 @@ pub(crate) fn pk_gen(
             {
                 if row == PK_NROWS - 32 {
                     if mov_columns(&mut mat, pi, pivots) != 0 {
-                        return -1;
+                        return Ok(-1);
                     }
                 }
             }
@@ -268,7 +271,7 @@ pub(crate) fn pk_gen(
             }
 
             if ((mat[row][i] >> j) & 1) == 0 {
-                return -1;
+                return Ok(-1);
             }
 
             for k in 0..PK_NROWS {
@@ -291,7 +294,7 @@ pub(crate) fn pk_gen(
         }
     }
 
-    0
+    Ok(0)
 }
 
 #[cfg(test)]
@@ -300,7 +303,6 @@ mod tests {
     use super::*;
     #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
-    use std::convert::TryFrom;
 
     #[test]
     #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]

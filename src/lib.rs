@@ -1,3 +1,9 @@
+//! This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
+//! 
+//! An example is provided to illustrate the API. Be aware that this documentation is generated
+//! for one specific variant (among ten). Thus the array lengths will be different if you specify
+//! a different variant via feature flags.
+
 mod api;
 mod benes;
 mod bm;
@@ -25,6 +31,39 @@ pub use api::{
     CRYPTO_SECRETKEYBYTES, CRYPTO_CIPHERTEXTBYTES,
     CRYPTO_PRIMITIVE
 };
+
+mod macros {
+    /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.
+    /// The default type T is u8 and “mut A” instead of “A” returns a mutable reference.
+    macro_rules! sub {
+        ($var:ident, $offset:expr, $len:expr) => {
+            {
+                use std::convert::TryFrom;
+                <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])?
+            }
+        };
+        (mut $var:ident, $offset:expr, $len:expr) => {
+            {
+                use std::convert::TryFrom;
+                <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+            }
+        };
+        ($var:ident, $offset:expr, $len:expr, $t:ty) => {
+            {
+                use std::convert::TryFrom;
+                <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])?
+            }
+        };
+        (mut $var:ident, $offset:expr, $len:expr, $t:ty) => {
+            {
+                use std::convert::TryFrom;
+                <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+            }
+        };
+    }
+
+    pub(crate) use sub;
+}
 
 #[cfg(test)]
 macro_rules! impl_parser_per_type {
@@ -105,117 +144,6 @@ impl TestData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::io::Write;
-    use std::error::Error;
-    use std::fmt;
-
-    #[derive(Debug)]
-    struct CryptoError<'a>(&'a str, String);
-
-    impl<'a> fmt::Display for CryptoError<'a> {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{} failed: {}", self.0, self.1)
-        }
-    }
-
-    impl<'a> Error for CryptoError<'a> {}
-
-    #[test]
-    fn test_kat_tests() -> Result<(), Box<dyn Error>> {
-        const KATNUM: usize = 10;
-        let mut rng = AesState::new();
-
-        let mut entropy_input = [0u8; 48];
-        let mut seed = [[0u8; 48]; KATNUM];
-
-        for i in 0..48 {
-            entropy_input[i] = i as u8;
-        }
-        rng.randombytes_init(entropy_input);
-
-        for i in 0..KATNUM {
-            rng.randombytes(&mut seed[i])?;
-        }
-
-        let fp_req = &mut File::create("kat_kem.req")?;
-
-        for i in 0..KATNUM {
-            kat_test_request(fp_req, i, &seed[i])?;
-        }
-
-        let fp_rsp = &mut File::create("kat_kem.rsp")?;
-        writeln!(fp_rsp, "# kem/{}\n", api::CRYPTO_PRIMITIVE)?;
-
-        for i in 0..KATNUM {
-            kat_test_response(fp_rsp, i, seed[i])?;
-        }
-
-        Ok(())
-    }
-
-    fn kat_test_request(fp_req: &mut File, i: usize, seed: &[u8; 48]) -> Result<(), Box<dyn Error>> {
-        writeln!(fp_req, "count = {}", i)?;
-        writeln!(fp_req, "seed = {}", repr_binary_str(seed))?;
-        writeln!(fp_req, "pk =")?;
-        writeln!(fp_req, "sk =")?;
-        writeln!(fp_req, "ct =")?;
-        writeln!(fp_req, "ss =\n")?;
-        Ok(())
-    }
-
-    fn kat_test_response(fp_rsp: &mut File, i: usize, seed: [u8; 48]) -> Result<(), Box<dyn Error>> {
-        let mut ct = [0u8; api::CRYPTO_CIPHERTEXTBYTES];
-        let mut ss = [0u8; api::CRYPTO_BYTES];
-        let mut ss1 = [0u8; api::CRYPTO_BYTES];
-        let mut pk = vec![0u8; api::CRYPTO_PUBLICKEYBYTES];
-        let mut sk = vec![0u8; api::CRYPTO_SECRETKEYBYTES];
-        let mut rng = AesState::new();
-
-        rng.randombytes_init(seed);
-
-        writeln!(fp_rsp, "count = {}", i)?;
-        writeln!(fp_rsp, "seed = {}", repr_binary_str(&seed))?;
-
-        if let Err(ret_kp) = operations::crypto_kem_keypair(&mut pk, &mut sk, &mut rng) {
-            return Err(Box::new(CryptoError("crypto_kem_keypair", ret_kp.to_string())));
-        }
-
-        writeln!(fp_rsp, "pk = {}", repr_binary_str(&pk))?;
-        writeln!(fp_rsp, "sk = {}", repr_binary_str(&sk))?;
-
-        if let Err(ret_enc) = operations::crypto_kem_enc(&mut ct, &mut ss, &mut pk, &mut rng) {
-            return Err(Box::new(CryptoError("crypto_kem_enc", ret_enc.to_string())));
-        }
-
-        writeln!(fp_rsp, "ct = {}", repr_binary_str(&ct))?;
-        writeln!(fp_rsp, "ss = {}", repr_binary_str(&ss))?;
-        writeln!(fp_rsp, "")?;
-
-        if let Err(ret_dec) = operations::crypto_kem_dec(&mut ss1, &mut ct, &mut sk) {
-            return Err(Box::new(CryptoError("crypto_kem_dec", ret_dec.to_string())));
-        }
-
-        if ss != ss1 {
-            return Err(Box::new(CryptoError("crypto_kem_dec", "shared keys of both parties do not match".to_string())));
-        }
-
-        Ok(())
-    }
-
-    fn repr_binary_str(a: &[u8]) -> String {
-        let mut s = String::new();
-
-        for v in a.iter() {
-            s.push_str(&format!("{:02X}", v));
-        }
-
-        if a.is_empty() {
-            s.push_str("00");
-        }
-
-        s
-    }
 
     #[test]
     fn testdata_sanity_check() {
