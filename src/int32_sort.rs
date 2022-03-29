@@ -14,22 +14,22 @@ const fn int32_minmax(mut a: i32, mut b: i32) -> (i32, i32) {
 
 /// Sort a sequence of integers using a sorting network to achieve constant time.
 /// To our understanding, this implements [djbsort](https://sorting.cr.yp.to/).
-pub(crate) fn int32_sort(x: &mut [i32], n: i64) {
-    assert_eq!(x.len() as i64, n, "number of elements must match specified length");  // TODO transition away from C API
+pub(crate) fn int32_sort(x: &mut [i32]) {
+    let n = x.len();
     let (mut top, mut p, mut q, mut r, mut i): (usize, usize, usize, usize, usize);
 
     if n < 2 {
         return;
     }
     top = 1;
-    while top < n as usize - top {
+    while top < n - top {
         top += top;
     }
 
     p = top;
     while p > 0 {
         i = 0;
-        while i < n as usize - p {
+        while i < n - p {
             if (i & p) == 0 {
                 let (tmp_xi, tmp_xip) = int32_minmax(x[i], x[i + p]);
                 x[i] = tmp_xi;
@@ -40,7 +40,7 @@ pub(crate) fn int32_sort(x: &mut [i32], n: i64) {
         i = 0;
         q = top;
         while q > p {
-            while i < n as usize - q {
+            while i < n - q {
                 if (i & p) == 0 {
                     let mut a = x[i + p];
                     r = q;
@@ -124,7 +124,7 @@ mod tests {
             //println!("{}", array[i]);
         }
 
-        int32_sort(&mut array, 64);
+        int32_sort(&mut array[0..64]);
 
         for i in 0..array.len() {
             //println!("{}", array[i]);

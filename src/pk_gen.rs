@@ -191,7 +191,7 @@ pub(crate) fn pk_gen(
         buf[i] |= i as u64;
     }
 
-    uint64_sort(&mut buf, 1 << GFBITS);
+    uint64_sort(sub!(mut buf, 0, 1 << GFBITS, u64));
 
     for i in 1..(1 << GFBITS) {
         if buf[i - 1] >> 31 == buf[i] >> 31 {

@@ -21,18 +21,18 @@ const fn uint64_minmax(mut a: u64, mut b: u64) -> (u64, u64) {
 
 /// Sort a sequence of integers using a sorting network to achieve constant time.
 /// To our understanding, this implements [djbsort](https://sorting.cr.yp.to/).
-pub(crate) fn uint64_sort(x: &mut [u64], n: usize) {
-    if n < 2 {
+pub(crate) fn uint64_sort<const N: usize>(x: &mut [u64; N]) {
+    if N < 2 {
         return;
     }
     let mut top = 1;
-    while top < n - top {
+    while top < N - top {
         top += top;
     }
 
     let mut p = top;
     while p > 0 {
-        for i in 0..(n - p) {
+        for i in 0..(N - p) {
             if (i & p) == 0 {
                 let (tmp_xi, tmp_xip) = uint64_minmax(x[i], x[i + p]);
                 x[i] = tmp_xi;
@@ -41,7 +41,7 @@ pub(crate) fn uint64_sort(x: &mut [u64], n: usize) {
         }
         let mut q = top;
         while q > p {
-            for i in 0..(n - q) {
+            for i in 0..(N - q) {
                 if (i & p) == 0 {
                     let mut a = x[i + p];
                     let mut r = q;
@@ -108,14 +108,14 @@ mod tests {
     }
 
     #[test]
-    fn test_uint64_sort() {
+    fn test_uint64_sort_random_numbers() {
         let mut array: [u64; 64] = [0; 64];
 
         for i in 0..array.len() {
             array[i] = gen_random_u64();
         }
 
-        uint64_sort(&mut array, 64);
+        uint64_sort(&mut array);
 
         for i in 1..array.len() {
             assert!(array[i] >= array[i - 1]);
