@@ -36,25 +36,25 @@ mod macros {
     /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.
     /// The default type T is u8 and “mut A” instead of “A” returns a mutable reference.
     macro_rules! sub {
-        ($var:ident, $offset:expr, $len:expr) => {
+        ($var:expr, $offset:expr, $len:expr) => {
             {
                 use std::convert::TryFrom;
                 <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])?
             }
         };
-        (mut $var:ident, $offset:expr, $len:expr) => {
+        (mut $var:expr, $offset:expr, $len:expr) => {
             {
                 use std::convert::TryFrom;
                 <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
             }
         };
-        ($var:ident, $offset:expr, $len:expr, $t:ty) => {
+        ($var:expr, $offset:expr, $len:expr, $t:ty) => {
             {
                 use std::convert::TryFrom;
                 <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])?
             }
         };
-        (mut $var:ident, $offset:expr, $len:expr, $t:ty) => {
+        (mut $var:expr, $offset:expr, $len:expr, $t:ty) => {
             {
                 use std::convert::TryFrom;
                 <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])?

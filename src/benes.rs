@@ -6,8 +6,8 @@
 
 use crate::macros::sub;
 use crate::gf::Gf;
-use crate::params::GFBITS;
-use crate::params::{SYS_N, SYS_T};
+use crate::params::{GFBITS, COND_BYTES};
+use crate::params::SYS_N;
 use crate::transpose;
 use crate::util;
 use std::error;
@@ -129,12 +129,9 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
 /// Here, `r` is a sequence of bits to be permuted.
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
-/// `bits` requires a length of 5888 (if `GFBITS=12` or `rev=0`) or
-/// 6400 (if `GFBITS=13` and `rev=1`).
+/// `bits` requires a length of 5888.
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-fn apply_benes(r: &mut [u8; 512], bits: &[u8], rev: usize) -> Result<(), Box<dyn error::Error>> {
-    assert!(GFBITS == 12 || rev == 0 || bits.len() == 6400);
-
+fn apply_benes(r: &mut [u8; 512], bits: &[u8; 5888], rev: usize) -> Result<(), Box<dyn error::Error>> {
     let mut bs = [0u64; 64];
     let mut cond = [0u64; 64];
 
@@ -238,8 +235,15 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8], rev: usize) -> Result<(), Box<dyn
 /// Here, `r` is a sequence of bits to be permuted.
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
+/// `bits` requires a length of 5888 (if `GFBITS=12` or `rev=0`) or
+/// 6400 (if `GFBITS=13` and `rev=1`).
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
-fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 12_800], rev: usize) {
+fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
+    assert!(
+        ((GFBITS == 12 || rev == 0) && bits.len() == 5888) ||
+        ((GFBITS == 13 && rev == 1) && bits.len() == 6400)
+    );
+
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -332,7 +336,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 12_800], rev: usize) {
     }
 }
 
-pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; 2 * SYS_T]) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) -> Result<(), Box<dyn error::Error>> {
     let mut a: Gf;
     let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 
@@ -351,7 +355,7 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; 2 * SYS_T]) -> Result<()
         }
         #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            apply_benes(&mut l[j], sub!(c, 0, 12_800), 0);
+            apply_benes(&mut l[j], sub!(c, 0, 6400), 0);
         }
     }
 
@@ -462,7 +466,7 @@ mod tests {
     fn test_apply_benes() {
         let t = crate::TestData::new();
         let mut r_arg = <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_before")).unwrap();
-        let bits_arg = <[u8; 12_800]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits")).unwrap();
+        let bits_arg = <[u8; 6400]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits")).unwrap(); // TODO actual array has wrong size of 12_800
         apply_benes(&mut r_arg, &bits_arg, 0);
         let actual_r = r_arg;
         let expected_r = <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_after")).unwrap();

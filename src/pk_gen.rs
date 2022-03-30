@@ -42,7 +42,7 @@ fn mov_columns(
     mat: &mut [[u8; SYS_N / 8]; PK_NROWS],
     pi: &mut [i16; 1 << GFBITS],
     pivots: &mut u64,
-) -> i32 {
+) -> Result<i32, Box<dyn error::Error>> {
     let mut buf = [0u64; 64];
     let mut ctz_list = [0u64; 32];
 
@@ -56,7 +56,7 @@ fn mov_columns(
 
     #[cfg(not(feature = "mceliece6960119f"))]
     for i in 0..32 {
-        buf[i] = load8(&mat[row + i][block_idx..block_idx + 8]);
+        buf[i] = load8(sub!(mat[row + i], block_idx, 8));
     }
 
     #[cfg(feature = "mceliece6960119f")]
@@ -78,7 +78,7 @@ fn mov_columns(
         }
 
         if t == 0 {
-            return -1; // return if buf is not full rank
+            return Ok(-1); // return if buf is not full rank
         }
 
         ctz_list[i] = ctz(t) as u64;
@@ -112,7 +112,7 @@ fn mov_columns(
     // moving columns of mat according to the column indices of pivots
     #[cfg(not(feature = "mceliece6960119f"))]
     for i in 0..PK_NROWS {
-        let mut t = load8(&mat[i][block_idx..block_idx + 8]);
+        let mut t = load8(sub!(mat[i], block_idx, 8));
 
         for j in 0..32 {
             let mut d: u64 = t >> j;
@@ -123,7 +123,7 @@ fn mov_columns(
             t ^= d << j;
         }
 
-        store8(&mut mat[i][block_idx..block_idx + 8], t);
+        store8(sub!(mut mat[i], block_idx, 8), t);
     }
 
     #[cfg(feature = "mceliece6960119f")]
@@ -156,7 +156,7 @@ fn mov_columns(
         }
 	}
 
-    0
+    Ok(0)
 }
 
 /// Public key generation. Generate the public key `pk`,
@@ -253,7 +253,7 @@ pub(crate) fn pk_gen(
             #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
             {
                 if row == PK_NROWS - 32 {
-                    if mov_columns(&mut mat, pi, pivots) != 0 {
+                    if mov_columns(&mut mat, pi, pivots)? != 0 {
                         return Ok(-1);
                     }
                 }
@@ -289,6 +289,7 @@ pub(crate) fn pk_gen(
     }
 
     for i in 0..PK_NROWS {
+        // TODO rewrite with copy_from_slice
         for j in 0..PK_ROW_BYTES {
             pk[i * PK_ROW_BYTES + j] = mat[i][PK_NROWS / 8 + j];
         }
@@ -327,11 +328,11 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_mov_columns() {
+    fn test_mov_columns() -> Result<(), Box<dyn error::Error>> {
         const COLS: usize = SYS_N / 8;
 
         // input data
-        let mut mat = vec![[0u8; COLS]; PK_NROWS];
+        let mut mat = [[0u8; COLS]; PK_NROWS];
         let mat_data = crate::TestData::new().u8vec("mceliece8192128f_mat_before");
         assert_eq!(mat_data.len(), PK_NROWS * COLS);
 
@@ -345,7 +346,7 @@ mod tests {
         let mut pivots = 0u64;
 
         // generated actual result
-        mov_columns(<&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat).unwrap(), <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice()).unwrap(), &mut pivots);
+        mov_columns(<&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat)?, <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice())?, &mut pivots)?;
 
         // expected data
         let mut mat_expected = Box::new([[0u8; COLS]; PK_NROWS]);
@@ -364,6 +365,8 @@ mod tests {
         assert_eq!(*mat.into_boxed_slice(), *mat_expected);
         assert_eq!(pi, pi_expected);
         assert_eq!(pivots, pivots_expected);
+
+        Ok(())
     }
 
     #[test]

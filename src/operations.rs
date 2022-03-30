@@ -1,7 +1,5 @@
 use std::error;
 
-use std::convert::TryFrom;
-
 use crate::controlbits::controlbitsfrompermutation;
 use crate::randombytes::RNGState;
 use crate::{
@@ -117,7 +115,7 @@ pub fn crypto_kem_dec(key: &mut [u8; CRYPTO_BYTES], c: &[u8; CRYPTO_CIPHERTEXTBY
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
 
-    let ret_decrypt: u8 = decrypt(sub!(mut two_e, 1, SYS_N/8), sub!(sk, 40, 2 * SYS_T), sub!(c, 0, SYND_BYTES))?;
+    let ret_decrypt: u8 = decrypt(sub!(mut two_e, 1, SYS_N/8), sub!(sk, 40, IRR_BYTES + COND_BYTES), sub!(c, 0, SYND_BYTES))?;
 
     shake256(&mut conf[0..32], &two_e)?;
 
@@ -204,6 +202,10 @@ pub fn crypto_kem_dec(key: &mut [u8; CRYPTO_BYTES], c: &[u8; CRYPTO_CIPHERTEXTBY
 /// Generate some public and secret key.
 /// The public key is meant to be shared with any party,
 /// but access to the secret key must be limited to the generating party.
+/// 
+/// The structure of the secret key is given by the following segments:
+/// (32 bytes seed, 8 bytes pivots, IRR_BYTES bytes, COND_BYTES bytes, SYS_N/8 bytes).
+/// The structure of the public key is simple: a matrix of PK_NROWS times PK_ROW_BYTES bytes.
 pub fn crypto_kem_keypair(pk: &mut [u8; CRYPTO_PUBLICKEYBYTES], sk: &mut [u8; CRYPTO_SECRETKEYBYTES], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut seed = [0u8; 33];
     seed[0] = 64;
@@ -246,7 +248,7 @@ pub fn crypto_kem_keypair(pk: &mut [u8; CRYPTO_PUBLICKEYBYTES], sk: &mut [u8; CR
             continue;
         }
 
-        for (i, chunk) in sk[32 + 8..32 + 8 + 2 * SYS_T].chunks_mut(2).enumerate() {
+        for (i, chunk) in sk[40..40 + IRR_BYTES].chunks_mut(2).enumerate() {
             store_gf(sub!(mut chunk, 0, 2), irr[i]);
         }
 
@@ -258,20 +260,19 @@ pub fn crypto_kem_keypair(pk: &mut [u8; CRYPTO_PUBLICKEYBYTES], sk: &mut [u8; CR
 
         #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
         {
-            if pk_gen(pk, <&mut [u8; 2 * SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + 2 * SYS_T)])?, &mut perm, &mut pi, &mut pivots) != 0 {
+            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi, &mut pivots)? != 0 {
                 continue;
             }
         }
         #[cfg(any(feature = "mceliece348864", feature = "mceliece460896", feature = "mceliece6688128", feature = "mceliece6960119", feature = "mceliece8192128"))]
         {
-            if pk_gen(pk, <&mut [u8; 2 * SYS_T]>::try_from(&mut sk[(32 + 8)..(32 + 8 + 2 * SYS_T)])?, &mut perm, &mut pi)? != 0 {
+            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi)? != 0 {
                 continue;
             }
         }
 
-        let count = (((2 * GFBITS - 1) * (1 << GFBITS) / 2) + 7) / 8;
         controlbitsfrompermutation(
-            &mut sk[(32 + 8 + IRR_BYTES)..(32 + 8 + IRR_BYTES + count)],
+            &mut sk[(40 + IRR_BYTES)..(40 + IRR_BYTES + COND_BYTES)],
             &mut pi,
             GFBITS,
             1 << GFBITS,

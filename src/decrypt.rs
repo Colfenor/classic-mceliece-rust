@@ -3,7 +3,7 @@ use crate::{
     bm::bm,
     gf::gf_iszero,
     macros::sub,
-    params::{SYND_BYTES, SYS_N, SYS_T},
+    params::{COND_BYTES, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     root::root,
     synd::synd,
     util::load_gf,
@@ -14,7 +14,7 @@ use std::error;
 ///
 /// It takes as input the secret key `sk` and a ciphertext `c`.
 /// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
-pub(crate) fn decrypt(e: &mut [u8; SYS_N/8], sk: &[u8; SYS_T*2], c: &[u8; SYND_BYTES]) -> Result<u8, Box<dyn error::Error>> {
+pub(crate) fn decrypt(e: &mut [u8; SYS_N/8], sk: &[u8; IRR_BYTES + COND_BYTES], c: &[u8; SYND_BYTES]) -> Result<u8, Box<dyn error::Error>> {
     let mut t: u16;
     let mut w: i32 = 0;
 
@@ -36,12 +36,12 @@ pub(crate) fn decrypt(e: &mut [u8; SYS_N/8], sk: &[u8; SYS_T*2], c: &[u8; SYND_B
         r[i] = 0;
     }
 
-    for (i, chunk) in sk.chunks(2).enumerate() {
+    for (i, chunk) in sk.chunks(2).take(SYS_T).enumerate() {
         g[i] = load_gf(sub!(chunk, 0, 2));
     }
     g[SYS_T] = 1;
 
-    support_gen(&mut l, sub!(sk, 2 * SYS_T, 2 * SYS_T))?;
+    support_gen(&mut l, sub!(sk, IRR_BYTES, COND_BYTES))?;
 
     synd(&mut s, &mut g, &mut l, &r);
 
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
-        let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
+        let sk = crate::TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
         assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 
         let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
@@ -96,7 +96,7 @@ mod tests {
         let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
         actual_error_vector[0] = 2;
 
-        decrypt(sub!(mut actual_error_vector, 1, SYS_N/8), sub!(mut sk, 40, 2 * SYS_T), sub!(mut c, 0, SYND_BYTES))?;
+        decrypt(sub!(mut actual_error_vector, 1, SYS_N/8), sub!(sk, 40, IRR_BYTES + COND_BYTES), sub!(mut c, 0, SYND_BYTES))?;
 
         assert_eq!(actual_error_vector.to_vec(), expected_error_vector);
 
