@@ -31,7 +31,7 @@ pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
 
 /// Take a 64×64 matrix over GF(2).
 /// Compute the transpose of `arg` and return it in `arg`
-/// 
+///
 /// Unlike the C implementation, this function works in-place.
 /// The C implementation uses the function only in a way such that
 /// input argument == output argument. Because we cannot create a
@@ -45,16 +45,16 @@ pub(crate) fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
         [0x0F0F0F0F0F0F0F0F, 0xF0F0F0F0F0F0F0F0],
         [0x00FF00FF00FF00FF, 0xFF00FF00FF00FF00],
         [0x0000FFFF0000FFFF, 0xFFFF0000FFFF0000],
-        [0x00000000FFFFFFFF, 0xFFFFFFFF00000000]
+        [0x00000000FFFFFFFF, 0xFFFFFFFF00000000],
     ];
 
     for d in (0..6).rev() {
         let s = 1 << d;
         let mut i = 0;
-        while i <  64 {
-            for j in i .. (i + s) {
-                let x: u64 = (arg[j] & masks[d][0]) | ((arg[j+s] & masks[d][0]) << s);
-                let y: u64 = ((arg[j] & masks[d][1]) >> s) | (arg[j+s] & masks[d][1]);
+        while i < 64 {
+            for j in i..(i + s) {
+                let x: u64 = (arg[j] & masks[d][0]) | ((arg[j + s] & masks[d][0]) << s);
+                let y: u64 = ((arg[j] & masks[d][1]) >> s) | (arg[j + s] & masks[d][1]);
 
                 arg[j] = x;
                 arg[j + s] = y;

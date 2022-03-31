@@ -102,7 +102,11 @@ mod tests {
             let (x, y) = uint64_minmax(x, y);
 
             if x > y {
-                assert!(false, "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64", x, y);
+                assert!(
+                    false,
+                    "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
+                    x, y
+                );
             }
         }
     }

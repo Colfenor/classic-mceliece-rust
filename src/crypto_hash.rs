@@ -2,9 +2,8 @@ use std::error;
 use std::fmt;
 use std::io::Read;
 
-use sha3::Shake256;
 use sha3::digest::{ExtendableOutput, Update};
-
+use sha3::Shake256;
 
 #[derive(Debug)]
 struct ShakeIOError(String);
@@ -25,7 +24,7 @@ pub(crate) fn shake256(output: &mut [u8], input: &[u8]) -> Result<(), Box<dyn er
     let mut result_shake = shake_hash_fn.finalize_xof();
     match result_shake.read(output) {
         Ok(_) => Ok(()),
-        Err(e) => Err(Box::new(ShakeIOError(e.to_string())))
+        Err(e) => Err(Box::new(ShakeIOError(e.to_string()))),
     }
 }
 

@@ -1,5 +1,5 @@
 //! This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
-//! 
+//!
 //! An example is provided to illustrate the API. Be aware that this documentation is generated
 //! for one specific variant (among ten). Thus the array lengths will be different if you specify
 //! a different variant via feature flags.
@@ -24,42 +24,33 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
-pub use randombytes::{AesState, RNGState};
-pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 pub use api::{
-    CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES,
-    CRYPTO_SECRETKEYBYTES, CRYPTO_CIPHERTEXTBYTES,
-    CRYPTO_PRIMITIVE
+    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
+    CRYPTO_SECRETKEYBYTES,
 };
+pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+pub use randombytes::{AesState, RNGState};
 
 mod macros {
     /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.
     /// The default type T is u8 and “mut A” instead of “A” returns a mutable reference.
     macro_rules! sub {
-        ($var:expr, $offset:expr, $len:expr) => {
-            {
-                use std::convert::TryFrom;
-                <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])?
-            }
-        };
-        (mut $var:expr, $offset:expr, $len:expr) => {
-            {
-                use std::convert::TryFrom;
-                <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
-            }
-        };
-        ($var:expr, $offset:expr, $len:expr, $t:ty) => {
-            {
-                use std::convert::TryFrom;
-                <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])?
-            }
-        };
-        (mut $var:expr, $offset:expr, $len:expr, $t:ty) => {
-            {
-                use std::convert::TryFrom;
-                <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
-            }
-        };
+        ($var:expr, $offset:expr, $len:expr) => {{
+            use std::convert::TryFrom;
+            <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])?
+        }};
+        (mut $var:expr, $offset:expr, $len:expr) => {{
+            use std::convert::TryFrom;
+            <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+        }};
+        ($var:expr, $offset:expr, $len:expr, $t:ty) => {{
+            use std::convert::TryFrom;
+            <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])?
+        }};
+        (mut $var:expr, $offset:expr, $len:expr, $t:ty) => {{
+            use std::convert::TryFrom;
+            <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+        }};
     }
 
     pub(crate) use sub;
@@ -74,8 +65,8 @@ macro_rules! impl_parser_per_type {
         /// I started to write a zero-allocation parser, but it takes many lines of code.
         /// This design allocates, but can be comprehended much easier.
         fn $name(&self, search_key: &str) -> Vec<$t> {
-            use std::str;
             use std::convert::TryInto;
+            use std::str;
 
             let content = match str::from_utf8(self.data) {
                 Ok(v) => v,
@@ -93,7 +84,7 @@ macro_rules! impl_parser_per_type {
                     match f {
                         0 => key = field.trim(),
                         1 => value = field.trim(),
-                        _ => {},
+                        _ => {}
                     }
                 }
                 if key != search_key {
@@ -107,17 +98,18 @@ macro_rules! impl_parser_per_type {
                 let elements_count = bytes.len() / bytes_per_element;
                 let mut elements = Vec::<$t>::with_capacity(elements_count);
                 for idx in 0..elements_count {
-                    let element = &bytes[bytes_per_element*idx .. bytes_per_element*(idx + 1)];
-                    elements.push(<$t>::from_be_bytes(element.try_into().expect("invalid slice length")));
+                    let element = &bytes[bytes_per_element * idx..bytes_per_element * (idx + 1)];
+                    elements.push(<$t>::from_be_bytes(
+                        element.try_into().expect("invalid slice length"),
+                    ));
                 }
                 return elements;
             }
 
             panic!("search_key '{}' not found in testdata.txt", search_key);
         }
-    }
+    };
 }
-
 
 #[cfg(test)]
 struct TestData {
@@ -147,8 +139,17 @@ mod tests {
 
     #[test]
     fn testdata_sanity_check() {
-        assert_eq!(TestData::new().u8vec("sanity_check"), [0x01, 0x23, 0x45, 0x67].to_vec());
-        assert_eq!(TestData::new().u16vec("sanity_check"), [0x0123, 0x4567].to_vec());
-        assert_eq!(TestData::new().u32vec("sanity_check"), [0x01234567].to_vec());
+        assert_eq!(
+            TestData::new().u8vec("sanity_check"),
+            [0x01, 0x23, 0x45, 0x67].to_vec()
+        );
+        assert_eq!(
+            TestData::new().u16vec("sanity_check"),
+            [0x0123, 0x4567].to_vec()
+        );
+        assert_eq!(
+            TestData::new().u32vec("sanity_check"),
+            [0x01234567].to_vec()
+        );
     }
 }

@@ -177,7 +177,7 @@ fn cbrecursion(
                     temp[n + x] = (temp[x] & (0xffff << 16)) | (temp[n + x] >> 16);
                 }
                 /* B = (p^(-1)<<16)+p */
-                int32_sort(&mut temp[n..2*n]); /* B = (id<<16)+p^(-2) */
+                int32_sort(&mut temp[n..2 * n]); /* B = (id<<16)+p^(-2) */
                 for x in 0..n {
                     temp[n + x] = (temp[n + x] << 16) | (temp[x] & 0xffff);
                 }
@@ -226,7 +226,7 @@ fn cbrecursion(
     }
     /* B = (pi^(-1)<<16)+F */
 
-    int32_sort(&mut temp[n..2*n]); /* B = (id<<16)+F(pi) */
+    int32_sort(&mut temp[n..2 * n]); /* B = (id<<16)+F(pi) */
 
     pos += (2 * w - 3) * step * (n / 2);
 

@@ -71,9 +71,11 @@ mod tests {
     fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
-        let input_src = crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
+        let input_src =
+            crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
         let first_round_input = <&[u16; 128]>::try_from(input_src.as_slice()).unwrap();
-        let first_round_output = crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");
+        let first_round_output =
+            crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");
 
         let mut output = [0u16; SYS_T];
 

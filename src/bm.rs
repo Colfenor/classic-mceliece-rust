@@ -112,7 +112,8 @@ mod tests {
     #[test]
     #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_first_round_bm() {
-        let compare_array = crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
+        let compare_array =
+            crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
         let compare_array_slice = <&[u16; SYS_T + 1]>::try_from(compare_array.as_slice()).unwrap();
         let mut s_input = crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_s_input");
         let s_input_slice = <&mut [u16; 2 * SYS_T]>::try_from(s_input.as_mut_slice()).unwrap();

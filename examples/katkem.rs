@@ -4,13 +4,12 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::{env, error, fmt, fs};
 
-use classic_mceliece_rust::{
-    CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
-    CRYPTO_CIPHERTEXTBYTES, CRYPTO_BYTES,
-    CRYPTO_PRIMITIVE,
-};
-use classic_mceliece_rust::{crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec};
+use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 use classic_mceliece_rust::{AesState, RNGState};
+use classic_mceliece_rust::{
+    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
+    CRYPTO_SECRETKEYBYTES,
+};
 
 const KATNUM: usize = 100;
 

@@ -14,7 +14,11 @@ use std::error;
 ///
 /// It takes as input the secret key `sk` and a ciphertext `c`.
 /// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
-pub(crate) fn decrypt(e: &mut [u8; SYS_N/8], sk: &[u8; IRR_BYTES + COND_BYTES], c: &[u8; SYND_BYTES]) -> Result<u8, Box<dyn error::Error>> {
+pub(crate) fn decrypt(
+    e: &mut [u8; SYS_N / 8],
+    sk: &[u8; IRR_BYTES + COND_BYTES],
+    c: &[u8; SYND_BYTES],
+) -> Result<u8, Box<dyn error::Error>> {
     let mut t: u16;
     let mut w: i32 = 0;
 
@@ -96,7 +100,11 @@ mod tests {
         let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
         actual_error_vector[0] = 2;
 
-        decrypt(sub!(mut actual_error_vector, 1, SYS_N/8), sub!(sk, 40, IRR_BYTES + COND_BYTES), sub!(mut c, 0, SYND_BYTES))?;
+        decrypt(
+            sub!(mut actual_error_vector, 1, SYS_N / 8),
+            sub!(sk, 40, IRR_BYTES + COND_BYTES),
+            sub!(mut c, 0, SYND_BYTES),
+        )?;
 
         assert_eq!(actual_error_vector.to_vec(), expected_error_vector);
 

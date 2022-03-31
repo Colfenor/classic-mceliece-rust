@@ -8,11 +8,23 @@ use crate::{
 };
 use std::error;
 
-#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+#[cfg(any(
+    feature = "mceliece348864f",
+    feature = "mceliece460896f",
+    feature = "mceliece6688128f",
+    feature = "mceliece6960119f",
+    feature = "mceliece8192128f"
+))]
 use crate::util::{load8, store8};
 
 /// Return number of trailing zeros of the non-zero input `input`
-#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+#[cfg(any(
+    feature = "mceliece348864f",
+    feature = "mceliece460896f",
+    feature = "mceliece6688128f",
+    feature = "mceliece6960119f",
+    feature = "mceliece8192128f"
+))]
 fn ctz(input: u64) -> i32 {
     let (mut m, mut r) = (0i32, 0i32);
 
@@ -26,7 +38,13 @@ fn ctz(input: u64) -> i32 {
 }
 
 /// Takes two 16-bit integers and determines whether they are equal (u64::MAX) or different (0)
-#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+#[cfg(any(
+    feature = "mceliece348864f",
+    feature = "mceliece460896f",
+    feature = "mceliece6688128f",
+    feature = "mceliece6960119f",
+    feature = "mceliece8192128f"
+))]
 fn same_mask(x: u16, y: u16) -> u64 {
     let mut mask = (x ^ y) as u64;
     mask = mask.wrapping_sub(1);
@@ -37,7 +55,13 @@ fn same_mask(x: u16, y: u16) -> u64 {
 }
 
 /// Move columns in matrix `mat`
-#[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+#[cfg(any(
+    feature = "mceliece348864f",
+    feature = "mceliece460896f",
+    feature = "mceliece6688128f",
+    feature = "mceliece6960119f",
+    feature = "mceliece8192128f"
+))]
 fn mov_columns(
     mat: &mut [[u8; SYS_N / 8]; PK_NROWS],
     pi: &mut [i16; 1 << GFBITS],
@@ -61,11 +85,15 @@ fn mov_columns(
 
     #[cfg(feature = "mceliece6960119f")]
     for i in 0..32 {
-        for j in 0..9 { tmp[j] = mat[row + i][block_idx + j]; }
-        for j in 0..8 { tmp[j] = (tmp[j] >> tail) | (tmp[j+1] << (8-tail)); }
+        for j in 0..9 {
+            tmp[j] = mat[row + i][block_idx + j];
+        }
+        for j in 0..8 {
+            tmp[j] = (tmp[j] >> tail) | (tmp[j + 1] << (8 - tail));
+        }
 
-		buf[i] = load8(sub!(tmp, 0, 8));
-	}
+        buf[i] = load8(sub!(tmp, 0, 8));
+    }
 
     // Compute the column indices of pivots by Gaussian elimination.
     // The indices are stored in ctz_list
@@ -127,34 +155,34 @@ fn mov_columns(
     }
 
     #[cfg(feature = "mceliece6960119f")]
-	for i in 0..PK_NROWS {
+    for i in 0..PK_NROWS {
         for k in 0..9 {
-            tmp[k] = mat[ i ][ block_idx + k ];
+            tmp[k] = mat[i][block_idx + k];
         }
         for k in 0..8 {
-            tmp[k] = (tmp[k] >> tail) | (tmp[k+1] << (8-tail));
+            tmp[k] = (tmp[k] >> tail) | (tmp[k + 1] << (8 - tail));
         }
 
-		let mut t = load8(sub!(tmp, 0, 8));
+        let mut t = load8(sub!(tmp, 0, 8));
 
-		for j in 0..32 {
-			let mut d  = t >> j;
-			d ^= t >> ctz_list[j];
-			d &= 1;
+        for j in 0..32 {
+            let mut d = t >> j;
+            d ^= t >> ctz_list[j];
+            d &= 1;
 
-			t ^= d << ctz_list[j];
-			t ^= d << j;
-		}
+            t ^= d << ctz_list[j];
+            t ^= d << j;
+        }
 
-		store8(sub!(mut tmp, 0, 8), t);
+        store8(sub!(mut tmp, 0, 8), t);
 
-		mat[ i ][ block_idx + 8 ] = (mat[ i ][ block_idx + 8 ] >> tail << tail) | (tmp[7] >> (8-tail));
-		mat[ i ][ block_idx + 0 ] = (tmp[0] << tail) | (mat[ i ][ block_idx ] << (8-tail) >> (8-tail));
+        mat[i][block_idx + 8] = (mat[i][block_idx + 8] >> tail << tail) | (tmp[7] >> (8 - tail));
+        mat[i][block_idx + 0] = (tmp[0] << tail) | (mat[i][block_idx] << (8 - tail) >> (8 - tail));
 
         for k in (1..=7).rev() {
-			mat[ i ][ block_idx + k ] = (tmp[k] << tail) | (tmp[k-1] >> (8-tail));
+            mat[i][block_idx + k] = (tmp[k] << tail) | (tmp[k - 1] >> (8 - tail));
         }
-	}
+    }
 
     Ok(0)
 }
@@ -170,7 +198,13 @@ pub(crate) fn pk_gen(
     sk: &[u8; 2 * SYS_T],
     perm: &[u32; 1 << GFBITS],
     pi: &mut [i16; 1 << GFBITS],
-    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+    #[cfg(any(
+        feature = "mceliece348864f",
+        feature = "mceliece460896f",
+        feature = "mceliece6688128f",
+        feature = "mceliece6960119f",
+        feature = "mceliece8192128f"
+    ))]
     pivots: &mut u64,
 ) -> Result<i32, Box<dyn error::Error>> {
     let mut buf = [0u64; 1 << GFBITS];
@@ -250,7 +284,13 @@ pub(crate) fn pk_gen(
                 break;
             }
 
-            #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+            #[cfg(any(
+                feature = "mceliece348864f",
+                feature = "mceliece460896f",
+                feature = "mceliece6688128f",
+                feature = "mceliece6960119f",
+                feature = "mceliece8192128f"
+            ))]
             {
                 if row == PK_NROWS - 32 {
                     if mov_columns(&mut mat, pi, pivots)? != 0 {
@@ -291,7 +331,7 @@ pub(crate) fn pk_gen(
     #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
     let tail = PK_NROWS % 8;
     #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-    const INNER_PK_ACCESSES: usize = ((SYS_N/8 - 1) - (PK_NROWS - 1)/8) + 1;
+    const INNER_PK_ACCESSES: usize = ((SYS_N / 8 - 1) - (PK_NROWS - 1) / 8) + 1;
 
     for i in 0..PK_NROWS {
         // TODO rewrite with copy_from_slice
@@ -301,12 +341,12 @@ pub(crate) fn pk_gen(
         }
 
         #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-        for (idx, j) in ((PK_NROWS - 1)/8..SYS_N/8 - 1).enumerate() {
-            pk[i * INNER_PK_ACCESSES + idx] = (mat[i][j] >> tail) | (mat[i][j+1] << (8-tail));
+        for (idx, j) in ((PK_NROWS - 1) / 8..SYS_N / 8 - 1).enumerate() {
+            pk[i * INNER_PK_ACCESSES + idx] = (mat[i][j] >> tail) | (mat[i][j + 1] << (8 - tail));
         }
         #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
         {
-            pk[(i + 1) * INNER_PK_ACCESSES - 1] = mat[i][SYS_N/8 - 1] >> tail;
+            pk[(i + 1) * INNER_PK_ACCESSES - 1] = mat[i][SYS_N / 8 - 1] >> tail;
         }
     }
 
@@ -315,25 +355,76 @@ pub(crate) fn pk_gen(
 
 #[cfg(test)]
 mod tests {
-    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+    #[cfg(any(
+        feature = "mceliece348864f",
+        feature = "mceliece460896f",
+        feature = "mceliece6688128f",
+        feature = "mceliece6960119f",
+        feature = "mceliece8192128f"
+    ))]
     use super::*;
     #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
 
     #[test]
-    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+    #[cfg(any(
+        feature = "mceliece348864f",
+        feature = "mceliece460896f",
+        feature = "mceliece6688128f",
+        feature = "mceliece6960119f",
+        feature = "mceliece8192128f"
+    ))]
     fn test_ctz() {
-        const EXPECTED: [i32; 180] = [64, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 7, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0];
+        const EXPECTED: [i32; 180] = [
+            64, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2,
+            0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0,
+            1, 0, 2, 0, 1, 0, 6, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1,
+            0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0,
+            2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 7, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4,
+            0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0,
+            1, 0, 4, 0, 1, 0,
+        ];
         for i in 0..180 {
             assert_eq!(ctz(i as u64), EXPECTED[i]);
         }
     }
 
-
     #[test]
-    #[cfg(any(feature = "mceliece348864f", feature = "mceliece460896f", feature = "mceliece6688128f", feature = "mceliece6960119f", feature = "mceliece8192128f"))]
+    #[cfg(any(
+        feature = "mceliece348864f",
+        feature = "mceliece460896f",
+        feature = "mceliece6688128f",
+        feature = "mceliece6960119f",
+        feature = "mceliece8192128f"
+    ))]
     fn test_same_mask() {
-        const EXPECTED: [u64; 25] = [0xFFFFFFFFFFFFFFFF, 0, 0, 0, 0, 0, 0xFFFFFFFFFFFFFFFF, 0, 0, 0, 0, 0, 0xFFFFFFFFFFFFFFFF, 0, 0, 0, 0, 0, 0xFFFFFFFFFFFFFFFF, 0, 0, 0, 0, 0, 0xFFFFFFFFFFFFFFFF];
+        const EXPECTED: [u64; 25] = [
+            0xFFFFFFFFFFFFFFFF,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0xFFFFFFFFFFFFFFFF,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0xFFFFFFFFFFFFFFFF,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0xFFFFFFFFFFFFFFFF,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0xFFFFFFFFFFFFFFFF,
+        ];
         for i in 0..5 {
             for j in 0..5 {
                 assert_eq!(same_mask(i as u16, j as u16), EXPECTED[i * 5 + j]);
@@ -361,7 +452,11 @@ mod tests {
         let mut pivots = 0u64;
 
         // generated actual result
-        mov_columns(<&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat)?, <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice())?, &mut pivots)?;
+        mov_columns(
+            <&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat)?,
+            <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice())?,
+            &mut pivots,
+        )?;
 
         // expected data
         let mut mat_expected = Box::new([[0u8; COLS]; PK_NROWS]);
@@ -393,7 +488,11 @@ mod tests {
         let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk = [0u8; 2 * SYS_T];
         let mut perm = [0u32; 1 << GFBITS];
-        let mut pi = [0i16; if (1 << GFBITS) > SYS_N { 1 << GFBITS } else { SYS_N }];
+        let mut pi = [0i16; if (1 << GFBITS) > SYS_N {
+            1 << GFBITS
+        } else {
+            SYS_N
+        }];
         let mut pivots = 0u64;
 
         assert_eq!(sk_data.len(), sk.len());
@@ -416,7 +515,6 @@ mod tests {
         assert_eq!(pivots, 0x1DFFFFFFF);
     }
 
-
     #[test]
     #[cfg(feature = "mceliece8192128f")]
     fn test_pk_gen_2() {
@@ -429,7 +527,11 @@ mod tests {
         let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk = [0u8; 2 * SYS_T];
         let mut perm = [0u32; 1 << GFBITS];
-        let mut pi = [0i16; if (1 << GFBITS) > SYS_N { 1 << GFBITS } else { SYS_N }];
+        let mut pi = [0i16; if (1 << GFBITS) > SYS_N {
+            1 << GFBITS
+        } else {
+            SYS_N
+        }];
         let mut pivots = 0x1DFFFFFFF_u64;
 
         assert_eq!(pk_data.len(), pk.len());
