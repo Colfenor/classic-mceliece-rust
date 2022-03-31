@@ -88,6 +88,8 @@ mod tests {
 
     #[test]
     fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
+        // TODO this testcase fails for {mceliece348864, mceliece348864f, mceliece460896, mceliece460896f, mceliece6688128, mceliece6688128f, mceliece6960119, mceliece6960119f}
+
         let sk = crate::TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
         assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
 

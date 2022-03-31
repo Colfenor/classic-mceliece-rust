@@ -811,8 +811,6 @@ mod tests {
         let mut res = [0u16; SYS_T];
         let mut arg1 = [0u16; SYS_T];
         let mut arg2 = [0u16; SYS_T];
-        arg1 = [0u16; SYS_T];
-        arg2 = [0u16; SYS_T];
         arg1[0] = 1;
         arg2[0] = 1;
         gf_mul_inplace(&mut res, &arg1, &arg2);
@@ -1461,7 +1459,6 @@ mod tests {
                 8190, 1, 8190, 1, 8190, 1, 8190, 1, 8190, 1, 8190, 1, 8190, 1
             ]
         );
-        res = [0u16; SYS_T];
     }
 
     #[cfg(any(
