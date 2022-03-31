@@ -72,11 +72,7 @@ fn layer_in<const L: usize>(data: &mut [[u64; L]; 2], bits: &[u64; L], lgs: usiz
     }
 }
 
-/// Exterior layers of the Beneš network
-// TODO this implementation is quite different from the C implementation. Just remove the s==64 special case?
-// attempt maybe iterators
-// for item in 2darray.iter().flatten() { … }
-// or try https://docs.rs/bytemuck/1.7.2/bytemuck/ crate
+/// Exterior layers of the Beneš network. The length of `bits` depends on the value of `lgs`.
 /// NOTE const expressions are not sophisticated enough in rust yet to represent this relationship.
 ///
 /// | lgs | data[0].len() == data[1].len() | bits.len() |
@@ -86,36 +82,47 @@ fn layer_in<const L: usize>(data: &mut [[u64; L]; 2], bits: &[u64; L], lgs: usiz
 /// | 6 | 128 | 64 |
 /// | 5 | 128 | 64 |
 /// | 4 | 128 | 64 |
+///
+/// Also recognize that his implementation is quite different from the C implementation.
+/// However, it does make sense. Whereas the C implementation uses pointer arithmetic to access
+/// the entire array `data`, this implementation always considers `data` as two-dimensional array.
+/// The C implementation uses 128 as upper bound (because the array contains 128 elements),
+/// but this implementation has 64 elements per subarray and needs case distinctions at different places.
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 fn layer_ex(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
-    let mut d: u64;
-    let mut index = 0;
-    let mut index2 = 32;
+    let mut data0_idx = 0;
+    let mut data1_idx = 32;
 
     let s = 1 << lgs;
     if s == 64 {
+        // in this case where `s` has the highest possible value,
+        // we need to access both subarrays in one expression.
         for j in 0..64 {
-            d = data[0][j + 0] ^ data[1][j];
-            d &= bits[index];
-            index += 1;
+            let mut d = data[0][j + 0] ^ data[1][j];
+            d &= bits[data0_idx];
+            data0_idx += 1;
 
             data[0][j + 0] ^= d;
             data[1][j] ^= d;
         }
     } else {
+        // in this case, we can run computations in both subarrays consecutively
+        // within one iteration of loop over `j`
         let mut i: usize = 0;
         while i < 64 {
             for j in i..(i + s) {
-                d = data[0][j + 0] ^ data[0][j + s];
-                d &= bits[index];
-                index += 1;
+                // data[0] computations
+                let mut d = data[0][j + 0] ^ data[0][j + s];
+                d &= bits[data0_idx];
+                data0_idx += 1;
 
                 data[0][j + 0] ^= d;
                 data[0][j + s] ^= d;
 
+                // data[1] computations
                 d = data[1][j + 0] ^ data[1][j + s];
-                d &= bits[index2]; // 64
-                index2 += 1;
+                d &= bits[data1_idx];
+                data1_idx += 1;
 
                 data[1][j + 0] ^= d;
                 data[1][j + s] ^= d;
