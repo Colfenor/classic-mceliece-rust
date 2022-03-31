@@ -21,6 +21,7 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Generation of `e`, an error vector of weight `t`.
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
+#[cfg(not(any(feature = "mceliece8192128", feature = "mceliece8192128f")))]
 fn gen_e(e: &mut [u8; SYS_N/8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut val = [0u8; SYS_T];
@@ -47,6 +48,56 @@ fn gen_e(e: &mut [u8; SYS_N/8], rng: &mut impl RNGState) -> Result<(), Box<dyn e
 
         if count < SYS_T {
             continue;
+        }
+
+        // check for repetition
+
+        let mut eq = 0;
+
+        for i in 1..SYS_T {
+            for j in 0..i {
+                if ind[i] == ind[j] {
+                    eq = 1;
+                }
+            }
+        }
+
+        if eq == 0 {
+            break;
+        }
+    }
+
+    for j in 0..SYS_T {
+        val[j] = 1 << (ind[j] & 7);
+    }
+
+    for i in 0..SYS_N / 8 {
+        e[i] = 0;
+
+        for j in 0..SYS_T {
+            let mask: u8 = same_mask_u8(i as u16, ind[j] >> 3);
+
+            e[i] |= val[j] & mask;
+        }
+    }
+
+    Ok(())
+}
+
+/// Generation of `e`, an error vector of weight `t`.
+/// Does not take any input arguments.
+/// If generation of pseudo-random numbers fails, an error is returned.
+#[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
+fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+    let mut ind = [0u16; SYS_T];
+    let mut bytes = [0u8; SYS_T * 2];
+    let mut val = [0u8; SYS_T];
+
+    loop {
+        rng.randombytes(&mut bytes)?;
+
+        for (i, chunk) in bytes.chunks(2).enumerate() {
+            ind[i] = load_gf(sub!(chunk, 0, 2));
         }
 
         // check for repetition
