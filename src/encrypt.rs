@@ -275,12 +275,11 @@ mod tests {
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
         let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
-        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
         let compare_ct = crate::TestData::new().u8vec("mceliece8192128f_encrypt_ct");
         assert_eq!(compare_ct.len(), CRYPTO_CIPHERTEXTBYTES);
 
-        encrypt(&mut c, &mut pk, &mut two_e[1..], &mut rng_state)?;
+        encrypt(&mut c, sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), sub!(mut two_e, 1, SYS_N / 8), &mut rng_state)?;
 
         assert_eq!(compare_ct, c);
 

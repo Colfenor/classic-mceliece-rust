@@ -75,12 +75,13 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 }
 
 #[cfg(test)]
+#[cfg(feature = "mceliece8192128f")]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    use std::error;
+    use crate::macros::sub;
 
     #[test]
-    #[cfg(all(feature = "mceliece8192128f", test))]
     fn test_simple_bm() {
         assert_eq!(SYS_T + 1, 129);
 
@@ -110,17 +111,18 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "mceliece8192128f", test))]
-    fn test_first_round_bm() {
+    fn test_first_round_bm() -> Result<(), Box<dyn error::Error>> {
         let compare_array =
             crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
-        let compare_array_slice = <&[u16; SYS_T + 1]>::try_from(compare_array.as_slice()).unwrap();
+        let compare_array_slice = sub!(compare_array.as_slice(), 0, SYS_T + 1, u16);
         let mut s_input = crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_s_input");
-        let s_input_slice = <&mut [u16; 2 * SYS_T]>::try_from(s_input.as_mut_slice()).unwrap();
+        let s_input_slice = sub!(mut s_input.as_mut_slice(), 0, 2 * SYS_T, u16);
 
         let mut locator = [0u16; SYS_T + 1];
         bm(&mut locator, s_input_slice);
 
         assert_eq!(&locator, compare_array_slice);
+
+        Ok(())
     }
 }

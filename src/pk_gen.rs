@@ -438,7 +438,7 @@ mod tests {
         const COLS: usize = SYS_N / 8;
 
         // input data
-        let mut mat = [[0u8; COLS]; PK_NROWS];
+        let mut mat = vec![[0u8; COLS]; PK_NROWS];
         let mat_data = crate::TestData::new().u8vec("mceliece8192128f_mat_before");
         assert_eq!(mat_data.len(), PK_NROWS * COLS);
 
@@ -453,26 +453,24 @@ mod tests {
 
         // generated actual result
         mov_columns(
-            <&mut [[u8; COLS]; PK_NROWS]>::try_from(&mut *mat)?,
-            <&mut [i16; 1 << GFBITS]>::try_from(pi.as_mut_slice())?,
+            sub!(mut mat.as_mut_slice(), 0, PK_NROWS, [u8; COLS]),
+            sub!(mut pi, 0, 1 << GFBITS, i16),
             &mut pivots,
         )?;
 
         // expected data
-        let mut mat_expected = Box::new([[0u8; COLS]; PK_NROWS]);
+        let mut mat_expected = [[0u8; COLS]; PK_NROWS];
         let mat_expected_data = crate::TestData::new().u8vec("mceliece8192128f_mat_expected");
 
         for row in 0..PK_NROWS {
-            for col in 0..COLS {
-                mat_expected[row][col] = mat_expected_data[row * COLS + col];
-            }
+            mat_expected[row].copy_from_slice(&mat_expected_data[row*COLS..(row + 1)*COLS]);
         }
 
         let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pi_expected");
         let pivots_expected = 8053063679u64;
 
         // comparison
-        assert_eq!(*mat.into_boxed_slice(), *mat_expected);
+        assert_eq!(mat, mat_expected);
         assert_eq!(pi, pi_expected);
         assert_eq!(pivots, pivots_expected);
 
@@ -481,7 +479,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_pk_gen_1() {
+    fn test_pk_gen_1() -> Result<(), Box<dyn error::Error>> {
         let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_input");
         let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
 
@@ -501,7 +499,7 @@ mod tests {
         sk.copy_from_slice(sk_data.as_slice());
         perm.copy_from_slice(perm_data.as_slice());
 
-        pk_gen(&mut pk, &mut sk, &mut perm, &mut pi, &mut pivots);
+        pk_gen(sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), &mut sk, &mut perm, &mut pi, &mut pivots)?;
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_expected");
@@ -513,11 +511,13 @@ mod tests {
         assert_eq!(perm, perm_expected.as_slice());
         assert_eq!(pi, pi_expected.as_slice());
         assert_eq!(pivots, 0x1DFFFFFFF);
+
+        Ok(())
     }
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_pk_gen_2() {
+    fn test_pk_gen_2() -> Result<(), Box<dyn error::Error>> {
         // NOTE expected pk_data of previous testcase becomes input for this one
         let pk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
         let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_input");
@@ -544,7 +544,7 @@ mod tests {
         perm.copy_from_slice(perm_data.as_slice());
         pi.copy_from_slice(pi_data.as_slice());
 
-        pk_gen(&mut pk, &mut sk, &mut perm, &mut pi, &mut pivots);
+        pk_gen(sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), &mut sk, &mut perm, &mut pi, &mut pivots)?;
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");
@@ -556,5 +556,7 @@ mod tests {
         assert_eq!(pi, pi_expected.as_slice());
         assert_eq!(perm, perm_expected.as_slice());
         assert_eq!(pk, pk_expected.as_slice());
+
+        Ok(())
     }
 }

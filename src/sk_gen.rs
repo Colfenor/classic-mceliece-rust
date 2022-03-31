@@ -62,18 +62,19 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 }
 
 #[cfg(test)]
+#[cfg(all(feature = "mceliece8192128f", test))]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    use crate::macros::sub;
+    use std::error;
 
     #[test]
-    #[cfg(all(feature = "mceliece8192128f", test))]
-    fn test_genpoly_gen() {
+    fn test_genpoly_gen() -> Result<(), Box<dyn error::Error>> {
         assert_eq!(SYS_T, 128);
 
         let input_src =
             crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
-        let first_round_input = <&[u16; 128]>::try_from(input_src.as_slice()).unwrap();
+        let first_round_input = sub!(input_src, 0, 128, u16);
         let first_round_output =
             crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");
 
@@ -82,5 +83,7 @@ mod tests {
         genpoly_gen(&mut output, first_round_input);
 
         assert_eq!(&output, first_round_output.as_slice());
+
+        Ok(())
     }
 }
