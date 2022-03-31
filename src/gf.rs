@@ -269,6 +269,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
     let mut i = (SYS_T - 1) * 2;
 
     while i >= SYS_T {
+        // the variants only differ in this loop… merge them and apply guarded blocks?
         prod[i - SYS_T + 3] ^= prod[i];
         prod[i - SYS_T + 1] ^= prod[i];
         prod[i - SYS_T + 0] ^= gf_mul(prod[i], 2);
@@ -293,7 +294,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
     }
 
     let mut i = (SYS_T - 1) * 2;
-
+    // TODO turn it into a for loop
     while i >= SYS_T {
         prod[i - SYS_T + 10] ^= prod[i];
         prod[i - SYS_T + 9] ^= prod[i];
@@ -320,7 +321,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
     }
 
     let mut i = (SYS_T - 1) * 2;
-
+    // TODO turn it into a for loop
     while i >= SYS_T {
         prod[i - SYS_T + 8] ^= prod[i];
         prod[i - SYS_T + 0] ^= prod[i];
@@ -345,7 +346,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
     }
 
     let mut i = (SYS_T - 1) * 2;
-
+    // TODO turn it into a for loop
     while i >= SYS_T {
         prod[i - SYS_T + 7] ^= prod[i];
         prod[i - SYS_T + 2] ^= prod[i];

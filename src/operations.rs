@@ -79,11 +79,11 @@ pub fn crypto_kem_enc(c: &mut [u8; CRYPTO_CIPHERTEXTBYTES], key: &mut [u8; CRYPT
 
     let padding_ok = check_pk_padding(pk);
 
-    encrypt(c, pk, &mut two_e[1..], rng)?;
+    encrypt(c, pk, sub!(mut two_e, 1, SYS_N/8), rng)?;
 
     shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
 
-    one_ec[1..(SYS_N/8) + 1].copy_from_slice(&two_e[1..(SYS_N/8) + 1]);
+    one_ec[1..1 + (SYS_N/8)].copy_from_slice(&two_e[1..(SYS_N/8) + 1]);
     one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
     shake256(&mut key[0..32], &one_ec)?;
@@ -157,9 +157,9 @@ pub fn crypto_kem_dec(key: &mut [u8; CRYPTO_BYTES], c: &[u8; CRYPTO_CIPHERTEXTBY
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
 
-    let padding_ok = check_c_padding(<&[u8; SYND_BYTES]>::try_from(&c[0..SYND_BYTES])?);
+    let padding_ok = check_c_padding(sub!(c, 0, SYND_BYTES));
 
-    let ret_decrypt: u8 = decrypt(&mut two_e[1..], &sk[40..], c);
+    let ret_decrypt: u8 = decrypt(sub!(mut two_e, 1, SYS_N/8), sub!(sk, 40, IRR_BYTES + COND_BYTES), sub!(c, 0, SYND_BYTES))?;
 
     shake256(&mut conf[0..32], &two_e)?;
 

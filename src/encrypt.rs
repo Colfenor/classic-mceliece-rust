@@ -90,7 +90,7 @@ fn gen_e(e: &mut [u8; SYS_N/8], rng: &mut impl RNGState) -> Result<(), Box<dyn e
 fn syndrome(s: &mut [u8; (PK_NROWS + 7) / 8], pk: &[u8; PK_NROWS * PK_ROW_BYTES], e: &[u8; SYS_N / 8]) {
     let mut row = [0u8; SYS_N / 8];
 
-    let mut pk_segment = pk;
+    let mut pk_segment = &pk[..];
     let tail = PK_NROWS % 8;
 
     for i in 0..SYND_BYTES {

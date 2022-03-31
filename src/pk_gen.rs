@@ -64,7 +64,7 @@ fn mov_columns(
         for j in 0..9 { tmp[j] = mat[row + i][block_idx + j]; }
         for j in 0..8 { tmp[j] = (tmp[j] >> tail) | (tmp[j+1] << (8-tail)); }
 
-		buf[i] = load8(&tmp[0..8]);
+		buf[i] = load8(sub!(tmp, 0, 8));
 	}
 
     // Compute the column indices of pivots by Gaussian elimination.
@@ -135,7 +135,7 @@ fn mov_columns(
             tmp[k] = (tmp[k] >> tail) | (tmp[k+1] << (8-tail));
         }
 
-		let mut t = load8(&tmp);
+		let mut t = load8(sub!(tmp, 0, 8));
 
 		for j in 0..32 {
 			let mut d  = t >> j;
@@ -146,7 +146,7 @@ fn mov_columns(
 			t ^= d << j;
 		}
 
-		store8(&mut tmp, t);
+		store8(sub!(mut tmp, 0, 8), t);
 
 		mat[ i ][ block_idx + 8 ] = (mat[ i ][ block_idx + 8 ] >> tail << tail) | (tmp[7] >> (8-tail));
 		mat[ i ][ block_idx + 0 ] = (tmp[0] << tail) | (mat[ i ][ block_idx ] << (8-tail) >> (8-tail));
@@ -288,10 +288,25 @@ pub(crate) fn pk_gen(
         }
     }
 
+    #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+    let tail = PK_NROWS % 8;
+    #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+    const INNER_PK_ACCESSES: usize = ((SYS_N/8 - 1) - (PK_NROWS - 1)/8) + 1;
+
     for i in 0..PK_NROWS {
         // TODO rewrite with copy_from_slice
+        #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
         for j in 0..PK_ROW_BYTES {
             pk[i * PK_ROW_BYTES + j] = mat[i][PK_NROWS / 8 + j];
+        }
+
+        #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+        for (idx, j) in ((PK_NROWS - 1)/8..SYS_N/8 - 1).enumerate() {
+            pk[i * INNER_PK_ACCESSES + idx] = (mat[i][j] >> tail) | (mat[i][j+1] << (8-tail));
+        }
+        #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+        {
+            pk[(i + 1) * INNER_PK_ACCESSES - 1] = mat[i][SYS_N/8 - 1] >> tail;
         }
     }
 

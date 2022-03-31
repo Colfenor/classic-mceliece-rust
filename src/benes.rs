@@ -129,9 +129,8 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
 /// Here, `r` is a sequence of bits to be permuted.
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
-/// `bits` requires a length of 5888.
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-fn apply_benes(r: &mut [u8; 512], bits: &[u8; 5888], rev: usize) -> Result<(), Box<dyn error::Error>> {
+fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) -> Result<(), Box<dyn error::Error>> {
     let mut bs = [0u64; 64];
     let mut cond = [0u64; 64];
 
@@ -235,15 +234,8 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; 5888], rev: usize) -> Result<(), B
 /// Here, `r` is a sequence of bits to be permuted.
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
-/// `bits` requires a length of 5888 (if `GFBITS=12` or `rev=0`) or
-/// 6400 (if `GFBITS=13` and `rev=1`).
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
-fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
-    assert!(
-        ((GFBITS == 12 || rev == 0) && bits.len() == 5888) ||
-        ((GFBITS == 13 && rev == 1) && bits.len() == 6400)
-    );
-
+fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) -> Result<(), Box<dyn error::Error>> {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -252,9 +244,8 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
     let mut calc_index = if rev == 0 { 0 } else { 12288 };
 
     for (i, chunk) in r.chunks(16).enumerate() {
-        let (subchunk1, subchunk2) = chunk.split_at(8);
-        r_int_v[0][i] = util::load8(subchunk1);
-        r_int_v[1][i] = util::load8(subchunk2);
+        r_int_v[0][i] = util::load8(sub!(chunk, 0, 8));
+        r_int_v[1][i] = util::load8(sub!(chunk, 8, 8));
     }
 
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
@@ -262,7 +253,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
 
     for iter in 0..=6 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(chunk);
+            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -281,7 +272,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
 
     for iter in 0..=5 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(chunk);
+            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -295,7 +286,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
 
     for iter in (0..=4).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(chunk);
+            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
         }
         calc_index = if rev == 0 {
             calc_index + 512
@@ -311,7 +302,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
 
     for iter in (0..=6).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(chunk);
+            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
         }
         // NOTE the second condition prevents a trailing integer underflow
         //      (recognize that calc_index is not used after the last subtraction)
@@ -330,10 +321,11 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; 6400], rev: usize) {
     transpose::transpose(&mut r_int_v[1], r_int_h[1]);
 
     for (i, chunk) in r.chunks_mut(16).enumerate() {
-        let (subchunk1, subchunk2) = chunk.split_at_mut(8);
-        util::store8(subchunk1, r_int_v[0][i]);
-        util::store8(subchunk2, r_int_v[1][i]);
+        util::store8(sub!(mut chunk, 0, 8), r_int_v[0][i]);
+        util::store8(sub!(mut chunk, 8, 8), r_int_v[1][i]);
     }
+
+    Ok(())
 }
 
 pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) -> Result<(), Box<dyn error::Error>> {
@@ -355,7 +347,7 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) -> Result<(
         }
         #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            apply_benes(&mut l[j], sub!(c, 0, 6400), 0);
+            apply_benes(&mut l[j], c, 0)?;
         }
     }
 
@@ -463,13 +455,14 @@ mod tests {
 
     #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
-    fn test_apply_benes() {
+    fn test_apply_benes() -> Result<(), Box<dyn error::Error>> {
         let t = crate::TestData::new();
         let mut r_arg = <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_before")).unwrap();
-        let bits_arg = <[u8; 6400]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits")).unwrap(); // TODO actual array has wrong size of 12_800
-        apply_benes(&mut r_arg, &bits_arg, 0);
+        let bits_arg = <[u8; COND_BYTES]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits")).unwrap(); // TODO actual array has wrong size of 12_800
+        apply_benes(&mut r_arg, &bits_arg, 0)?;
         let actual_r = r_arg;
         let expected_r = <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_after")).unwrap();
         assert_eq!(actual_r, expected_r);
+        Ok(())
     }
 }
