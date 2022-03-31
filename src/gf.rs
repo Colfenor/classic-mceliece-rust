@@ -254,7 +254,6 @@ pub(crate) fn gf_inv(den: Gf) -> Gf {
 
 /// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
 /// Called `GF_mul` in the C implementation.
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
     let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
 
@@ -266,6 +265,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
 
     let mut i = (SYS_T - 1) * 2;
 
+    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
     while i >= SYS_T {
         // the variants only differ in this loop… merge them and apply guarded blocks?
         prod[i - SYS_T + 3] ^= prod[i];
@@ -275,25 +275,9 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
         i -= 1;
     }
 
-    for i in 0..SYS_T {
-        out[i] = prod[i];
-    }
-}
-
-/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
-#[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
-pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
-    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
-
-    for i in 0..SYS_T {
-        for j in 0..SYS_T {
-            prod[i + j] ^= gf_mul(in0[i], in1[j]);
-        }
-    }
-
-    let mut i = (SYS_T - 1) * 2;
-    // TODO turn it into a for loop
+    #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
     while i >= SYS_T {
+        // TODO turn it into a for loop
         prod[i - SYS_T + 10] ^= prod[i];
         prod[i - SYS_T + 9] ^= prod[i];
         prod[i - SYS_T + 6] ^= prod[i];
@@ -302,55 +286,23 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
         i -= 1;
     }
 
-    for i in 0..SYS_T {
-        out[i] = prod[i];
-    }
-}
-
-/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
-#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
-    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
-
-    for i in 0..SYS_T {
-        for j in 0..SYS_T {
-            prod[i + j] ^= gf_mul(in0[i], in1[j]);
-        }
-    }
-
-    let mut i = (SYS_T - 1) * 2;
-    // TODO turn it into a for loop
+    #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
     while i >= SYS_T {
+        // TODO turn it into a for loop
         prod[i - SYS_T + 8] ^= prod[i];
         prod[i - SYS_T + 0] ^= prod[i];
 
         i -= 1;
     }
-
-    for i in 0..SYS_T {
-        out[i] = prod[i];
-    }
-}
-
-/// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
-#[cfg(any(
-    feature = "mceliece6688128",
-    feature = "mceliece6688128f",
-    feature = "mceliece8192128",
-    feature = "mceliece8192128f"
-))]
-pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf; SYS_T]) {
-    let mut prod: [Gf; SYS_T * 2 - 1] = [0; SYS_T * 2 - 1];
-
-    for i in 0..SYS_T {
-        for j in 0..SYS_T {
-            prod[i + j] ^= gf_mul(in0[i], in1[j]);
-        }
-    }
-
-    let mut i = (SYS_T - 1) * 2;
-    // TODO turn it into a for loop
+    
+    #[cfg(any(
+        feature = "mceliece6688128",
+        feature = "mceliece6688128f",
+        feature = "mceliece8192128",
+        feature = "mceliece8192128f"
+    ))]
     while i >= SYS_T {
+        // TODO turn it into a for loop
         prod[i - SYS_T + 7] ^= prod[i];
         prod[i - SYS_T + 2] ^= prod[i];
         prod[i - SYS_T + 1] ^= prod[i];

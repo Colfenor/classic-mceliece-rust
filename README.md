@@ -6,7 +6,7 @@ A safe pure-rust implementation of the Classic McEliece post-quantum scheme.
 * The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
 * The implementation does not utilize any concurrency techniques (SIMD/threading/…, except maybe auto-vectorization on your CPU)
 * It depends on `sha3` as SHA-3 implementation and `aes` as AES block cipher (used as RNG) implementation
-* TODO It passes the 100 testcases of the C reference implementation
+* It passes the 100 testcases of the C reference implementation
 * It implements all 10 variants of the Classic McEliece KEM
 * TODO The implementation takes between 200 milliseconds (`mceliece348864`) and 300 milliseconds (`mceliece8192128f`) to run on a modern computer
 * The implementation is constant-time on software instruction level
@@ -38,7 +38,7 @@ Add this to your `Cargo.toml`:
 classic-mceliece-rust = "0.9"
 ```
 
-TODO To use a specific Classic McEliece variant, you need to import it with the corresponding feature flag:
+To use a specific Classic McEliece variant, you need to import it with the corresponding feature flag:
 
 ```toml
 [dependencies]
@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 This library comes with two examples:
 
 ```bash
-$ cargo run --example simple
+$ cargo run --example basic
 ```
 
 The output annotates messages with Alice/Bob to illustrate which data is processed by which party.
@@ -148,7 +148,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
-* **2022-02-11 version 0.9.0:** public release
+* **2022-03-31 version 1.0.0:** public release
 
 ## Where can I ask you to fix a bug?
 
