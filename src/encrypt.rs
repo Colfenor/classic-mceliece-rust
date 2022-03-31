@@ -1,3 +1,5 @@
+//! Encryption function to compute error vector and syndrome to get ciphertext
+
 use std::error;
 
 use crate::{

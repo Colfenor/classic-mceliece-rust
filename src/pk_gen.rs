@@ -1,3 +1,5 @@
+//! Generation of public key
+
 use crate::{
     gf::{gf_inv, gf_mul},
     macros::sub,

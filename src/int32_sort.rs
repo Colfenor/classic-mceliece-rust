@@ -1,3 +1,5 @@
+//! Sort an array of i32 elements in constant-time
+
 /// If `a > b`, swap `a` and `b` in-place. Otherwise keep values.
 /// Implements `(min(a, b), max(a, b))` in constant time.
 const fn int32_minmax(mut a: i32, mut b: i32) -> (i32, i32) {

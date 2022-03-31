@@ -1,8 +1,8 @@
-//! This file is for loading/storing data in a little-endian fashion
+//! This file is for loading/storing data in a little-endian fashion and a `bitrev` function
 
 use crate::{gf::Gf, params::GFMASK};
 
-// Store Gf element `a` in array `dest`
+/// Store Gf element `a` in array `dest`
 pub(crate) fn store_gf(dest: &mut [u8; 2], a: Gf) {
     dest[0] = (a & 0xFF) as u8;
     dest[1] = a.overflowing_shr(8).0 as u8;

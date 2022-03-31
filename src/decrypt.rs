@@ -1,3 +1,5 @@
+//! Decryption function to turn ciphertext into a ciphertext using the secret key
+
 use crate::{
     benes::support_gen,
     bm::bm,

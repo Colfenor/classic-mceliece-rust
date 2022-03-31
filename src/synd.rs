@@ -1,3 +1,5 @@
+//! Syndrome computation
+
 use crate::gf::{gf_add, gf_inv, gf_mul, Gf};
 use crate::params::{SYS_N, SYS_T};
 use crate::root::eval;

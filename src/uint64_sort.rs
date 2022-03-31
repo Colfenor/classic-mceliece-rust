@@ -1,3 +1,5 @@
+//! Sort an array of u64 elements in constant-time
+
 /// If `a > b`, swap `a` and `b` in-place. Otherwise keep values.
 /// Implements `(min(a, b), max(a, b))` in constant time.
 ///

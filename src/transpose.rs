@@ -1,3 +1,5 @@
+//! Matrix transpose implementation
+
 /// Compute transposition of `input` and store it in `output`
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {

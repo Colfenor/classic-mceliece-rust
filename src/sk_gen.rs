@@ -1,7 +1,7 @@
+//! Generation of secret key
+
 use crate::gf::{gf_inv, gf_iszero, gf_mul, gf_mul_inplace, Gf};
 use crate::params::SYS_T;
-
-// out and f both arrays with SYS_T len
 
 /// Take element `f` in `GF((2^m)^t)` and return minimal polynomial `out` of `f`
 /// Returns 0 for success and -1 for failure

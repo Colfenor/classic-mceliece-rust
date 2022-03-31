@@ -1,3 +1,5 @@
+//! Hash function implementations (only SHAKE)
+
 use std::error;
 use std::fmt;
 use std::io::Read;

@@ -1,3 +1,5 @@
+//! KEM API
+
 use std::error;
 
 use crate::controlbits::controlbitsfrompermutation;

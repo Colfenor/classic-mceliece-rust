@@ -1,6 +1,4 @@
-/*
-  This file is for evaluating a polynomial at one or more field elements
-*/
+//! This file is for evaluating a polynomial at one or more field elements
 
 use crate::{
     gf::{gf_add, gf_mul, Gf},
