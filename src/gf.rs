@@ -1119,7 +1119,6 @@ mod tests {
                 8190, 1, 8190, 1, 8190, 1
             ]
         );
-        res = [0u16; SYS_T];
     }
 
     #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
