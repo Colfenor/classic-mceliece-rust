@@ -263,52 +263,37 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
         }
     }
 
-    let mut i = (SYS_T - 1) * 2;
-
-    #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-    while i >= SYS_T {
-        // the variants only differ in this loop… merge them and apply guarded blocks?
-        prod[i - SYS_T + 3] ^= prod[i];
-        prod[i - SYS_T + 1] ^= prod[i];
-        prod[i - SYS_T + 0] ^= gf_mul(prod[i], 2);
-
-        i -= 1;
-    }
-
-    #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
-    while i >= SYS_T {
-        // TODO turn it into a for loop
-        prod[i - SYS_T + 10] ^= prod[i];
-        prod[i - SYS_T + 9] ^= prod[i];
-        prod[i - SYS_T + 6] ^= prod[i];
-        prod[i - SYS_T + 0] ^= prod[i];
-
-        i -= 1;
-    }
-
-    #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-    while i >= SYS_T {
-        // TODO turn it into a for loop
-        prod[i - SYS_T + 8] ^= prod[i];
-        prod[i - SYS_T + 0] ^= prod[i];
-
-        i -= 1;
-    }
-    
-    #[cfg(any(
-        feature = "mceliece6688128",
-        feature = "mceliece6688128f",
-        feature = "mceliece8192128",
-        feature = "mceliece8192128f"
-    ))]
-    while i >= SYS_T {
-        // TODO turn it into a for loop
-        prod[i - SYS_T + 7] ^= prod[i];
-        prod[i - SYS_T + 2] ^= prod[i];
-        prod[i - SYS_T + 1] ^= prod[i];
-        prod[i - SYS_T + 0] ^= prod[i];
-
-        i -= 1;
+    for i in (SYS_T..=(SYS_T - 1) * 2).rev() {
+        #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+        {
+            prod[i - SYS_T + 3] ^= prod[i];
+            prod[i - SYS_T + 1] ^= prod[i];
+            prod[i - SYS_T + 0] ^= gf_mul(prod[i], 2);
+        }
+        #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
+        {
+            prod[i - SYS_T + 10] ^= prod[i];
+            prod[i - SYS_T + 9] ^= prod[i];
+            prod[i - SYS_T + 6] ^= prod[i];
+            prod[i - SYS_T + 0] ^= prod[i];
+        }
+        #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+        {
+            prod[i - SYS_T + 8] ^= prod[i];
+            prod[i - SYS_T + 0] ^= prod[i];
+        }
+        #[cfg(any(
+            feature = "mceliece6688128",
+            feature = "mceliece6688128f",
+            feature = "mceliece8192128",
+            feature = "mceliece8192128f"
+        ))]
+        {
+            prod[i - SYS_T + 7] ^= prod[i];
+            prod[i - SYS_T + 2] ^= prod[i];
+            prod[i - SYS_T + 1] ^= prod[i];
+            prod[i - SYS_T + 0] ^= prod[i];
+        }
     }
 
     for i in 0..SYS_T {
