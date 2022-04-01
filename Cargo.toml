@@ -1,8 +1,14 @@
 [package]
 name = "classic-mceliece-rust"
-version = "0.1.0"
+description = "Pure rust implementation of the PQC scheme Classic McEliece"
+repository = "https://github.com/prokls/classic-mceliece-rust/"
+readme = "README.md"
+license = "MIT"
+version = "1.0.0"
 authors = ["Bernhard <34011017+Colfenor@users.noreply.github.com>", "Lukas Prokop <admin@lukas-prokop.at>"]
-edition = "2018"
+edition = "2021"
+keywords = ["pqc", "post-quantum", "cryptography", "lattice"]
+categories = ["cryptography"]
 
 [dependencies]
 rand = "0.8.4"
