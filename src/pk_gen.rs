@@ -275,11 +275,13 @@ pub(crate) fn pk_gen(
             inv[j] = gf_mul(inv[j], l[j]);
         }
     }
-
     // gaussian elimination
-    for i in 0..(PK_NROWS + 7) / 8 {
+    const ROWS: usize = (PK_NROWS + 7) / 8;
+
+    for i in 0..ROWS {
         for j in 0..8 {
-            // TODO this loop is much slower than in C
+            // NOTE: this loop is much very slow without optimization.
+            //       test_pk_gen_2 takes 126s, but 4s with opt-level=1.
             let row = i * 8 + j;
 
             if row >= PK_NROWS {
@@ -317,14 +319,16 @@ pub(crate) fn pk_gen(
             }
 
             for k in 0..PK_NROWS {
-                if k != row {
-                    let mut mask = mat[k][i] >> j;
-                    mask &= 1;
-                    mask = 0u8.wrapping_sub(mask);
+                if k == row {
+                    continue;
+                }
 
-                    for c in 0..(SYS_N / 8) {
-                        mat[k][c] ^= mat[row][c] & mask;
-                    }
+                let mut mask = mat[k][i] >> j;
+                mask &= 1;
+                mask = 0u8.wrapping_sub(mask);
+
+                for c in 0..(SYS_N / 8) {
+                    mat[k][c] ^= mat[row][c] & mask;
                 }
             }
         }
