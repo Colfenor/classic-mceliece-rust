@@ -1,11 +1,8 @@
-pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
-    assert!(
-        output.len() == 64 && input.len() == 64,
-        "Error, array-length has to be 64."
-    );
+//! Matrix transpose implementation
 
-    let (mut x, mut y): (u64, u64);
-
+/// Compute transposition of `input` and store it in `output`
+#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
     let masks: [[u64; 2]; 6] = [
         [0x5555555555555555, 0xAAAAAAAAAAAAAAAA],
         [0x3333333333333333, 0xCCCCCCCCCCCCCCCC],
@@ -14,23 +11,18 @@ pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
         [0x0000FFFF0000FFFF, 0xFFFF0000FFFF0000],
         [0x00000000FFFFFFFF, 0xFFFFFFFF00000000],
     ];
-    //println!("{:X}", masks[0][0] as i32);
-    //println!("{:X}", masks[0][1] as i32);
-    //println!("{:X}", masks[4][0] as i32);
-
-    let (mut i, mut j, mut s): (usize, usize, usize);
 
     for h in 0..64 {
         output[h] = input[h];
     }
 
     for d in (0..=5).rev() {
-        s = 1 << d;
+        let s = 1 << d;
 
         for i in (0..64).step_by(s * 2) {
             for j in i..i + s {
-                x = (output[j] & masks[d][0]) | ((output[j + s] & masks[d][0]) << s);
-                y = ((output[j] & masks[d][1]) >> s) | (output[j + s] & masks[d][1]);
+                let x = (output[j] & masks[d][0]) | ((output[j + s] & masks[d][0]) << s);
+                let y = ((output[j] & masks[d][1]) >> s) | (output[j + s] & masks[d][1]);
 
                 output[j + 0] = x;
                 output[j + s] = y;
@@ -39,19 +31,44 @@ pub fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
     }
 }
 
+/// Take a 64×64 matrix over GF(2).
+/// Compute the transpose of `arg` and return it in `arg`
+///
+/// Unlike the C implementation, this function works in-place.
+/// The C implementation uses the function only in a way such that
+/// input argument == output argument. Because we cannot create a
+/// shared and mutable reference simultaneously, we can only generate
+/// one argument.
+#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+pub(crate) fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
+    let masks = [
+        [0x5555555555555555u64, 0xAAAAAAAAAAAAAAAAu64],
+        [0x3333333333333333, 0xCCCCCCCCCCCCCCCC],
+        [0x0F0F0F0F0F0F0F0F, 0xF0F0F0F0F0F0F0F0],
+        [0x00FF00FF00FF00FF, 0xFF00FF00FF00FF00],
+        [0x0000FFFF0000FFFF, 0xFFFF0000FFFF0000],
+        [0x00000000FFFFFFFF, 0xFFFFFFFF00000000],
+    ];
+
+    for d in (0..6).rev() {
+        let s = 1 << d;
+        let mut i = 0;
+        while i < 64 {
+            for j in i..(i + s) {
+                let x: u64 = (arg[j] & masks[d][0]) | ((arg[j + s] & masks[d][0]) << s);
+                let y: u64 = ((arg[j] & masks[d][1]) >> s) | (arg[j + s] & masks[d][1]);
+
+                arg[j] = x;
+                arg[j + s] = y;
+            }
+            i += s * 2;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    //Unit tests
-    pub fn print_matrix(m: [u64; 64]) {
-        for i in 0..64 {
-            for j in 0..64 {
-                print!("{}", (m[i] >> (63 - j)) & 1);
-            }
-            print!("\n");
-        }
-    }
 
     struct TestMatrix {
         input: [u64; 64],
@@ -59,9 +76,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_transpose() {
-        let mut test_output: [u64; 64] = [0; 64];
-
+    fn test_transpose() {
         let mut testcases: [TestMatrix; 2] = [
             TestMatrix {
                 input: [0u64; 64],
@@ -342,18 +357,20 @@ mod tests {
             ],
         };
 
-        /*for i in 0..64 {
-            println!("0x{:016X}u64,", test_output[i]);
-        }*/
-
-        // assert matrice elements are equal
         for i in 0..2 {
-            println!("Starting testcases {}", i);
+            #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
+            {
+                let mut test_output: [u64; 64] = [0; 64];
+                transpose(&mut test_output, testcases[i].input);
+                assert_eq!(test_output, testcases[i].output);
+            }
 
-            transpose(&mut test_output, testcases[i].input);
-            //print_matrix(test_output);
-
-            assert_eq!(test_output, testcases[i].output);
+            #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
+            {
+                let mut data = testcases[i].input;
+                transpose_64x64_inplace(&mut data);
+                assert_eq!(data, testcases[i].output);
+            }
         }
     }
 }

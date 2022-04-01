@@ -1,116 +1,241 @@
-use std::{error, fmt::Debug};
+//! KEM API
+
+use std::error;
 
 use crate::controlbits::controlbitsfrompermutation;
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+use crate::params::{PK_NCOLS, PK_NROWS, PK_ROW_BYTES};
+use crate::randombytes::RNGState;
 use crate::{
+    api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
     crypto_hash::shake256,
-    decrypt,
     decrypt::decrypt,
     encrypt::encrypt,
+    macros::sub,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
-    randombytes::{randombytes, randombytes_init},
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
 
-pub fn crypto_kem_enc(c: &mut [u8], key: &mut [u8], pk: &mut [u8]) -> i32 {
+/// This function determines (in a constant-time manner) whether the padding bits of `pk` are all zero.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+fn check_pk_padding(pk: &[u8; PK_NROWS * PK_ROW_BYTES]) -> u8 {
+    let mut b = 0u8;
+    for i in 0..PK_NROWS {
+        b |= pk[i * PK_ROW_BYTES + PK_ROW_BYTES - 1];
+    }
+
+    b >>= PK_NCOLS % 8;
+    b = b.wrapping_sub(1);
+    b >>= 7;
+    b.wrapping_sub(1)
+}
+
+/// This function determines (in a constant-time manner) whether the padding bits of `c` are all zero.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+fn check_c_padding(c: &[u8; SYND_BYTES]) -> u8 {
+    let mut b = c[SYND_BYTES - 1] >> (PK_NROWS % 8);
+    b = b.wrapping_sub(1);
+    b >>= 7;
+    b.wrapping_sub(1)
+}
+
+/// KEM Encapsulation.
+///
+/// Given a public key `pk`, sample a shared key.
+/// This shared key is returned through parameter `key` whereas
+/// the ciphertext (meant to be used for decapsulation) is returned as `c`.
+#[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
+pub fn crypto_kem_enc(
+    c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
+    key: &mut [u8; CRYPTO_BYTES],
+    pk: &[u8; CRYPTO_PUBLICKEYBYTES],
+    rng: &mut impl RNGState,
+) -> Result<(), Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
     one_ec[0] = 1;
 
-    encrypt(c, pk, &mut two_e[1..]);
+    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
 
-    shake256(&mut c[SYND_BYTES..], &two_e);
+    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e)?;
 
-    for i in 1..=SYS_N / 8 {
-        one_ec[i] = two_e[i];
-    }
+    one_ec[1..1 + SYS_N / 8].copy_from_slice(&two_e[1..1 + SYS_N / 8]);
+    one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    let mut j = 0;
-    for i in (1 + SYS_N / 8)..(1 + SYS_N / 8 + SYND_BYTES + 32) {
-        one_ec[i] = c[j];
-        j += 1;
-    }
+    shake256(&mut key[0..32], &one_ec)?;
 
-    shake256(key, &one_ec);
-
-    return 0;
+    Ok(())
 }
 
-// debug function
-pub fn print_array<T: Debug>(input: &[T]) {
-    for i in 0..input.len() {
-        println!("i:{} {:?}", i, input[i]);
+/// KEM Encapsulation.
+///
+/// Given a public key `pk`, sample a shared key.
+/// This shared key is returned through parameter `key` whereas
+/// the ciphertext (meant to be used for decapsulation) is returned as `c`.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+pub fn crypto_kem_enc(
+    c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
+    key: &mut [u8; CRYPTO_BYTES],
+    pk: &[u8; CRYPTO_PUBLICKEYBYTES],
+    rng: &mut impl RNGState,
+) -> Result<u8, Box<dyn error::Error>> {
+    let mut two_e = [0u8; 1 + SYS_N / 8];
+    two_e[0] = 2;
+
+    let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    one_ec[0] = 1;
+
+    let padding_ok = check_pk_padding(pk);
+
+    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
+
+    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
+
+    one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&two_e[1..(SYS_N / 8) + 1]);
+    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32]
+        .copy_from_slice(&c[0..SYND_BYTES + 32]);
+
+    shake256(&mut key[0..32], &one_ec)?;
+
+    // clear outputs (set to all 0's) if padding bits are not all zero
+
+    let mask = padding_ok ^ 0xFF;
+
+    for i in 0..SYND_BYTES + 32 {
+        c[i] &= mask;
     }
+
+    for i in 0..32 {
+        key[i] &= mask;
+    }
+
+    Ok(padding_ok)
 }
 
-pub fn crypto_kem_dec(key: &mut [u8], c: &mut [u8], sk: &mut [u8]) -> i32 {
-    let mut ret_confirm: u8 = 0;
-    let mut ret_decrypt: u8 = 0;
-
-    let mut m: u16 = 0;
-
+/// KEM Decapsulation.
+///
+/// Given a secret key `sk` and a ciphertext `c`,
+/// determine the shared text `key` negotiated by both parties.
+#[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
+pub fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+) -> Result<u8, Box<dyn error::Error>> {
     let mut conf = [0u8; 32];
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
 
-    ret_decrypt = decrypt(&mut two_e[1..], &mut sk[40..], c);
+    let ret_decrypt: u8 = decrypt(
+        sub!(mut two_e, 1, SYS_N / 8),
+        sub!(sk, 40, IRR_BYTES + COND_BYTES),
+        sub!(c, 0, SYND_BYTES),
+    )?;
 
-    shake256(&mut conf, &two_e);
+    shake256(&mut conf[0..32], &two_e)?;
 
+    let mut ret_confirm: u8 = 0;
     for i in 0..32 {
         ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
     }
 
-    m = (ret_decrypt | ret_confirm) as u16;
+    let mut m = (ret_decrypt | ret_confirm) as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
-    let mut index = 0;
-    preimage[index] = (m & 1) as u8;
-    index += 1;
+    preimage[0] = (m & 1) as u8;
 
-    let mut s = &mut sk[40 + IRR_BYTES + COND_BYTES..];
+    let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
     for i in 0..SYS_N / 8 {
-        preimage[index] = (!m as u8 & s[i]) | (m as u8 & two_e[i + 1]);
-        index += 1;
+        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
     }
 
-    for i in 0..SYND_BYTES + 32 {
-        preimage[index] = c[i];
-        index += 1;
-    }
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(key, &preimage);
+    shake256(&mut key[0..32], &preimage)?;
 
-    /*println!("KEY: ");
+    Ok(0)
+}
+
+/// KEM Decapsulation.
+///
+/// Given a secret key `sk` and a ciphertext `c`,
+/// determine the shared text `key` negotiated by both parties.
+#[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
+pub fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+) -> Result<u8, Box<dyn error::Error>> {
+    let mut conf = [0u8; 32];
+    let mut two_e = [0u8; 1 + SYS_N / 8];
+    two_e[0] = 2;
+
+    let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+
+    let padding_ok = check_c_padding(sub!(c, 0, SYND_BYTES));
+
+    let ret_decrypt: u8 = decrypt(
+        sub!(mut two_e, 1, SYS_N / 8),
+        sub!(sk, 40, IRR_BYTES + COND_BYTES),
+        sub!(c, 0, SYND_BYTES),
+    )?;
+
+    shake256(&mut conf[0..32], &two_e)?;
+
+    let mut ret_confirm: u8 = 0;
     for i in 0..32 {
-        println!("{}", key[i]);
+        ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
     }
-    println!("ENDK");*/
 
-    return 0;
+    let mut m = (ret_decrypt | ret_confirm) as u16;
+    m = m.wrapping_sub(1);
+    m >>= 8;
+
+    preimage[0] = (m & 1) as u8;
+
+    let s = &sk[40 + IRR_BYTES + COND_BYTES..];
+
+    for i in 0..SYS_N / 8 {
+        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
+    }
+
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
+
+    shake256(&mut key[0..32], &preimage)?;
+
+    // clear outputs (set to all 1's) if padding bits are not all zero
+
+    let mask = padding_ok;
+
+    for i in 0..32 {
+        key[i] |= mask;
+    }
+
+    Ok(padding_ok)
 }
 
-// quick custom log2 fn
-fn log2(mut x: usize) -> usize {
-    while x.count_ones() != 1 {
-        x += 1;
-    }
-    let mut log = 0;
-    while x != 0 {
-        x >>= 1;
-        log += 1;
-    }
-    log - 1
-}
-
-pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
+/// KEM Keypair generation.
+///
+/// Generate some public and secret key.
+/// The public key is meant to be shared with any party,
+/// but access to the secret key must be limited to the generating party.
+///
+/// The structure of the secret key is given by the following segments:
+/// (32 bytes seed, 8 bytes pivots, IRR_BYTES bytes, COND_BYTES bytes, SYS_N/8 bytes).
+/// The structure of the public key is simple: a matrix of PK_NROWS times PK_ROW_BYTES bytes.
+pub fn crypto_kem_keypair(
+    pk: &mut [u8; CRYPTO_PUBLICKEYBYTES],
+    sk: &mut [u8; CRYPTO_SECRETKEYBYTES],
+    rng: &mut impl RNGState,
+) -> Result<(), Box<dyn error::Error>> {
     let mut seed = [0u8; 33];
     seed[0] = 64;
 
@@ -120,11 +245,24 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     const IRR_POLYS: usize = SYS_N / 8 + (1 << GFBITS) * 4;
     const PERM: usize = SYS_N / 8;
 
-    // ------------------ 1024     +     32768      +  256   +  32
-    let mut r = [0u8; SYS_N / 8 + (1 << GFBITS) * 4 + SYS_T * 2 + 32];
-    let mut r_len = r.len(); // 34080
-    let mut pivots: u64 = 0;
-    let mut index = r_len - 32;
+    let mut r = [0u8; SEED + 32];
+
+    #[cfg(any(
+        feature = "mceliece348864f",
+        feature = "mceliece460896f",
+        feature = "mceliece6688128f",
+        feature = "mceliece6960119f",
+        feature = "mceliece8192128f"
+    ))]
+    let mut pivots = 0u64;
+    #[cfg(any(
+        feature = "mceliece348864",
+        feature = "mceliece460896",
+        feature = "mceliece6688128",
+        feature = "mceliece6960119",
+        feature = "mceliece8192128"
+    ))]
+    let pivots: u64;
 
     let mut f = [0u16; SYS_T];
     let mut irr = [0u16; SYS_T];
@@ -132,46 +270,69 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
     let mut perm = [0u32; 1 << GFBITS];
     let mut pi = [0i16; 1 << GFBITS];
 
-    if let Err(e) = randombytes(&mut seed[1..], 32) {
-        eprintln!("{:?}", e);
-        return 1;
-    }
+    rng.randombytes(&mut seed[1..])?;
 
     loop {
         // expanding and updating the seed
-        shake256(&mut r[..], &seed[0..33]);
+        shake256(&mut r[..], &seed[0..33])?;
 
-        (&mut sk[..32]).clone_from_slice(&seed[1..]);
-        (&mut seed[1..]).clone_from_slice(&r[r.len() - 32..]);
+        sk[..32].clone_from_slice(&seed[1..]);
+        seed[1..].clone_from_slice(&r[r.len() - 32..]);
 
         // generating irreducible polynomial
 
         for (i, chunk) in r[IRR_POLYS..SEED].chunks(2).enumerate() {
-            f[i] = load_gf(chunk);
+            f[i] = load_gf(sub!(chunk, 0, 2));
         }
 
         if genpoly_gen(&mut irr, &mut f) != 0 {
             continue;
         }
 
-        for (i, chunk) in sk[32 + 8..32 + 8 + 2 * SYS_T].chunks_mut(2).enumerate() {
-            store_gf(chunk, irr[i]);
+        for (i, chunk) in sk[40..40 + IRR_BYTES].chunks_mut(2).enumerate() {
+            store_gf(sub!(mut chunk, 0, 2), irr[i]);
         }
 
         // generating permutation
 
         for (i, chunk) in r[PERM..IRR_POLYS].chunks(4).enumerate() {
-            perm[i] = load4(chunk);
+            perm[i] = load4(sub!(chunk, 0, 4));
         }
 
-        if pk_gen(pk, &mut sk[(32 + 8)..], &mut perm, &mut pi, &mut pivots) != 0 {
-            continue;
+        #[cfg(any(
+            feature = "mceliece348864f",
+            feature = "mceliece460896f",
+            feature = "mceliece6688128f",
+            feature = "mceliece6960119f",
+            feature = "mceliece8192128f"
+        ))]
+        {
+            if pk_gen(
+                pk,
+                sub!(mut sk, 40, IRR_BYTES),
+                &mut perm,
+                &mut pi,
+                &mut pivots,
+            )? != 0
+            {
+                continue;
+            }
+        }
+        #[cfg(any(
+            feature = "mceliece348864",
+            feature = "mceliece460896",
+            feature = "mceliece6688128",
+            feature = "mceliece6960119",
+            feature = "mceliece8192128"
+        ))]
+        {
+            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi)? != 0 {
+                continue;
+            }
         }
 
-        let m = log2(pi.len());
-        let count = (((2 * m - 1) * (1 << (m - 1))) + 7) / 8;
         controlbitsfrompermutation(
-            &mut sk[(32 + 8 + IRR_BYTES)..(32 + 8 + IRR_BYTES + count)],
+            &mut sk[(40 + IRR_BYTES)..(40 + IRR_BYTES + COND_BYTES)],
             &mut pi,
             GFBITS,
             1 << GFBITS,
@@ -179,139 +340,118 @@ pub fn crypto_kem_keypair(pk: &mut [u8], mut sk: &mut [u8]) -> i32 {
 
         // storing the random string s
 
-        //println!("end pk_geeeentz");
-        //print_array(&pk);
-        //println!("finitorz");
-
         sk[S_BASE..(S_BASE + SYS_N / 8)].clone_from_slice(&r[0..SYS_N / 8]);
 
         // storing positions of the 32 pivots
 
-        store8(&mut sk[32..40], pivots);
+        #[cfg(any(
+            feature = "mceliece348864",
+            feature = "mceliece460896",
+            feature = "mceliece6688128",
+            feature = "mceliece6960119",
+            feature = "mceliece8192128"
+        ))]
+        {
+            pivots = 0xFFFFFFFF;
+        }
+
+        store8(sub!(mut sk, 32, 8), pivots);
 
         break;
     }
 
-    return 0;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
+    #[cfg(all(feature = "mceliece8192128f", test))]
+    use crate::randombytes::AesState;
+    #[cfg(all(feature = "mceliece8192128f", test))]
+    use std::convert::TryFrom;
 
     #[test]
-    pub fn test_crypto_kem_dec() {
-        use crate::{
-            api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
-            decrypt_arrays::{C_INPUT, SK_INPUT},
-        };
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_crypto_kem_dec() -> Result<(), Box<dyn error::Error>> {
+        use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
 
-        let mut sk = SK_INPUT.to_vec();
-        assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
-
-        let mut c = C_INPUT.to_vec();
-        assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
-
+        let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
+        let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
         let mut test_key = [0u8; 32];
+        let compare_key = crate::TestData::new().u8vec("mceliece8192128f_operations_ss");
 
-        let compare_key: [u8; 32] = [
-            236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10,
-            133, 197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
-        ];
+        crypto_kem_dec(&mut test_key, sub!(mut c, 0, CRYPTO_CIPHERTEXTBYTES), sub!(mut sk, 0, CRYPTO_SECRETKEYBYTES))?;
 
-        crypto_kem_dec(&mut test_key, &mut c, &mut sk);
-
-        assert_eq!(test_key, compare_key);
-    }
-
-    #[test]
-    pub fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
-        use crate::{
-            api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES},
-            encrypt_array::PK_INPUT,
-        };
-
-        let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-        let mut ss = [0u8; CRYPTO_BYTES];
-        let mut pk = PK_INPUT.to_vec();
-        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
-
-        let mut compare_key: [u8; 32] = [
-            236, 53, 216, 229, 94, 183, 172, 233, 134, 102, 148, 252, 9, 21, 64, 46, 160, 114, 10,
-            133, 197, 163, 219, 138, 147, 214, 39, 240, 67, 42, 69, 46,
-        ];
-        let mut compare_s: [u8; CRYPTO_CIPHERTEXTBYTES] = [
-            242, 32, 240, 115, 213, 142, 119, 195, 175, 92, 54, 108, 148, 206, 223, 242, 89, 228,
-            20, 76, 143, 186, 142, 203, 248, 51, 88, 44, 41, 34, 66, 148, 49, 215, 188, 202, 21,
-            213, 135, 64, 92, 246, 70, 65, 28, 225, 19, 149, 13, 231, 177, 94, 146, 172, 255, 139,
-            219, 153, 56, 91, 225, 145, 127, 126, 230, 140, 186, 88, 195, 37, 5, 40, 44, 86, 141,
-            103, 238, 41, 200, 75, 7, 152, 140, 157, 77, 2, 205, 90, 33, 84, 74, 48, 80, 210, 75,
-            112, 1, 179, 35, 47, 188, 83, 79, 32, 51, 171, 122, 16, 171, 78, 92, 129, 106, 12, 231,
-            177, 251, 219, 70, 210, 219, 181, 250, 201, 52, 188, 250, 87, 198, 117, 38, 85, 100,
-            175, 52, 0, 234, 77, 206, 215, 230, 139, 237, 176, 175, 76, 82, 162, 91, 251, 166, 190,
-            33, 98, 170, 122, 219, 142, 246, 133, 239, 188, 17, 148, 7, 166, 147, 138, 249, 4, 99,
-            11, 126, 117, 90, 157, 47, 116, 150, 240, 97, 41, 238, 117, 56, 208, 145, 68, 16, 123,
-            213, 27, 199, 37, 214, 213, 167, 63, 65, 157, 130, 119, 187, 193, 149, 255, 76, 127,
-            62, 221, 8, 98, 22, 201, 15, 40, 199, 142, 3, 196, 150, 181, 110, 102, 89, 220, 149,
-            197, 247, 197, 26, 55, 29, 54, 186, 217, 188, 23, 87, 194,
-        ];
-
-        // set the same seed as in C implementation
-        let mut entropy_input = [0u8; 48];
-        let mut personalization_string = [0u8; 48];
-        entropy_input = [
-            6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
-            204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
-            249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
-        ];
-
-        randombytes_init(&entropy_input, &personalization_string, 256)?;
-
-        let mut second_seed = [0u8; 33];
-        second_seed[0] = 64;
-
-        randombytes(&mut second_seed[1..], 32)?;
-
-        // call
-        crypto_kem_enc(&mut c, &mut ss, &mut pk);
-
-        assert_eq!(ss, compare_key);
-
-        assert_eq!(c, compare_s);
+        assert_eq!(test_key, compare_key.as_slice());
 
         Ok(())
     }
 
     #[test]
-    pub fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
-        use crate::{
-            api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
-            operations_arrays::{COMPARE_PK, COMPARE_SK, PK_INPUT, SK_INPUT},
-        };
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
+        use crate::api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES};
 
-        let mut pk_input = PK_INPUT.to_vec();
-        assert_eq!(pk_input.len(), CRYPTO_PUBLICKEYBYTES);
+        let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut ss = [0u8; CRYPTO_BYTES];
+        let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
+        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        let mut sk_input = SK_INPUT.to_vec();
-        assert_eq!(sk_input.len(), CRYPTO_SECRETKEYBYTES);
+        let compare_ss = crate::TestData::new().u8vec("mceliece8192128f_operations_ss");
+        let compare_ct = crate::TestData::new().u8vec("mceliece8192128f_operations_enc1_ct");
 
-        let mut entropy_input = [0u8; 48];
-        let mut personalization_string = [0u8; 48];
-        entropy_input = [
-            6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
-            204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
-            249, 126, 208, 133, 65, 219, 210, 225, 255, 161,
-        ];
+        // set the same seed as in C implementation
+        let entropy_input = <[u8; 48]>::try_from(
+            crate::TestData::new()
+                .u8vec("mceliece8192128f_operations_entropy_input")
+                .as_slice(),
+        )
+        .unwrap();
 
-        let compare_sk = COMPARE_SK.to_vec();
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
+
+        let mut second_seed = [0u8; 33];
+        second_seed[0] = 64;
+
+        rng_state.randombytes(&mut second_seed[1..])?;
+
+        crypto_kem_enc(&mut c, &mut ss, sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), &mut rng_state)?;
+
+        assert_eq!(ss, compare_ss.as_slice());
+
+        assert_eq!(c, compare_ct.as_slice());
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
+    fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
+        use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+        let mut pk_input = [0; CRYPTO_PUBLICKEYBYTES].to_vec();
+        let mut sk_input = [0; CRYPTO_SECRETKEYBYTES].to_vec();
+
+        let entropy_input = <[u8; 48]>::try_from(
+            crate::TestData::new()
+                .u8vec("mceliece8192128f_operations_entropy_input")
+                .as_slice(),
+        )
+        .unwrap();
+
+        let compare_sk = crate::TestData::new().u8vec("mceliece8192128f_operations_sk_expected");
         assert_eq!(compare_sk.len(), CRYPTO_SECRETKEYBYTES);
 
-        let compare_pk = COMPARE_PK.to_vec();
+        let compare_pk = crate::TestData::new().u8vec("mceliece8192128f_operations_pk_expected");
         assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        randombytes_init(&entropy_input, &personalization_string, 256)?;
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
 
-        crypto_kem_keypair(&mut pk_input, &mut sk_input);
+        crypto_kem_keypair(sub!(mut pk_input, 0, CRYPTO_PUBLICKEYBYTES), sub!(mut sk_input, 0, CRYPTO_SECRETKEYBYTES), &mut rng_state)?;
 
         assert_eq!(compare_sk, sk_input);
         assert_eq!(compare_pk, pk_input);
