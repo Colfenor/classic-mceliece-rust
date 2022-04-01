@@ -38,9 +38,7 @@ pub(crate) fn decrypt(
         r[i] = c[i];
     }
 
-    for i in SYND_BYTES..SYS_N / 8 {
-        r[i] = 0;
-    }
+    r[SYND_BYTES..SYS_N / 8].fill(0);
 
     for (i, chunk) in sk.chunks(2).take(SYS_T).enumerate() {
         g[i] = load_gf(sub!(chunk, 0, 2));
@@ -55,9 +53,7 @@ pub(crate) fn decrypt(
 
     root(&mut images, &mut locator, &mut l);
 
-    for i in 0..SYS_N / 8 {
-        e[i] = 0;
-    }
+    e[0..SYS_N / 8].fill(0);
 
     for i in 0..SYS_N {
         t = gf_iszero(images[i]) & 1;

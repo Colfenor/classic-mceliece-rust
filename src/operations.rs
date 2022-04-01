@@ -157,9 +157,7 @@ pub fn crypto_kem_dec(
         preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
     }
 
-    for i in 0..SYND_BYTES + 32 {
-        preimage[1 + (SYS_N / 8) + i] = c[i];
-    }
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
     shake256(&mut key[0..32], &preimage)?;
 
@@ -209,9 +207,7 @@ pub fn crypto_kem_dec(
         preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
     }
 
-    for i in 0..SYND_BYTES + 32 {
-        preimage[1 + (SYS_N / 8) + i] = c[i];
-    }
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
     shake256(&mut key[0..32], &preimage)?;
 

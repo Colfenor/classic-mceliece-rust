@@ -39,7 +39,6 @@ mod tests {
 
         for i in 0..l.len() {
             l[i] = i as u16;
-            inv[i] = 0;
         }
 
         root(&mut inv, &g, &l);

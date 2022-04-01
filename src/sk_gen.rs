@@ -9,9 +9,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
     let mut mat = [[0u16; SYS_T]; SYS_T + 1];
     mat[0][0] = 1;
 
-    for i in 1..SYS_T {
-        mat[0][i] = 0;
-    }
+    mat[0][1..SYS_T].fill(0);
 
     for i in 0..SYS_T {
         mat[1][i] = f[i];
@@ -54,9 +52,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
         }
     }
 
-    for i in 0..SYS_T {
-        out[i] = mat[SYS_T][i];
-    }
+    out[0..SYS_T].copy_from_slice(&mat[SYS_T][0..SYS_T]);
 
     0
 }

@@ -152,14 +152,10 @@ fn syndrome(
     let mut pk_segment = &pk[..];
     let tail = PK_NROWS % 8;
 
-    for i in 0..SYND_BYTES {
-        s[i] = 0;
-    }
+    s[0..SYND_BYTES].fill(0);
 
     for i in 0..PK_NROWS {
-        for j in 0..SYS_N / 8 {
-            row[j] = 0;
-        }
+        row[0..SYS_N / 8].fill(0);
 
         for j in 0..PK_ROW_BYTES {
             row[SYS_N / 8 - PK_ROW_BYTES + j] = pk_segment[j];
@@ -200,14 +196,10 @@ fn syndrome(
 
     let mut pk_segment = &pk[..];
 
-    for i in 0..SYND_BYTES {
-        s[i] = 0;
-    }
+    s[0..SYND_BYTES].fill(0);
 
     for i in 0..PK_NROWS {
-        for j in 0..SYS_N / 8 {
-            row[j] = 0;
-        }
+        row[0..SYS_N / 8].fill(0);
 
         for j in 0..PK_ROW_BYTES {
             row[SYS_N / 8 - PK_ROW_BYTES + j] = pk_segment[j];

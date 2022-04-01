@@ -12,13 +12,10 @@ pub(crate) fn synd(
     l: &[Gf; SYS_N],
     r: &[u8; SYS_N / 8],
 ) {
-    for j in 0..SYS_T * 2 {
-        out[j] = 0;
-    }
+    out[0..2 * SYS_T].fill(0);
 
     for i in 0..SYS_N {
         let c: Gf = (r[i / 8] >> (i % 8)) as u16 & 1;
-
         let e: Gf = eval(f, l[i]);
         let mut e_inv: Gf = gf_inv(gf_mul(e, e));
 

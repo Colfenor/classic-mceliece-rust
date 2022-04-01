@@ -296,9 +296,7 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
         }
     }
 
-    for i in 0..SYS_T {
-        out[i] = prod[i];
-    }
+    out[0..SYS_T].copy_from_slice(&prod[0..SYS_T]);
 }
 
 #[cfg(test)]
