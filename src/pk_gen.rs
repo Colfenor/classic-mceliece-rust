@@ -341,7 +341,8 @@ pub(crate) fn pk_gen(
 
     for i in 0..PK_NROWS {
         #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-        pk[i * PK_ROW_BYTES..(i + 1) * PK_ROW_BYTES].copy_from_slice(&mat[i][PK_NROWS / 8..PK_NROWS / 8 + PK_ROW_BYTES]);
+        pk[i * PK_ROW_BYTES..(i + 1) * PK_ROW_BYTES]
+            .copy_from_slice(&mat[i][PK_NROWS / 8..PK_NROWS / 8 + PK_ROW_BYTES]);
 
         #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
         for (idx, j) in ((PK_NROWS - 1) / 8..SYS_N / 8 - 1).enumerate() {
@@ -466,7 +467,7 @@ mod tests {
         let mat_expected_data = crate::TestData::new().u8vec("mceliece8192128f_mat_expected");
 
         for row in 0..PK_NROWS {
-            mat_expected[row].copy_from_slice(&mat_expected_data[row*COLS..(row + 1)*COLS]);
+            mat_expected[row].copy_from_slice(&mat_expected_data[row * COLS..(row + 1) * COLS]);
         }
 
         let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pi_expected");
@@ -502,7 +503,13 @@ mod tests {
         sk.copy_from_slice(sk_data.as_slice());
         perm.copy_from_slice(perm_data.as_slice());
 
-        pk_gen(sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), &mut sk, &mut perm, &mut pi, &mut pivots)?;
+        pk_gen(
+            sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
+            &mut sk,
+            &mut perm,
+            &mut pi,
+            &mut pivots,
+        )?;
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_expected");
@@ -547,7 +554,13 @@ mod tests {
         perm.copy_from_slice(perm_data.as_slice());
         pi.copy_from_slice(pi_data.as_slice());
 
-        pk_gen(sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES), &mut sk, &mut perm, &mut pi, &mut pivots)?;
+        pk_gen(
+            sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
+            &mut sk,
+            &mut perm,
+            &mut pi,
+            &mut pivots,
+        )?;
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");

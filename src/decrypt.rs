@@ -98,7 +98,10 @@ mod tests {
             sub!(mut c, 0, SYND_BYTES),
         )?;
 
-        assert_eq!(&actual_error_vector[1..SYS_N/8], &expected_error_vector[1..SYS_N/8]);
+        assert_eq!(
+            &actual_error_vector[1..SYS_N / 8],
+            &expected_error_vector[1..SYS_N / 8]
+        );
 
         Ok(())
     }
