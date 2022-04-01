@@ -340,11 +340,8 @@ pub(crate) fn pk_gen(
     const INNER_PK_ACCESSES: usize = ((SYS_N / 8 - 1) - (PK_NROWS - 1) / 8) + 1;
 
     for i in 0..PK_NROWS {
-        // TODO rewrite with copy_from_slice
         #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-        for j in 0..PK_ROW_BYTES {
-            pk[i * PK_ROW_BYTES + j] = mat[i][PK_NROWS / 8 + j];
-        }
+        pk[i * PK_ROW_BYTES..(i + 1) * PK_ROW_BYTES].copy_from_slice(&mat[i][PK_NROWS / 8..PK_NROWS / 8 + PK_ROW_BYTES]);
 
         #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
         for (idx, j) in ((PK_NROWS - 1) / 8..SYS_N / 8 - 1).enumerate() {
