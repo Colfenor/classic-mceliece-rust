@@ -1,32 +1,33 @@
+//! Decryption function to turn ciphertext into a ciphertext using the secret key
+
 use crate::{
-    api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES},
     benes::support_gen,
     bm::bm,
-    crypto_hash::{self, shake256},
     gf::gf_iszero,
-    params::{SYND_BYTES, SYS_N, SYS_T},
+    macros::sub,
+    params::{COND_BYTES, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     root::root,
     synd::synd,
     util::load_gf,
 };
+use std::error;
 
-// todo write function for array output, which
-// takes array and it's length
-
-/* Niederreiter decryption with the Berlekamp decoder */
-/* intput: sk, secret key */
-/*         c, ciphertext */
-/* output: e, error vector two_e[ 1 + SYS_N/8 ] = {2}; */
-/* return: 0 for success; 1 for failure */
-pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
-    let mut check: u16 = 0;
-    let mut t: u16 = 0;
+/// Niederreiter decryption with the Berlekamp decoder.
+///
+/// It takes as input the secret key `sk` and a ciphertext `c`.
+/// It returns an error vector in `e` and the return value indicates success (0) or failure (1)
+pub(crate) fn decrypt(
+    e: &mut [u8; SYS_N / 8],
+    sk: &[u8; IRR_BYTES + COND_BYTES],
+    c: &[u8; SYND_BYTES],
+) -> Result<u8, Box<dyn error::Error>> {
+    let mut t: u16;
     let mut w: i32 = 0;
 
     let mut r = [0u8; SYS_N / 8];
 
     let mut g = [0u16; SYS_T + 1];
-    let mut L = [0u16; SYS_N];
+    let mut l = [0u16; SYS_N];
 
     let mut s = [0u16; SYS_T * 2];
     let mut s_cmp = [0u16; SYS_T * 2];
@@ -37,39 +38,22 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
         r[i] = c[i];
     }
 
-    for i in SYND_BYTES..SYS_N / 8 {
-        r[i] = 0;
-    }
+    r[SYND_BYTES..SYS_N / 8].fill(0);
 
-    let mut i = 0;
-    for chunk in sk.chunks_mut(2) {
-        g[i] = load_gf(chunk);
-        i += 1;
-        if i == SYS_T + 1 {
-            break;
-        }
+    for (i, chunk) in sk.chunks(2).take(SYS_T).enumerate() {
+        g[i] = load_gf(sub!(chunk, 0, 2));
     }
     g[SYS_T] = 1;
-    // g array matches :)
-    sk = &mut sk[256..];
 
-    /*println!("sk input: ");
-    for i in 0..13864 {
-        println!("{}", sk[i]);
-    }
-    println!("ENDI");*/
+    support_gen(&mut l, sub!(sk, IRR_BYTES, COND_BYTES))?;
 
-    support_gen(&mut L, sk);
-
-    synd(&mut s, &mut g, &mut L, &r);
+    synd(&mut s, &mut g, &mut l, &r);
 
     bm(&mut locator, &mut s);
 
-    root(&mut images, &mut locator, &mut L);
+    root(&mut images, &mut locator, &mut l);
 
-    for i in 0..SYS_N / 8 {
-        e[i] = 0;
-    }
+    e[0..SYS_N / 8].fill(0);
 
     for i in 0..SYS_N {
         t = gf_iszero(images[i]) & 1;
@@ -78,17 +62,9 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
         w += t as i32;
     }
 
-    print!("decrypt e: positions");
-    for k in 0..SYS_N {
-        if e[k / 8] & (1 << (k & 7)) != 0 {
-            print!(" {}", k);
-        }
-    }
-    println!("");
+    synd(&mut s_cmp, &mut g, &mut l, e);
 
-    synd(&mut s_cmp, &mut g, &mut L, e);
-
-    check = w as u16;
+    let mut check = w as u16;
     check ^= SYS_T as u16;
 
     for i in 0..SYS_T * 2 {
@@ -98,49 +74,32 @@ pub fn decrypt(e: &mut [u8], mut sk: &mut [u8], c: &mut [u8]) -> u8 {
     check = check.wrapping_sub(1);
     check >>= 15;
 
-    return (check ^ 1) as u8;
+    Ok((check ^ 1) as u8)
 }
 
 #[cfg(test)]
+#[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 mod tests {
     use super::*;
+    use std::error;
 
     #[test]
-    pub fn test_decrypt() {
-        use crate::decrypt_arrays::{C_INPUT, SK_INPUT, TWO_E_COMPARE};
+    fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
+        let sk = crate::TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
+        let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
+        let expected_error_vector = crate::TestData::new().u8vec("mceliece8192128f_decrypt_errvec");
 
-        //let mut sk = [0u8; CRYPTO_SECRETKEYBYTES]; // + 40
-        let mut sk = SK_INPUT.to_vec();
-        assert_eq!(sk.len(), CRYPTO_SECRETKEYBYTES + 40);
+        let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
+        actual_error_vector[0] = 2;
 
-        let mut c = C_INPUT.to_vec();
-        assert_eq!(c.len(), CRYPTO_CIPHERTEXTBYTES);
+        decrypt(
+            sub!(mut actual_error_vector, 1, SYS_N / 8),
+            sub!(sk, 40, IRR_BYTES + COND_BYTES),
+            sub!(mut c, 0, SYND_BYTES),
+        )?;
 
-        let mut two_e_compare = TWO_E_COMPARE.to_vec();
-        assert_eq!(two_e_compare.len(), 1 + SYS_N / 8);
+        assert_eq!(&actual_error_vector[1..SYS_N/8], &expected_error_vector[1..SYS_N/8]);
 
-        let mut two_e = [0u8; 1 + SYS_N / 8];
-        two_e[0] = 2;
-
-        /*println!("skp input: ");
-        for i in 0..sk.len() {
-            println!("{}", sk[i]);
-        }
-        println!("ENDI");*/
-
-        decrypt(&mut two_e[1..], &mut sk[40..], &mut c);
-
-        assert_eq!(two_e.to_vec(), two_e_compare);
-
-        // test crypto_hash
-        let mut conf = [0u8; 32];
-
-        shake256(&mut conf, &two_e[0..1025]);
-
-        /*println!("crypto: ");
-        for i in 0..32 {
-            println!("{}", conf[i]);
-        }
-        println!("ENDI");*/
+        Ok(())
     }
 }

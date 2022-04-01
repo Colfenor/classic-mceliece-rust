@@ -1,20 +1,23 @@
+//! Syndrome computation
+
 use crate::gf::{gf_add, gf_inv, gf_mul, Gf};
 use crate::params::{SYS_N, SYS_T};
 use crate::root::eval;
-/* input: Goppa polynomial f, support L, received word r */
-/* output: out, the syndrome of length 2t */
-pub fn synd(out: &mut [Gf; SYS_T * 2], f: &mut [Gf; SYS_T + 1], l: &mut [Gf; SYS_N], r: &[u8]) {
-    let (mut e, mut e_inv, mut c): (Gf, Gf, Gf);
 
-    for j in 0..SYS_T * 2 {
-        out[j] = 0;
-    }
+/// Given Goppa polynomial `f`, support `l`, and received word `r`
+/// compute `out`, the syndrome of length 2t
+pub(crate) fn synd(
+    out: &mut [Gf; SYS_T * 2],
+    f: &[Gf; SYS_T + 1],
+    l: &[Gf; SYS_N],
+    r: &[u8; SYS_N / 8],
+) {
+    out[0..2 * SYS_T].fill(0);
 
     for i in 0..SYS_N {
-        c = ((r[i / 8] >> (i % 8)) & 1) as u16;
-
-        e = eval(f, l[i]);
-        e_inv = gf_inv(gf_mul(e, e));
+        let c: Gf = (r[i / 8] >> (i % 8)) as u16 & 1;
+        let e: Gf = eval(f, l[i]);
+        let mut e_inv: Gf = gf_inv(gf_mul(e, e));
 
         for j in 0..SYS_T * 2 {
             out[j] = gf_add(out[j], gf_mul(e_inv, c));
