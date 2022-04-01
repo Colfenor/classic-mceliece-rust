@@ -25,12 +25,12 @@ mceliece6960119f = []
 mceliece8192128 = []
 mceliece8192128f = []
 
-#[[bench]]
-#name = "kem_api"
-#harness = false
+[[bench]]
+name = "kem_api"
+harness = false
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = { version = "0.3", "features" = [ "html_reports" ] }
 criterion-cycles-per-byte = "0.1.2"
 
 [profile.dev]
