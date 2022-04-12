@@ -2,7 +2,7 @@
 
 A safe pure-rust implementation of the Classic McEliece post-quantum scheme.
 
-* Classic McEliece is a lattice-based key encapsulation mechanism (KEM)
+* Classic McEliece is a code-based key encapsulation mechanism (KEM)
 * The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
 * The implementation does not utilize any concurrency techniques (SIMD/threading/…, except maybe auto-vectorization on your CPU)
 * It depends on `sha3` as SHA-3 implementation and `aes` as AES block cipher (used as RNG) implementation
