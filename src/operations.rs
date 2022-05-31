@@ -235,7 +235,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     pk: &mut [u8; CRYPTO_PUBLICKEYBYTES],
     sk: &mut [u8; CRYPTO_SECRETKEYBYTES],
     rng: &mut R,
-) -> Result<(), Box<dyn error::Error>> {
+) {
     let mut seed = [0u8; 33];
     seed[0] = 64;
 

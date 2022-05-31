@@ -24,10 +24,7 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(not(any(feature = "mceliece8192128", feature = "mceliece8192128f")))]
-fn gen_e<R: CryptoRng + RngCore>(
-    e: &mut [u8; SYS_N / 8],
-    rng: &mut R,
-) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8; SYS_N / 8], rng: &mut R) {
     let mut ind = [0u16; SYS_T];
     let mut val = [0u8; SYS_T];
 
@@ -87,15 +84,13 @@ fn gen_e<R: CryptoRng + RngCore>(
             e[i] |= val[j] & mask;
         }
     }
-
-    Ok(())
 }
 
 /// Generation of `e`, an error vector of weight `t`.
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
-fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8], rng: &mut R) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8], rng: &mut R) {
     let mut ind = [0u16; SYS_T];
     let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
@@ -137,8 +132,6 @@ fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8], rng: &mut R) -> Result<(), Box<dy
             e[i] |= val[j] & mask;
         }
     }
-
-    Ok(())
 }
 
 /// Syndrome computation.
