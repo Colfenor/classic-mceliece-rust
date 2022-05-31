@@ -5,18 +5,18 @@ repository = "https://github.com/Colfenor/classic-mceliece-rust"
 readme = "README.md"
 license = "MIT"
 version = "1.0.1"
-authors = ["Bernhard Berg <b.b_erg@outlook.com>", "Lukas Prokop <admin@lukas-prokop.at>"]
+authors = [
+    "Bernhard Berg <b.b_erg@outlook.com>",
+    "Lukas Prokop <admin@lukas-prokop.at>",
+    "Daniel Kales <daniel.kales@gmail.com>",
+]
 edition = "2021"
 keywords = ["pqc", "post-quantum", "cryptography", "lattice"]
 categories = ["cryptography"]
 
 [dependencies]
-rand = "0.8.4"
-sha3 = "0.9.1"
-lazy_static = "1.4.0"
-aes = "0.7.5"
-hex = "0.4.3"
-block-modes = "0.8.1"
+rand = { version = "0.8", default-features = false }
+sha3 = "0.10"
 
 [features]
 default = []
@@ -36,8 +36,12 @@ name = "kem_api"
 harness = false
 
 [dev-dependencies]
-criterion = { version = "0.3", "features" = [ "html_reports" ] }
+rand = { version = "0.8", features = ["default"] }
+criterion = { version = "0.3", features = ["html_reports"] }
 criterion-cycles-per-byte = "0.1.2"
+aes = "0.7"
+block-modes = "0.8"
+hex = "0.4.3"
 
 [profile.dev]
-opt-level = 1  # reduces runtime for KATNUM=2 from 281s to 11s
+opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s
