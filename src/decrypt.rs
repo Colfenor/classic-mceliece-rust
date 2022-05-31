@@ -10,7 +10,6 @@ use crate::{
     synd::synd,
     util::load_gf,
 };
-use std::error;
 
 /// Niederreiter decryption with the Berlekamp decoder.
 ///
@@ -81,7 +80,6 @@ pub(crate) fn decrypt(
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 mod tests {
     use super::*;
-    use std::error;
 
     #[test]
     fn test_decrypt() {

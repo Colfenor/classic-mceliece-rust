@@ -10,7 +10,6 @@ use crate::params::SYS_N;
 use crate::params::{COND_BYTES, GFBITS};
 use crate::transpose;
 use crate::util;
-use std::error;
 
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
 /// NOTE const expressions are not sophisticated enough in rust yet to represent this relationship.
@@ -377,6 +376,8 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
 
 #[cfg(test)]
 mod tests {
+    use std::vec::Vec;
+
     use super::*;
     use crate::api::CRYPTO_PRIMITIVE;
     use std::convert::TryFrom;

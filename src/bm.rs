@@ -79,7 +79,6 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 mod tests {
     use super::*;
     use crate::macros::sub;
-    use std::error;
 
     #[test]
     fn test_simple_bm() {

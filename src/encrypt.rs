@@ -1,7 +1,5 @@
 //! Encryption function to compute error vector and syndrome to get ciphertext
 
-use std::error;
-
 use crate::{
     api::CRYPTO_CIPHERTEXTBYTES,
     macros::sub,
@@ -226,10 +224,9 @@ pub(crate) fn encrypt<R: CryptoRng + RngCore>(
     pk: &[u8; PK_NROWS * PK_ROW_BYTES],
     e: &mut [u8; SYS_N / 8],
     rng: &mut R,
-) -> Result<(), Box<dyn error::Error>> {
-    gen_e(e, rng)?;
+) {
+    gen_e(e, rng);
     syndrome(sub!(mut s, 0, (PK_NROWS + 7) / 8), pk, e);
-    Ok(())
 }
 
 #[cfg(test)]
@@ -245,7 +242,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
+    fn test_encrypt() {
         let entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
@@ -274,10 +271,8 @@ mod tests {
             sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
             sub!(mut two_e, 1, SYS_N / 8),
             &mut rng_state,
-        )?;
+        );
 
         assert_eq!(compare_ct, c);
-
-        Ok(())
     }
 }

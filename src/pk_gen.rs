@@ -8,7 +8,6 @@ use crate::{
     uint64_sort::uint64_sort,
     util::{bitrev, load_gf},
 };
-use std::error;
 
 #[cfg(any(
     feature = "mceliece348864f",
@@ -297,8 +296,8 @@ pub(crate) fn pk_gen(
             ))]
             {
                 if row == PK_NROWS - 32 {
-                    if mov_columns(&mut mat, pi, pivots)? != 0 {
-                        return Ok(-1);
+                    if mov_columns(&mut mat, pi, pivots) != 0 {
+                        return -1;
                     }
                 }
             }

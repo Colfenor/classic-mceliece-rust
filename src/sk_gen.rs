@@ -62,7 +62,6 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 mod tests {
     use super::*;
     use crate::macros::sub;
-    use std::error;
 
     #[test]
     fn test_genpoly_gen() {
