@@ -4,6 +4,8 @@
 //! for one specific variant (among ten). Thus the array lengths will be different if you specify
 //! a different variant via feature flags.
 
+#![forbid(unsafe_code)]
+
 mod api;
 mod benes;
 mod bm;
