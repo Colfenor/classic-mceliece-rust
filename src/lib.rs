@@ -115,13 +115,13 @@ macro_rules! impl_parser_per_type {
 }
 
 #[cfg(test)]
-struct TestData {
+pub struct TestData {
     data: &'static [u8],
 }
 
 #[cfg(test)]
 impl TestData {
-    fn new() -> TestData {
+    pub fn new() -> TestData {
         let bytes = include_bytes!("../data/testdata.txt");
         TestData { data: bytes }
     }
