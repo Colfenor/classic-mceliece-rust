@@ -61,12 +61,12 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
 
     encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
 
-    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e)?;
+    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e);
 
     one_ec[1..1 + SYS_N / 8].copy_from_slice(&two_e[1..1 + SYS_N / 8]);
     one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &one_ec)?;
+    shake256(&mut key[0..32], &one_ec);
 
     Ok(())
 }
@@ -93,13 +93,13 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
 
     encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
 
-    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
+    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e);
 
     one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&two_e[1..(SYS_N / 8) + 1]);
     one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32]
         .copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &one_ec)?;
+    shake256(&mut key[0..32], &one_ec);
 
     // clear outputs (set to all 0's) if padding bits are not all zero
 
@@ -138,7 +138,7 @@ pub fn crypto_kem_dec(
         sub!(c, 0, SYND_BYTES),
     )?;
 
-    shake256(&mut conf[0..32], &two_e)?;
+    shake256(&mut conf[0..32], &two_e);
 
     let mut ret_confirm: u8 = 0;
     for i in 0..32 {
@@ -159,7 +159,7 @@ pub fn crypto_kem_dec(
 
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &preimage)?;
+    shake256(&mut key[0..32], &preimage);
 
     Ok(0)
 }
@@ -188,7 +188,7 @@ pub fn crypto_kem_dec(
         sub!(c, 0, SYND_BYTES),
     )?;
 
-    shake256(&mut conf[0..32], &two_e)?;
+    shake256(&mut conf[0..32], &two_e);
 
     let mut ret_confirm: u8 = 0;
     for i in 0..32 {
@@ -209,7 +209,7 @@ pub fn crypto_kem_dec(
 
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &preimage)?;
+    shake256(&mut key[0..32], &preimage);
 
     // clear outputs (set to all 1's) if padding bits are not all zero
 
@@ -274,7 +274,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
 
     loop {
         // expanding and updating the seed
-        shake256(&mut r[..], &seed[0..33])?;
+        shake256(&mut r[..], &seed[0..33]);
 
         sk[..32].clone_from_slice(&seed[1..]);
         seed[1..].clone_from_slice(&r[r.len() - 32..]);
