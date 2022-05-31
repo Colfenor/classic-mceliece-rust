@@ -4,6 +4,7 @@
 //! for one specific variant (among ten). Thus the array lengths will be different if you specify
 //! a different variant via feature flags.
 
+#![no_std]
 #![forbid(unsafe_code)]
 
 mod api;
@@ -27,6 +28,11 @@ mod util;
 
 #[cfg(test)]
 mod nist_aes_rng;
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+#[cfg(test)]
+use std::vec::Vec;
 
 pub use api::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
@@ -39,20 +45,20 @@ mod macros {
     /// The default type T is u8 and “mut A” instead of “A” returns a mutable reference.
     macro_rules! sub {
         ($var:expr, $offset:expr, $len:expr) => {{
-            use std::convert::TryFrom;
-            <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])?
+            <&[u8; $len]>::try_from(&$var[$offset..($offset + $len)])
+                .expect("slice has the correct length")
         }};
         (mut $var:expr, $offset:expr, $len:expr) => {{
-            use std::convert::TryFrom;
-            <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+            <&mut [u8; $len]>::try_from(&mut $var[$offset..($offset + $len)])
+                .expect("slice has the correct length")
         }};
         ($var:expr, $offset:expr, $len:expr, $t:ty) => {{
-            use std::convert::TryFrom;
-            <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])?
+            <&[$t; $len]>::try_from(&$var[$offset..($offset + $len)])
+                .expect("slice has the correct length")
         }};
         (mut $var:expr, $offset:expr, $len:expr, $t:ty) => {{
-            use std::convert::TryFrom;
-            <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])?
+            <&mut [$t; $len]>::try_from(&mut $var[$offset..($offset + $len)])
+                .expect("slice has the correct length")
         }};
     }
 
@@ -160,4 +166,16 @@ mod tests {
             [0x01234567].to_vec()
         );
     }
+}
+
+#[cfg(doctest)]
+mod test_readme {
+    macro_rules! external_doc_test {
+        ($x:expr) => {
+            #[doc = $x]
+            extern "C" {}
+        };
+    }
+
+    external_doc_test!(include_str!("../README.md"));
 }

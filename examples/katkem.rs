@@ -208,10 +208,10 @@ fn create_response_file(filepath: &str) -> R {
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
 
-        crypto_kem_keypair(&mut tc.pk, &mut tc.sk, &mut tc_rng)?;
-        crypto_kem_enc(&mut tc.ct, &mut tc.ss, &tc.pk, &mut tc_rng)?;
+        crypto_kem_keypair(&mut tc.pk, &mut tc.sk, &mut tc_rng);
+        crypto_kem_enc(&mut tc.ct, &mut tc.ss, &tc.pk, &mut tc_rng);
         let mut ss = [0u8; CRYPTO_BYTES];
-        crypto_kem_dec(&mut ss, &tc.ct, &tc.sk)?;
+        crypto_kem_dec(&mut ss, &tc.ct, &tc.sk);
 
         assert_eq!(tc.ss, ss);
         tc.write_to_file(&mut fd)?;
@@ -238,9 +238,9 @@ fn verify(filepath: &str) -> R {
         rng.randombytes_init(expected.seed);
 
         let mut actual = Testcase::with_seed(t, &expected.seed);
-        crypto_kem_keypair(&mut actual.pk, &mut actual.sk, &mut rng)?;
-        crypto_kem_enc(&mut actual.ct, &mut actual.ss, &actual.pk, &mut rng)?;
-        crypto_kem_dec(&mut actual.ss, &actual.ct, &actual.sk)?;
+        crypto_kem_keypair(&mut actual.pk, &mut actual.sk, &mut rng);
+        crypto_kem_enc(&mut actual.ct, &mut actual.ss, &actual.pk, &mut rng);
+        crypto_kem_dec(&mut actual.ss, &actual.ct, &actual.sk);
 
         //assert_eq!(expected, actual);
         assert_eq!(
