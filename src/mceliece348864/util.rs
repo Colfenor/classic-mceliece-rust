@@ -1,6 +1,6 @@
 //! This file is for loading/storing data in a little-endian fashion and a `bitrev` function
 
-use crate::{gf::Gf, params::GFMASK};
+use super::{gf::Gf, GFMASK};
 
 /// Store Gf element `a` in array `dest`
 pub(crate) fn store_gf(dest: &mut [u8; 2], a: Gf) {
@@ -28,18 +28,6 @@ pub(crate) fn load4(input: &[u8; 4]) -> u32 {
         ret |= input[i] as u32;
     }
     ret
-}
-
-/// Take `input` and store it in 8 bytes, `out` points to.
-pub(crate) fn store8(out: &mut [u8; 8], input: u64) {
-    out[0] = input.wrapping_shr(0x00) as u8;
-    out[1] = input.wrapping_shr(0x08) as u8;
-    out[2] = input.wrapping_shr(0x10) as u8;
-    out[3] = input.wrapping_shr(0x18) as u8;
-    out[4] = input.wrapping_shr(0x20) as u8;
-    out[5] = input.wrapping_shr(0x28) as u8;
-    out[6] = input.wrapping_shr(0x30) as u8;
-    out[7] = input.wrapping_shr(0x38) as u8;
 }
 
 /// Interpret 8 bytes from `input` as integer and return it as u64.

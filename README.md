@@ -47,8 +47,8 @@ classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 
 The `simple` example illustrates the API:
 ```rust
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+use classic_mceliece_rust::mceliece348864::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+use classic_mceliece_rust::mceliece348864::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 fn main()  {
   let mut rng = rand::thread_rng();

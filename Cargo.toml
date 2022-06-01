@@ -19,7 +19,7 @@ rand = { version = "0.8", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 
 [features]
-default = []
+default = ["mceliece348864"]
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []

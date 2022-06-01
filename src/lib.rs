@@ -7,24 +7,40 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-mod api;
-mod benes;
-mod bm;
-mod controlbits;
-mod crypto_hash;
-mod decrypt;
-mod encrypt;
-mod gf;
-mod int32_sort;
-mod operations;
-mod params;
-mod pk_gen;
-mod root;
-mod sk_gen;
-mod synd;
-mod transpose;
-mod uint64_sort;
-mod util;
+mod common;
+
+//mod benes;
+//mod bm;
+//mod controlbits;
+//mod decrypt;
+//mod encrypt;
+//mod operations;
+//mod params;
+//mod pk_gen;
+//mod root;
+//mod sk_gen;
+//mod synd;
+
+#[cfg(feature = "mceliece348864")]
+pub mod mceliece348864;
+#[cfg(feature = "mceliece348864f")]
+pub mod mceliece348864f;
+#[cfg(feature = "mceliece460896")]
+pub mod mceliece460896;
+#[cfg(feature = "mceliece460896f")]
+pub mod mceliece460896f;
+#[cfg(feature = "mceliece6688128")]
+pub mod mceliece6688128;
+#[cfg(feature = "mceliece6688128f")]
+pub mod mceliece6688128f;
+#[cfg(feature = "mceliece6960119")]
+pub mod mceliece6960119;
+#[cfg(feature = "mceliece6960119f")]
+pub mod mceliece6960119f;
+#[cfg(feature = "mceliece8192128")]
+pub mod mceliece8192128;
+#[cfg(feature = "mceliece8192128f")]
+pub mod mceliece8192128f;
 
 #[cfg(test)]
 mod nist_aes_rng;
@@ -33,12 +49,6 @@ mod nist_aes_rng;
 extern crate std;
 #[cfg(test)]
 use std::vec::Vec;
-
-pub use api::{
-    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
-    CRYPTO_SECRETKEYBYTES,
-};
-pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 
 mod macros {
     /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.

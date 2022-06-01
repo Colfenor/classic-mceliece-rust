@@ -1,7 +1,6 @@
 //! Matrix transpose implementation
 
 /// Compute transposition of `input` and store it in `output`
-#[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
 pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
     let masks: [[u64; 2]; 6] = [
         [0x5555555555555555, 0xAAAAAAAAAAAAAAAA],
@@ -39,7 +38,6 @@ pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
 /// input argument == output argument. Because we cannot create a
 /// shared and mutable reference simultaneously, we can only generate
 /// one argument.
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn transpose_64x64_inplace(arg: &mut [u64; 64]) {
     let masks = [
         [0x5555555555555555u64, 0xAAAAAAAAAAAAAAAAu64],
@@ -358,14 +356,12 @@ mod tests {
         };
 
         for i in 0..2 {
-            #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
             {
                 let mut test_output: [u64; 64] = [0; 64];
                 transpose(&mut test_output, testcases[i].input);
                 assert_eq!(test_output, testcases[i].output);
             }
 
-            #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
             {
                 let mut data = testcases[i].input;
                 transpose_64x64_inplace(&mut data);

@@ -1,7 +1,7 @@
 //! Simple example illustrating shared key negotiation.
 
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{
+use classic_mceliece_rust::mceliece348864::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+use classic_mceliece_rust::mceliece348864::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
 };
 
