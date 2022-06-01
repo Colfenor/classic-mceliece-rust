@@ -3,33 +3,22 @@ use rand::{CryptoRng, RngCore};
 use crate::{
     common::crypto_hash::shake256,
     common::gf12::{load_gf, store_gf},
-    macros::sub,
-    mceliece348864::{
+    common::internals348864::{
         controlbits::controlbitsfrompermutation, decrypt::decrypt, encrypt::encrypt,
-        pk_gen::pk_gen, sk_gen::genpoly_gen,
+        sk_gen::genpoly_gen,
     },
+    macros::sub,
 };
-
-/// The number of bytes required to store the public key
-pub const CRYPTO_PUBLICKEYBYTES: usize = 261120;
-/// The number of bytes required to store the secret key
-pub const CRYPTO_SECRETKEYBYTES: usize = 6492;
-/// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 128;
-/// The number of bytes required to store the shared secret negotiated between both parties
-pub const CRYPTO_BYTES: usize = 32;
+use pk_gen::pk_gen;
 
 /// Name of the variant
 pub const CRYPTO_PRIMITIVE: &str = "mceliece348864";
 
-pub use crate::common::gf12::{COND_BYTES, GFBITS, GFMASK};
-pub const SYS_N: usize = 3488;
-pub const SYS_T: usize = 64;
-pub const IRR_BYTES: usize = SYS_T * 2;
-pub const PK_NROWS: usize = SYS_T * GFBITS;
-pub const PK_NCOLS: usize = SYS_N - PK_NROWS;
-pub const PK_ROW_BYTES: usize = (PK_NCOLS + 7) / 8;
-pub const SYND_BYTES: usize = (PK_NROWS + 7) / 8;
+pub use crate::common::internals348864::params::CRYPTO_BYTES;
+pub use crate::common::internals348864::params::CRYPTO_CIPHERTEXTBYTES;
+pub use crate::common::internals348864::params::CRYPTO_PUBLICKEYBYTES;
+pub use crate::common::internals348864::params::CRYPTO_SECRETKEYBYTES;
+use crate::common::internals348864::params::*;
 
 /// KEM Encapsulation.
 ///
@@ -190,13 +179,4 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     }
 }
 
-mod benes;
-mod bm;
-mod controlbits;
-mod decrypt;
-mod encrypt;
-mod gf_mul;
 mod pk_gen;
-mod root;
-mod sk_gen;
-mod synd;

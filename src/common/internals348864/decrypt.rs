@@ -1,8 +1,11 @@
 //! Decryption function to turn ciphertext into a ciphertext using the secret key
 
 use super::{
-    benes::support_gen, bm::bm, root::root, synd::synd, COND_BYTES, IRR_BYTES, SYND_BYTES, SYS_N,
-    SYS_T,
+    benes::support_gen,
+    bm::bm,
+    params::{COND_BYTES, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
+    root::root,
+    synd::synd,
 };
 use crate::common::gf12::{gf_iszero, load_gf};
 use crate::macros::sub;

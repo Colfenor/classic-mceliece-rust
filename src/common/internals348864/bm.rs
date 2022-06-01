@@ -1,7 +1,7 @@
 //! This file implements the Berlekamp-Massey algorithm
 //! see <http://crypto.stanford.edu/~mironov/cs359/massey.pdf>
 
-use super::SYS_T;
+use super::params::SYS_T;
 use crate::common::gf12::{gf_frac, gf_mul, Gf};
 
 fn min(a: usize, b: usize) -> usize {

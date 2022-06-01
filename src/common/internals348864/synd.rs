@@ -1,6 +1,9 @@
 //! Syndrome computation
 
-use super::{root::eval, SYS_N, SYS_T};
+use super::{
+    params::{SYS_N, SYS_T},
+    root::eval,
+};
 use crate::common::gf12::{gf_add, gf_inv, gf_mul, Gf};
 
 /// Given Goppa polynomial `f`, support `l`, and received word `r`

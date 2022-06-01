@@ -4,7 +4,7 @@
 //! [^cb]: Daniel J. Bernstein "Verified fast formulas for control bits for permutation networks"
 //!        <https://cr.yp.to/papers/controlbits-20200923.pdf>
 
-use super::GFBITS;
+use super::params::GFBITS;
 use crate::common::int32_sort::int32_sort;
 
 // controlbits returns ((2*m - 1) * 2^(m - 1)) control bits for a permutation pi over 2^m indices

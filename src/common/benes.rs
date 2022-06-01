@@ -1,3 +1,9 @@
+//! This file is for Beneš network related functions
+//!
+//! For the implementation strategy, see
+//! “McBits Revisited” by Tung Chou (2017)
+//! <https://eprint.iacr.org/2017/793.pdf>
+//!
 use super::transpose;
 use crate::macros::sub;
 

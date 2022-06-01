@@ -1,7 +1,7 @@
 //! Generation of secret key
 
 use super::gf_mul::gf_mul_inplace;
-use super::SYS_T;
+use super::params::SYS_T;
 use crate::common::gf12::{gf_inv, gf_iszero, gf_mul, Gf};
 
 /// Take element `f` in `GF((2^m)^t)` and return minimal polynomial `out` of `f`

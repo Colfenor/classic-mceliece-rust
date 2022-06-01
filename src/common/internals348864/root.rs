@@ -1,6 +1,6 @@
 //! This file is for evaluating a polynomial at one or more field elements
 
-use super::{SYS_N, SYS_T};
+use super::params::{SYS_N, SYS_T};
 
 use crate::common::gf12::{gf_add, gf_mul, Gf};
 
@@ -26,7 +26,6 @@ pub(crate) fn root(out: &mut [Gf; SYS_N], f: &[Gf; SYS_T + 1], l: &[Gf; SYS_N]) 
 
 #[cfg(test)]
 mod tests {
-    use super::super::CRYPTO_PRIMITIVE;
     use super::*;
 
     #[test]
@@ -45,10 +44,7 @@ mod tests {
 
         root(&mut out, &f, &l);
 
-        let mut name = format!("{}_root_out_expected", CRYPTO_PRIMITIVE);
-        // NOTE the f-variants equals the non-f variants. We only stored the non-f variants
-        name = name.replace("f_root_out", "_root_out");
-        let expected = crate::TestData::new().u16vec(&name);
+        let expected = crate::TestData::new().u16vec("mceliece348864_root_out_expected");
         assert_eq!(expected, out);
     }
 }

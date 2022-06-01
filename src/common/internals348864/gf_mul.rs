@@ -1,6 +1,6 @@
 use crate::common::gf12::{gf_mul, Gf};
 
-use super::SYS_T;
+use super::params::SYS_T;
 
 /// Multiply Gf elements `in0` and `in0` in GF((2^m)^t) and store result in `out`.
 /// Called `GF_mul` in the C implementation.
