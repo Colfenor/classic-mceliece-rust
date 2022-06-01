@@ -22,3 +22,17 @@ pub(crate) mod internals348864 {
     pub(crate) mod sk_gen;
     pub(crate) mod synd;
 }
+
+#[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
+pub(crate) mod internals348864 {
+    pub(crate) mod benes;
+    pub(crate) mod bm;
+    pub(crate) mod controlbits;
+    pub(crate) mod decrypt;
+    pub(crate) mod encrypt;
+    pub(crate) mod gf_mul;
+    pub(crate) mod params;
+    pub(crate) mod root;
+    pub(crate) mod sk_gen;
+    pub(crate) mod synd;
+}

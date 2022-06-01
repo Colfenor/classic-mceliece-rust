@@ -36,7 +36,6 @@ pub(crate) fn gf_add(in0: Gf, in1: Gf) -> Gf {
 }
 
 /// Multiplication of two Gf elements.
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
     let (mut tmp, t0, t1, mut t): (u64, u64, u64, u64);
 
@@ -63,7 +62,6 @@ pub(crate) fn gf_mul(in0: Gf, in1: Gf) -> Gf {
 }
 
 /// Computes the square `in0^2` for Gf element `in0`
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 fn gf_sq(in0: Gf) -> Gf {
     let b = [0x55555555u32, 0x33333333, 0x0F0F0F0F, 0x00FF00FF];
 
@@ -85,13 +83,11 @@ fn gf_sq(in0: Gf) -> Gf {
 }
 
 /// Computes the division `num/den` for Gf elements `den` and `num`
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn gf_frac(den: Gf, num: Gf) -> Gf {
     gf_mul(gf_inv(den), num)
 }
 
 /// Computes the inverse element of `den` in the Galois field.
-#[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 pub(crate) fn gf_inv(in0: Gf) -> Gf {
     let mut out = gf_sq(in0);
     let tmp_11 = gf_mul(out, in0); // 11
