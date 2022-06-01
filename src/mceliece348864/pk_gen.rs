@@ -1,11 +1,16 @@
 //! Generation of public key
 
 use super::{
-    gf::{bitrev, gf_inv, gf_mul, load_gf},
     root::root,
     {GFBITS, GFMASK, PK_NROWS, PK_ROW_BYTES, SYS_N, SYS_T},
 };
-use crate::{common::uint64_sort::uint64_sort, macros::sub};
+use crate::{
+    common::{
+        gf12::{bitrev, gf_inv, gf_mul, load_gf},
+        uint64_sort::uint64_sort,
+    },
+    macros::sub,
+};
 
 #[cfg(any(
     feature = "mceliece348864f",

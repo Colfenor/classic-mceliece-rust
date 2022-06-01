@@ -1,9 +1,8 @@
 //! This file is for evaluating a polynomial at one or more field elements
 
-use super::{
-    gf::{gf_add, gf_mul, Gf},
-    {SYS_N, SYS_T},
-};
+use super::{SYS_N, SYS_T};
+
+use crate::common::gf12::{gf_add, gf_mul, Gf};
 
 /// Evaluate polynomial `f` with argument `a`.
 /// Thus it returns `f(a)` in symbolic notation.

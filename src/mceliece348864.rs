@@ -2,14 +2,11 @@ use rand::{CryptoRng, RngCore};
 
 use crate::{
     common::crypto_hash::shake256,
+    common::gf12::{load_gf, store_gf},
     macros::sub,
     mceliece348864::{
-        controlbits::controlbitsfrompermutation,
-        decrypt::decrypt,
-        encrypt::encrypt,
-        gf::{load_gf, store_gf},
-        pk_gen::pk_gen,
-        sk_gen::genpoly_gen,
+        controlbits::controlbitsfrompermutation, decrypt::decrypt, encrypt::encrypt,
+        pk_gen::pk_gen, sk_gen::genpoly_gen,
     },
 };
 
@@ -25,16 +22,14 @@ pub const CRYPTO_BYTES: usize = 32;
 /// Name of the variant
 pub const CRYPTO_PRIMITIVE: &str = "mceliece348864";
 
-pub const GFBITS: usize = 12;
+pub use crate::common::gf12::{COND_BYTES, GFBITS, GFMASK};
 pub const SYS_N: usize = 3488;
 pub const SYS_T: usize = 64;
-pub const COND_BYTES: usize = (1 << (GFBITS - 4)) * (2 * GFBITS - 1);
 pub const IRR_BYTES: usize = SYS_T * 2;
 pub const PK_NROWS: usize = SYS_T * GFBITS;
 pub const PK_NCOLS: usize = SYS_N - PK_NROWS;
 pub const PK_ROW_BYTES: usize = (PK_NCOLS + 7) / 8;
 pub const SYND_BYTES: usize = (PK_NROWS + 7) / 8;
-pub const GFMASK: usize = (1 << GFBITS) - 1;
 
 /// KEM Encapsulation.
 ///
@@ -200,7 +195,7 @@ mod bm;
 mod controlbits;
 mod decrypt;
 mod encrypt;
-mod gf;
+mod gf_mul;
 mod pk_gen;
 mod root;
 mod sk_gen;

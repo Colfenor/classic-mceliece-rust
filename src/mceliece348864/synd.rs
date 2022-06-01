@@ -1,10 +1,7 @@
 //! Syndrome computation
 
-use super::{
-    gf::{gf_add, gf_inv, gf_mul, Gf},
-    root::eval,
-    SYS_N, SYS_T,
-};
+use super::{root::eval, SYS_N, SYS_T};
+use crate::common::gf12::{gf_add, gf_inv, gf_mul, Gf};
 
 /// Given Goppa polynomial `f`, support `l`, and received word `r`
 /// compute `out`, the syndrome of length 2t

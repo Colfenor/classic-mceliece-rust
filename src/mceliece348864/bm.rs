@@ -1,8 +1,8 @@
 //! This file implements the Berlekamp-Massey algorithm
 //! see <http://crypto.stanford.edu/~mironov/cs359/massey.pdf>
 
-use super::gf::{gf_frac, gf_mul, Gf};
 use super::SYS_T;
+use crate::common::gf12::{gf_frac, gf_mul, Gf};
 
 fn min(a: usize, b: usize) -> usize {
     let c = (a < b) as isize;
