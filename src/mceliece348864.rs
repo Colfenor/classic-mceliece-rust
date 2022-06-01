@@ -7,9 +7,9 @@ use crate::{
         controlbits::controlbitsfrompermutation,
         decrypt::decrypt,
         encrypt::encrypt,
+        gf::{load_gf, store_gf},
         pk_gen::pk_gen,
         sk_gen::genpoly_gen,
-        util::{load4, load_gf, store_gf},
     },
 };
 
@@ -167,7 +167,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
         // generating permutation
 
         for (i, chunk) in r[PERM..IRR_POLYS].chunks(4).enumerate() {
-            perm[i] = load4(sub!(chunk, 0, 4));
+            perm[i] = u32::from_le_bytes(*sub!(chunk, 0, 4));
         }
 
         if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi) != 0 {
@@ -205,4 +205,3 @@ mod pk_gen;
 mod root;
 mod sk_gen;
 mod synd;
-mod util;

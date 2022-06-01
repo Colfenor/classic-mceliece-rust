@@ -1,6 +1,6 @@
 //! Encryption function to compute error vector and syndrome to get ciphertext
 
-use super::util::load_gf;
+use super::gf::load_gf;
 use super::{CRYPTO_CIPHERTEXTBYTES, PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T};
 use crate::macros::sub;
 use rand::{CryptoRng, RngCore};

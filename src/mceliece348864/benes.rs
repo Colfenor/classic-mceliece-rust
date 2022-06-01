@@ -4,7 +4,7 @@
 //! “McBits Revisited” by Tung Chou (2017)
 //! <https://eprint.iacr.org/2017/793.pdf>
 
-use super::{gf::Gf, util, COND_BYTES, GFBITS, SYS_N};
+use super::{gf, gf::Gf, COND_BYTES, GFBITS, SYS_N};
 use crate::{common::transpose, macros::sub};
 
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
@@ -138,14 +138,14 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
     if rev == 0 {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
 
         for low in 0..6 {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, low * 256 + i * 4, 4)) as u64;
+                cond[i] = u32::from_le_bytes(*sub!(bits, low * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -155,13 +155,13 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (low + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (low + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
@@ -170,7 +170,8 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
+                cond[i] =
+                    u32::from_le_bytes(*sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -183,7 +184,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         }
     } else {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
@@ -191,7 +192,8 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         for low in 0..6 {
             for i in 0..64 {
                 cond[i] =
-                    util::load4(sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4)) as u64;
+                    u32::from_le_bytes(*sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4))
+                        as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -201,7 +203,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6) * 256 - low * 256 + i * 8,
                     8
@@ -211,7 +213,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6) * 256 - (4 - low) * 256 + i * 8,
                     8
@@ -224,7 +226,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(
+                cond[i] = u32::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6 - 5) * 256 - (5 - low) * 256 + i * 4,
                     4
@@ -343,7 +345,7 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
     let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 
     for i in 0..(1 << GFBITS) {
-        a = util::bitrev(i as Gf);
+        a = gf::bitrev(i as Gf);
 
         for j in 0..GFBITS {
             l[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
