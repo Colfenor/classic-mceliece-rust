@@ -1,0 +1,112 @@
+name: Rust
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    name: Test (${{matrix.toolchain}} toolchain, ${{matrix.os}})
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{matrix.toolchain}}
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Test mceliece348864
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece348864
+      - name: Test mceliece348864f
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece348864f
+      - name: Test mceliece460896
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece460896
+      - name: Test mceliece460896f
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece460896f
+      - name: Test mceliece6688128
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece6688128
+      - name: Test mceliece6688128f
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece6688128f
+      - name: Test mceliece6960119
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece6960119
+      - name: Test mceliece6960119f
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece6960119f
+      - name: Test mceliece8192128
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece8192128
+      - name: Test mceliece8192128f
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features mceliece8192128f
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: clippy
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -D warnings
