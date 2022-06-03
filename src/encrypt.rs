@@ -6,9 +6,9 @@ use crate::{
     api::CRYPTO_CIPHERTEXTBYTES,
     macros::sub,
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
-    randombytes::RNGState,
     util::load_gf,
 };
+use rand::{CryptoRng, RngCore};
 
 /// Takes two 16-bit integers and determines whether they are equal (u8::MAX) or different (0)
 fn same_mask_u8(x: u16, y: u16) -> u8 {
@@ -24,13 +24,16 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(not(any(feature = "mceliece8192128", feature = "mceliece8192128f")))]
-fn gen_e(e: &mut [u8; SYS_N / 8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(
+    e: &mut [u8; SYS_N / 8],
+    rng: &mut R,
+) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut val = [0u8; SYS_T];
 
     loop {
         let mut bytes = [0u8; SYS_T * 4];
-        rng.randombytes(&mut bytes)?;
+        rng.fill_bytes(&mut bytes);
 
         let mut nums = [0u16; SYS_T * 2];
         for (i, chunk) in bytes.chunks(2).enumerate() {
@@ -92,13 +95,13 @@ fn gen_e(e: &mut [u8; SYS_N / 8], rng: &mut impl RNGState) -> Result<(), Box<dyn
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
-fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8], rng: &mut R) -> Result<(), Box<dyn error::Error>> {
     let mut ind = [0u16; SYS_T];
     let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
 
     loop {
-        rng.randombytes(&mut bytes)?;
+        rng.fill_bytes(&mut bytes);
 
         for (i, chunk) in bytes.chunks(2).enumerate() {
             ind[i] = load_gf(sub!(chunk, 0, 2));
@@ -225,11 +228,11 @@ fn syndrome(
 
 /// Encryption routine.
 /// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
-pub(crate) fn encrypt(
+pub(crate) fn encrypt<R: CryptoRng + RngCore>(
     s: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     pk: &[u8; PK_NROWS * PK_ROW_BYTES],
     e: &mut [u8; SYS_N / 8],
-    rng: &mut impl RNGState,
+    rng: &mut R,
 ) -> Result<(), Box<dyn error::Error>> {
     gen_e(e, rng)?;
     syndrome(sub!(mut s, 0, (PK_NROWS + 7) / 8), pk, e);
@@ -245,7 +248,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
     #[cfg(all(feature = "mceliece8192128f", test))]
-    use crate::randombytes::AesState;
+    use crate::nist_aes_rng::AesState;
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
@@ -262,7 +265,7 @@ mod tests {
         let mut second_seed = [0u8; 33];
         second_seed[0] = 64;
 
-        rng_state.randombytes(&mut second_seed[1..])?;
+        rng_state.fill_bytes(&mut second_seed[1..]);
 
         let mut two_e = [0u8; 1 + SYS_N / 8];
         two_e[0] = 2;

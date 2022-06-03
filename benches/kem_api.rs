@@ -1,14 +1,13 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use criterion_cycles_per_byte::CyclesPerByte;
 
-use classic_mceliece_rust::AesState;
 use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
 };
 
 pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
+    let mut rng = rand::thread_rng();
     let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
@@ -26,7 +25,7 @@ pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
 }
 
 pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
+    let mut rng = rand::thread_rng();
     let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
 
@@ -38,7 +37,7 @@ pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
 }
 
 pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
+    let mut rng = rand::thread_rng();
     let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
@@ -54,7 +53,7 @@ pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
 }
 
 pub fn bench_kem_dec(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
+    let mut rng = rand::thread_rng();
     let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];

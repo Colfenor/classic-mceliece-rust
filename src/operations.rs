@@ -5,7 +5,6 @@ use std::error;
 use crate::controlbits::controlbitsfrompermutation;
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 use crate::params::{PK_NCOLS, PK_NROWS, PK_ROW_BYTES};
-use crate::randombytes::RNGState;
 use crate::{
     api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
     crypto_hash::shake256,
@@ -17,6 +16,7 @@ use crate::{
     sk_gen::genpoly_gen,
     util::{load4, load_gf, store8, store_gf},
 };
+use rand::{CryptoRng, RngCore};
 
 /// This function determines (in a constant-time manner) whether the padding bits of `pk` are all zero.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
@@ -47,11 +47,11 @@ fn check_c_padding(c: &[u8; SYND_BYTES]) -> u8 {
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-pub fn crypto_kem_enc(
+pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
     c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
-    rng: &mut impl RNGState,
+    rng: &mut R,
 ) -> Result<(), Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -77,11 +77,11 @@ pub fn crypto_kem_enc(
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-pub fn crypto_kem_enc(
+pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
     c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
-    rng: &mut impl RNGState,
+    rng: &mut R,
 ) -> Result<u8, Box<dyn error::Error>> {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -231,10 +231,10 @@ pub fn crypto_kem_dec(
 /// The structure of the secret key is given by the following segments:
 /// (32 bytes seed, 8 bytes pivots, IRR_BYTES bytes, COND_BYTES bytes, SYS_N/8 bytes).
 /// The structure of the public key is simple: a matrix of PK_NROWS times PK_ROW_BYTES bytes.
-pub fn crypto_kem_keypair(
+pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     pk: &mut [u8; CRYPTO_PUBLICKEYBYTES],
     sk: &mut [u8; CRYPTO_SECRETKEYBYTES],
-    rng: &mut impl RNGState,
+    rng: &mut R,
 ) -> Result<(), Box<dyn error::Error>> {
     let mut seed = [0u8; 33];
     seed[0] = 64;
@@ -270,7 +270,7 @@ pub fn crypto_kem_keypair(
     let mut perm = [0u32; 1 << GFBITS];
     let mut pi = [0i16; 1 << GFBITS];
 
-    rng.randombytes(&mut seed[1..])?;
+    rng.fill_bytes(&mut seed[1..]);
 
     loop {
         // expanding and updating the seed
@@ -368,7 +368,7 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use super::*;
     #[cfg(all(feature = "mceliece8192128f", test))]
-    use crate::randombytes::AesState;
+    use crate::nist_aes_rng::AesState;
     #[cfg(all(feature = "mceliece8192128f", test))]
     use std::convert::TryFrom;
 
@@ -420,7 +420,7 @@ mod tests {
         let mut second_seed = [0u8; 33];
         second_seed[0] = 64;
 
-        rng_state.randombytes(&mut second_seed[1..])?;
+        rng_state.fill_bytes(&mut second_seed[1..]);
 
         crypto_kem_enc(
             &mut c,

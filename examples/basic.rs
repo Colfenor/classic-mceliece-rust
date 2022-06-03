@@ -1,16 +1,15 @@
 //! Simple example illustrating shared key negotiation.
 
-use classic_mceliece_rust::AesState;
 use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
 };
 
-use hex;
+use rand::thread_rng;
 use std::error;
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    let mut rng = AesState::new();
+    let mut rng = thread_rng();
     let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
