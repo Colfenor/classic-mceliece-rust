@@ -18,7 +18,6 @@ mod int32_sort;
 mod operations;
 mod params;
 mod pk_gen;
-mod randombytes;
 mod root;
 mod sk_gen;
 mod synd;
@@ -26,12 +25,14 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
+#[cfg(test)]
+mod nist_aes_rng;
+
 pub use api::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
 };
 pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-pub use randombytes::{AesState, RNGState};
 
 mod macros {
     /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.

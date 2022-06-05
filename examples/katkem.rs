@@ -1,15 +1,18 @@
-use hex;
-
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::{env, error, fmt, fs};
 
 use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{AesState, RNGState};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
 };
+use rand::RngCore;
+
+use nist_aes_rng::AesState;
+
+#[path = "../src/nist_aes_rng.rs"]
+mod nist_aes_rng;
 
 const KATNUM: usize = 100;
 
@@ -161,7 +164,7 @@ impl fmt::Display for Testcase {
     }
 }
 
-fn create_request_file(filepath: &str, rng: &mut impl RNGState) -> R {
+fn create_request_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
 
     // initialize RNG
@@ -169,13 +172,14 @@ fn create_request_file(filepath: &str, rng: &mut impl RNGState) -> R {
     for i in 0..48 {
         entropy_input[i] = i as u8;
     }
+    let mut rng = AesState::new();
     rng.randombytes_init(entropy_input);
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
         let mut tc = Testcase::new();
         tc.count = t;
-        rng.randombytes(&mut tc.seed)?;
+        rng.fill_bytes(&mut tc.seed);
 
         tc.write_to_file(&mut fd)?;
     }
@@ -183,7 +187,7 @@ fn create_request_file(filepath: &str, rng: &mut impl RNGState) -> R {
     Ok(())
 }
 
-fn create_response_file(filepath: &str, rng: &mut impl RNGState) -> R {
+fn create_response_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
     writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
 
@@ -192,13 +196,14 @@ fn create_response_file(filepath: &str, rng: &mut impl RNGState) -> R {
     for i in 0..48 {
         entropy_input[i] = i as u8;
     }
+    let mut rng = AesState::new();
     rng.randombytes_init(entropy_input);
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
         let mut tc = Testcase::new();
         tc.count = t;
-        rng.randombytes(&mut tc.seed)?;
+        rng.fill_bytes(&mut tc.seed);
 
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
@@ -271,14 +276,6 @@ fn verify(filepath: &str) -> R {
 fn main() -> R {
     let mut args = env::args();
     match args.len() {
-        1 => {
-            eprintln!("usage: ./PQCgenKAT_kem <request:filepath> <response:filepath>");
-            eprintln!("  generate a request and response file\n");
-            eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
-            eprintln!("  verify the given response file\n");
-            panic!("wrong number of arguments");
-        }
-
         2 => {
             args.next().unwrap();
             let rsp_file = args.next().unwrap();
@@ -292,13 +289,19 @@ fn main() -> R {
             let req_file = args.next().unwrap();
             let rsp_file = args.next().unwrap();
 
-            create_request_file(&req_file, &mut AesState::new())?;
-            create_response_file(&rsp_file, &mut AesState::new())?;
+            create_request_file(&req_file)?;
+            create_response_file(&rsp_file)?;
 
             println!("request and response file created.");
         }
 
-        _ => panic!("unexpected number of arguments!"),
+        _ => {
+            eprintln!("usage: ./PQCgenKAT_kem <request:filepath> <response:filepath>");
+            eprintln!("  generate a request and response file\n");
+            eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
+            eprintln!("  verify the given response file\n");
+            panic!("wrong number of arguments");
+        }
     }
 
     Ok(())
