@@ -8,7 +8,6 @@ use crate::{
     uint64_sort::uint64_sort,
     util::{bitrev, load_gf},
 };
-use std::error;
 
 #[cfg(any(
     feature = "mceliece348864f",
@@ -68,7 +67,7 @@ fn mov_columns(
     mat: &mut [[u8; SYS_N / 8]; PK_NROWS],
     pi: &mut [i16; 1 << GFBITS],
     pivots: &mut u64,
-) -> Result<i32, Box<dyn error::Error>> {
+) -> i32 {
     let mut buf = [0u64; 64];
     let mut ctz_list = [0u64; 32];
 
@@ -108,7 +107,7 @@ fn mov_columns(
         }
 
         if t == 0 {
-            return Ok(-1); // return if buf is not full rank
+            return -1; // return if buf is not full rank
         }
 
         ctz_list[i] = ctz(t) as u64;
@@ -186,7 +185,7 @@ fn mov_columns(
         }
     }
 
-    Ok(0)
+    0
 }
 
 /// Public key generation. Generate the public key `pk`,
@@ -208,7 +207,7 @@ pub(crate) fn pk_gen(
         feature = "mceliece8192128f"
     ))]
     pivots: &mut u64,
-) -> Result<i32, Box<dyn error::Error>> {
+) -> i32 {
     let mut buf = [0u64; 1 << GFBITS];
     let mut mat = [[0u8; SYS_N / 8]; PK_NROWS];
 
@@ -231,7 +230,7 @@ pub(crate) fn pk_gen(
 
     for i in 1..(1 << GFBITS) {
         if buf[i - 1] >> 31 == buf[i] >> 31 {
-            return Ok(-1);
+            return -1;
         }
     }
 
@@ -297,8 +296,8 @@ pub(crate) fn pk_gen(
             ))]
             {
                 if row == PK_NROWS - 32 {
-                    if mov_columns(&mut mat, pi, pivots)? != 0 {
-                        return Ok(-1);
+                    if mov_columns(&mut mat, pi, pivots) != 0 {
+                        return -1;
                     }
                 }
             }
@@ -315,7 +314,7 @@ pub(crate) fn pk_gen(
             }
 
             if ((mat[row][i] >> j) & 1) == 0 {
-                return Ok(-1);
+                return -1;
             }
 
             for k in 0..PK_NROWS {
@@ -354,7 +353,7 @@ pub(crate) fn pk_gen(
         }
     }
 
-    Ok(0)
+    0
 }
 
 #[cfg(test)]
@@ -438,7 +437,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_mov_columns() -> Result<(), Box<dyn error::Error>> {
+    fn test_mov_columns() {
         const COLS: usize = SYS_N / 8;
 
         // input data
@@ -460,7 +459,7 @@ mod tests {
             sub!(mut mat.as_mut_slice(), 0, PK_NROWS, [u8; COLS]),
             sub!(mut pi, 0, 1 << GFBITS, i16),
             &mut pivots,
-        )?;
+        );
 
         // expected data
         let mut mat_expected = [[0u8; COLS]; PK_NROWS];
@@ -477,13 +476,11 @@ mod tests {
         assert_eq!(mat, mat_expected);
         assert_eq!(pi, pi_expected);
         assert_eq!(pivots, pivots_expected);
-
-        Ok(())
     }
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_pk_gen_1() -> Result<(), Box<dyn error::Error>> {
+    fn test_pk_gen_1() {
         let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_input");
         let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
 
@@ -509,7 +506,7 @@ mod tests {
             &mut perm,
             &mut pi,
             &mut pivots,
-        )?;
+        );
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_expected");
@@ -521,13 +518,11 @@ mod tests {
         assert_eq!(perm, perm_expected.as_slice());
         assert_eq!(pi, pi_expected.as_slice());
         assert_eq!(pivots, 0x1DFFFFFFF);
-
-        Ok(())
     }
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_pk_gen_2() -> Result<(), Box<dyn error::Error>> {
+    fn test_pk_gen_2() {
         // NOTE expected pk_data of previous testcase becomes input for this one
         let pk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
         let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_input");
@@ -560,7 +555,7 @@ mod tests {
             &mut perm,
             &mut pi,
             &mut pivots,
-        )?;
+        );
 
         let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
         let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");
@@ -572,7 +567,5 @@ mod tests {
         assert_eq!(pi, pi_expected.as_slice());
         assert_eq!(perm, perm_expected.as_slice());
         assert_eq!(pk, pk_expected.as_slice());
-
-        Ok(())
     }
 }

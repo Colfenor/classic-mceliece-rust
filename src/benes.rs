@@ -10,7 +10,6 @@ use crate::params::SYS_N;
 use crate::params::{COND_BYTES, GFBITS};
 use crate::transpose;
 use crate::util;
-use std::error;
 
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
 /// NOTE const expressions are not sophisticated enough in rust yet to represent this relationship.
@@ -137,11 +136,7 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-fn apply_benes(
-    r: &mut [u8; 512],
-    bits: &[u8; COND_BYTES],
-    rev: usize,
-) -> Result<(), Box<dyn error::Error>> {
+fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
     let mut bs = [0u64; 64];
     let mut cond = [0u64; 64];
 
@@ -249,8 +244,6 @@ fn apply_benes(
             util::store8(sub!(mut r, i * 8, 8), bs[i]);
         }
     }
-
-    Ok(())
 }
 
 /// Apply Beneš network in-place to array `r` based on configuration `bits` and `rev`.
@@ -258,11 +251,7 @@ fn apply_benes(
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
-fn apply_benes(
-    r: &mut [u8; 1024],
-    bits: &[u8; COND_BYTES],
-    rev: usize,
-) -> Result<(), Box<dyn error::Error>> {
+fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -351,14 +340,9 @@ fn apply_benes(
         util::store8(sub!(mut chunk, 0, 8), r_int_v[0][i]);
         util::store8(sub!(mut chunk, 8, 8), r_int_v[1][i]);
     }
-
-    Ok(())
 }
 
-pub(crate) fn support_gen(
-    s: &mut [Gf; SYS_N],
-    c: &[u8; COND_BYTES],
-) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
     let mut a: Gf;
     let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 
@@ -373,11 +357,11 @@ pub(crate) fn support_gen(
     for j in 0..GFBITS {
         #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
-            apply_benes(&mut l[j], c, 0)?;
+            apply_benes(&mut l[j], c, 0);
         }
         #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            apply_benes(&mut l[j], c, 0)?;
+            apply_benes(&mut l[j], c, 0);
         }
     }
 
@@ -388,12 +372,12 @@ pub(crate) fn support_gen(
             s[i] |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::vec::Vec;
+
     use super::*;
     use crate::api::CRYPTO_PRIMITIVE;
     use std::convert::TryFrom;
@@ -505,23 +489,22 @@ mod tests {
 
     #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
     #[test]
-    fn test_apply_benes() -> Result<(), Box<dyn error::Error>> {
+    fn test_apply_benes() {
         let t = crate::TestData::new();
         let mut r_arg =
             <[u8; 512]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_r_before")).unwrap();
         let bits_arg =
             <[u8; 5888]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_bits")).unwrap();
-        apply_benes(&mut r_arg, &bits_arg, 0)?;
+        apply_benes(&mut r_arg, &bits_arg, 0);
         let actual_r = r_arg;
         let expected_r =
             <[u8; 512]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_r_after")).unwrap();
         assert_eq!(actual_r, expected_r);
-        Ok(())
     }
 
     #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
-    fn test_apply_benes() -> Result<(), Box<dyn error::Error>> {
+    fn test_apply_benes() {
         let t = crate::TestData::new();
         let mut r_arg =
             <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_before"))
@@ -529,12 +512,11 @@ mod tests {
         let bits_arg =
             <[u8; COND_BYTES]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits"))
                 .unwrap(); // TODO actual array has wrong size of 12_800
-        apply_benes(&mut r_arg, &bits_arg, 0)?;
+        apply_benes(&mut r_arg, &bits_arg, 0);
         let actual_r = r_arg;
         let expected_r =
             <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_after"))
                 .unwrap();
         assert_eq!(actual_r, expected_r);
-        Ok(())
     }
 }

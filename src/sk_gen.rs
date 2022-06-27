@@ -62,10 +62,9 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 mod tests {
     use super::*;
     use crate::macros::sub;
-    use std::error;
 
     #[test]
-    fn test_genpoly_gen() -> Result<(), Box<dyn error::Error>> {
+    fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
         let input_src =
@@ -79,7 +78,5 @@ mod tests {
         genpoly_gen(&mut output, first_round_input);
 
         assert_eq!(&output, first_round_output.as_slice());
-
-        Ok(())
     }
 }

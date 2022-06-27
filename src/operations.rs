@@ -1,7 +1,5 @@
 //! KEM API
 
-use std::error;
-
 use crate::controlbits::controlbitsfrompermutation;
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 use crate::params::{PK_NCOLS, PK_NROWS, PK_ROW_BYTES};
@@ -52,23 +50,21 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
     rng: &mut R,
-) -> Result<(), Box<dyn error::Error>> {
+) {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
     let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
     one_ec[0] = 1;
 
-    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
+    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng);
 
-    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e)?;
+    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e);
 
     one_ec[1..1 + SYS_N / 8].copy_from_slice(&two_e[1..1 + SYS_N / 8]);
     one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &one_ec)?;
-
-    Ok(())
+    shake256(&mut key[0..32], &one_ec);
 }
 
 /// KEM Encapsulation.
@@ -82,7 +78,7 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
     rng: &mut R,
-) -> Result<u8, Box<dyn error::Error>> {
+) -> u8 {
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
 
@@ -91,15 +87,15 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
 
     let padding_ok = check_pk_padding(pk);
 
-    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng)?;
+    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng);
 
-    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e)?;
+    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e);
 
     one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&two_e[1..(SYS_N / 8) + 1]);
     one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32]
         .copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &one_ec)?;
+    shake256(&mut key[0..32], &one_ec);
 
     // clear outputs (set to all 0's) if padding bits are not all zero
 
@@ -113,7 +109,7 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
         key[i] &= mask;
     }
 
-    Ok(padding_ok)
+    padding_ok
 }
 
 /// KEM Decapsulation.
@@ -125,7 +121,7 @@ pub fn crypto_kem_dec(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
-) -> Result<u8, Box<dyn error::Error>> {
+) -> u8 {
     let mut conf = [0u8; 32];
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -136,9 +132,9 @@ pub fn crypto_kem_dec(
         sub!(mut two_e, 1, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
-    )?;
+    );
 
-    shake256(&mut conf[0..32], &two_e)?;
+    shake256(&mut conf[0..32], &two_e);
 
     let mut ret_confirm: u8 = 0;
     for i in 0..32 {
@@ -159,9 +155,9 @@ pub fn crypto_kem_dec(
 
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &preimage)?;
+    shake256(&mut key[0..32], &preimage);
 
-    Ok(0)
+    0
 }
 
 /// KEM Decapsulation.
@@ -173,7 +169,7 @@ pub fn crypto_kem_dec(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
-) -> Result<u8, Box<dyn error::Error>> {
+) -> u8 {
     let mut conf = [0u8; 32];
     let mut two_e = [0u8; 1 + SYS_N / 8];
     two_e[0] = 2;
@@ -186,9 +182,9 @@ pub fn crypto_kem_dec(
         sub!(mut two_e, 1, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
-    )?;
+    );
 
-    shake256(&mut conf[0..32], &two_e)?;
+    shake256(&mut conf[0..32], &two_e);
 
     let mut ret_confirm: u8 = 0;
     for i in 0..32 {
@@ -209,7 +205,7 @@ pub fn crypto_kem_dec(
 
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
 
-    shake256(&mut key[0..32], &preimage)?;
+    shake256(&mut key[0..32], &preimage);
 
     // clear outputs (set to all 1's) if padding bits are not all zero
 
@@ -219,7 +215,7 @@ pub fn crypto_kem_dec(
         key[i] |= mask;
     }
 
-    Ok(padding_ok)
+    padding_ok
 }
 
 /// KEM Keypair generation.
@@ -235,7 +231,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     pk: &mut [u8; CRYPTO_PUBLICKEYBYTES],
     sk: &mut [u8; CRYPTO_SECRETKEYBYTES],
     rng: &mut R,
-) -> Result<(), Box<dyn error::Error>> {
+) {
     let mut seed = [0u8; 33];
     seed[0] = 64;
 
@@ -274,7 +270,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
 
     loop {
         // expanding and updating the seed
-        shake256(&mut r[..], &seed[0..33])?;
+        shake256(&mut r[..], &seed[0..33]);
 
         sk[..32].clone_from_slice(&seed[1..]);
         seed[1..].clone_from_slice(&r[r.len() - 32..]);
@@ -313,7 +309,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
                 &mut perm,
                 &mut pi,
                 &mut pivots,
-            )? != 0
+            ) != 0
             {
                 continue;
             }
@@ -326,7 +322,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
             feature = "mceliece8192128"
         ))]
         {
-            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi)? != 0 {
+            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi) != 0 {
                 continue;
             }
         }
@@ -359,8 +355,6 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
 
         break;
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -374,7 +368,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_crypto_kem_dec() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_dec() {
         use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
 
         let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
@@ -386,16 +380,14 @@ mod tests {
             &mut test_key,
             sub!(mut c, 0, CRYPTO_CIPHERTEXTBYTES),
             sub!(mut sk, 0, CRYPTO_SECRETKEYBYTES),
-        )?;
+        );
 
         assert_eq!(test_key, compare_key.as_slice());
-
-        Ok(())
     }
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_crypto_kem_enc() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_enc() {
         use crate::api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES};
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
@@ -427,18 +419,16 @@ mod tests {
             &mut ss,
             sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
             &mut rng_state,
-        )?;
+        );
 
         assert_eq!(ss, compare_ss.as_slice());
 
         assert_eq!(c, compare_ct.as_slice());
-
-        Ok(())
     }
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_crypto_kem_keypair() -> Result<(), Box<dyn error::Error>> {
+    fn test_crypto_kem_keypair() {
         use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
         let mut pk_input = [0; CRYPTO_PUBLICKEYBYTES].to_vec();
@@ -464,11 +454,9 @@ mod tests {
             sub!(mut pk_input, 0, CRYPTO_PUBLICKEYBYTES),
             sub!(mut sk_input, 0, CRYPTO_SECRETKEYBYTES),
             &mut rng_state,
-        )?;
+        );
 
         assert_eq!(compare_sk, sk_input);
         assert_eq!(compare_pk, pk_input);
-
-        Ok(())
     }
 }
