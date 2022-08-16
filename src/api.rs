@@ -1,5 +1,8 @@
 //! Global constants that are part of the API (i.e. array sizes)
 
+#[cfg(feature = "kem")]
+use kem::generic_array::typenum;
+
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 /// The number of bytes required to store the public key
 pub const CRYPTO_PUBLICKEYBYTES: usize = 261120;
@@ -9,6 +12,13 @@ pub const CRYPTO_SECRETKEYBYTES: usize = 6492;
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
 pub const CRYPTO_CIPHERTEXTBYTES: usize = 128;
+
+#[cfg(all(
+    feature = "kem",
+    any(feature = "mceliece348864", feature = "mceliece348864f")
+))]
+/// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
+pub type CryptoCiphertextBytesTypenum = typenum::U128;
 
 #[cfg(feature = "mceliece348864")]
 /// Name of the variant
@@ -26,6 +36,12 @@ pub const CRYPTO_SECRETKEYBYTES: usize = 13608;
 #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
 pub const CRYPTO_CIPHERTEXTBYTES: usize = 188;
+#[cfg(all(
+    feature = "kem",
+    any(feature = "mceliece460896", feature = "mceliece460896f")
+))]
+/// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
+pub type CryptoCiphertextBytesTypenum = typenum::U188;
 
 #[cfg(feature = "mceliece460896")]
 /// Name of the variant
@@ -43,6 +59,12 @@ pub const CRYPTO_SECRETKEYBYTES: usize = 13932;
 #[cfg(any(feature = "mceliece6688128", feature = "mceliece6688128f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
 pub const CRYPTO_CIPHERTEXTBYTES: usize = 240;
+#[cfg(all(
+    feature = "kem",
+    any(feature = "mceliece6688128", feature = "mceliece6688128f")
+))]
+/// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
+pub type CryptoCiphertextBytesTypenum = typenum::U240;
 
 #[cfg(feature = "mceliece6688128")]
 /// Name of the variant
@@ -60,6 +82,12 @@ pub const CRYPTO_SECRETKEYBYTES: usize = 13948;
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
 pub const CRYPTO_CIPHERTEXTBYTES: usize = 226;
+#[cfg(all(
+    feature = "kem",
+    any(feature = "mceliece6960119", feature = "mceliece6960119f")
+))]
+/// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
+pub type CryptoCiphertextBytesTypenum = typenum::U226;
 
 #[cfg(feature = "mceliece6960119")]
 /// Name of the variant
@@ -77,6 +105,12 @@ pub const CRYPTO_SECRETKEYBYTES: usize = 14120;
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
 pub const CRYPTO_CIPHERTEXTBYTES: usize = 240;
+#[cfg(all(
+    feature = "kem",
+    any(feature = "mceliece8192128", feature = "mceliece8192128f")
+))]
+/// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
+pub type CryptoCiphertextBytesTypenum = typenum::U240;
 
 #[cfg(feature = "mceliece8192128")]
 /// Name of the variant

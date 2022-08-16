@@ -26,6 +26,11 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
+#[cfg(feature = "kem")]
+mod kem_api;
+#[cfg(feature = "kem")]
+pub use kem_api::{Ciphertext, ClassicMcEliece, PublicKey, SecretKey};
+
 #[cfg(test)]
 mod nist_aes_rng;
 #[cfg(test)]
