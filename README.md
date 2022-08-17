@@ -47,20 +47,89 @@ classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 
 The `simple` example illustrates the API:
 ```rust
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+//just for asserts
+use std::mem::{size_of_val, size_of};
+
+use classic_mceliece_rust::{keypair, encaps, decaps};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 fn main()  {
   let mut rng = rand::thread_rng();
-  let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-  let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-  let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-  let mut ss_alice = [0u8; CRYPTO_BYTES];
-  let mut ss_bob = [0u8; CRYPTO_BYTES];
 
-  crypto_kem_keypair(&mut pk, &mut sk, &mut rng);
-  crypto_kem_enc(&mut ct, &mut ss_bob, &pk, &mut rng);
-  crypto_kem_dec(&mut ss_alice, &ct, &sk);
+
+  // since ClassicMcEliece keys are rather large, we provide several options to select the backing storage
+  // option one: allocate owned buffers on the stack and pass them to `keypair`
+  // the key objects then own the data, but are rather large
+  {
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let (sk, pk) = keypair(sk_buf, pk_buf, &mut rng);
+    assert_eq!(size_of_val(&pk), CRYPTO_PUBLICKEYBYTES);
+    assert_eq!(size_of_val(&sk), CRYPTO_SECRETKEYBYTES);
+    // just for illustrative purposes, our threads require large stack sizes since some key objects are large
+    std::thread::Builder::new()
+      .stack_size(4*1024*1024)
+      .spawn(move || drop((sk, pk))); 
+  }
+
+  // option two: pass a reference to buffers to `keypair`
+  // the key objects then only reference the buffers and do not own them
+  {
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let (sk, pk) = keypair(&mut sk_buf, &mut pk_buf, &mut rng);
+    assert_eq!(size_of_val(&pk), size_of::<usize>());
+    assert_eq!(size_of_val(&sk), size_of::<usize>());
+    // std::thread::spawn(move || drop((sk, pk)));  <- Does not compile
+    // However, we can convert such keys to owned versions of themselves
+    let stack_pk = pk.to_owned();
+    let stack_sk = sk.to_owned();
+    assert_eq!(size_of_val(&stack_pk), CRYPTO_PUBLICKEYBYTES);
+    assert_eq!(size_of_val(&stack_sk), CRYPTO_SECRETKEYBYTES);
+    // just for illustrative purposes, our threads require large stack sizes since some key objects are large
+    std::thread::Builder::new()
+      .stack_size(4*1024*1024)
+      .spawn(move || drop((stack_sk, stack_pk))); 
+  }
+
+    #[cfg(feature = "alloc")]
+    {
+        // If we allocate the buffer on the heap and transfer ownership to `keypair`, it
+        // can use the heap buffer and return the ownership of the same data without cloning
+        // or moving. The resulting `PublicKey<Box<...>>` is 'static
+        let heap_pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+        let heap_sk_buf = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
+        let (sk, pk) = keypair(heap_sk_buf, heap_pk_buf, &mut rng);
+        assert_eq!(size_of_val(&pk), size_of::<usize>());
+        assert_eq!(size_of_val(&sk), size_of::<usize>());
+        std::thread::spawn(move || drop((sk, pk)));
+
+        // there is even a helper function for this
+        use classic_mceliece_rust::keypair_boxed;
+        let (sk, pk) = keypair_boxed(&mut rng);
+        assert_eq!(size_of_val(&pk), size_of::<usize>());
+        assert_eq!(size_of_val(&sk), size_of::<usize>());
+        std::thread::spawn(move || drop((sk, pk)));
+    }
+
+    #[cfg(feature = "alloc")]
+    {
+        // We can even use the heap stored buffer in a borrowing way
+        let mut heap_pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+        let mut heap_sk_buf = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
+        let (sk,pk) = keypair(&mut *heap_sk_buf, &mut *heap_pk_buf, &mut rng);
+        assert_eq!(size_of_val(&pk), size_of::<usize>());
+        assert_eq!(size_of_val(&sk), size_of::<usize>());
+        // std::thread::spawn(move || drop((sk, pk)));  <- Does not compile
+        drop((sk, pk));
+    }
+
+  // lets use option 2 here
+  let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+  let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+  let (sk, pk) = keypair(&mut sk_buf, &mut pk_buf, &mut rng);
+  let (ct, ss_bob) = encaps(&pk, &mut rng);
+  let ss_alice = decaps(&sk, &ct);
 
   assert_eq!(ss_bob, ss_alice);
 }

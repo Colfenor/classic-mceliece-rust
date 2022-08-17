@@ -20,7 +20,8 @@ sha3 = { version = "0.10", default-features = false }
 kem = { version = "0.2", default-features = false, optional = true }
 
 [features]
-default = ["kem"]
+default = ["kem", "alloc"]
+alloc = []
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []

@@ -2,7 +2,7 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::{env, error, fmt, fs};
 
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+use classic_mceliece_rust::{decaps, encaps, keypair};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
@@ -208,12 +208,13 @@ fn create_response_file(filepath: &str) -> R {
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
 
-        crypto_kem_keypair(&mut tc.pk, &mut tc.sk, &mut tc_rng);
-        crypto_kem_enc(&mut tc.ct, &mut tc.ss, &tc.pk, &mut tc_rng);
-        let mut ss = [0u8; CRYPTO_BYTES];
-        crypto_kem_dec(&mut ss, &tc.ct, &tc.sk);
+        let (sk, pk) = keypair(&mut tc.sk, &mut tc.pk, &mut tc_rng);
+        let (ct, ss) = encaps(&pk, &mut tc_rng);
+        let ss2 = decaps(&sk, &ct);
 
-        assert_eq!(tc.ss, ss);
+        assert_eq!(ss, ss2);
+        tc.ss = ss;
+        tc.ct.copy_from_slice(ct.as_ref());
         tc.write_to_file(&mut fd)?;
     }
 
@@ -238,9 +239,13 @@ fn verify(filepath: &str) -> R {
         rng.randombytes_init(expected.seed);
 
         let mut actual = Testcase::with_seed(t, &expected.seed);
-        crypto_kem_keypair(&mut actual.pk, &mut actual.sk, &mut rng);
-        crypto_kem_enc(&mut actual.ct, &mut actual.ss, &actual.pk, &mut rng);
-        crypto_kem_dec(&mut actual.ss, &actual.ct, &actual.sk);
+        let (sk, pk) = keypair(&mut actual.sk, &mut actual.pk, &mut rng);
+        let (ct, ss) = encaps(&pk, &mut rng);
+        let ss2 = decaps(&sk, &ct);
+
+        assert_eq!(ss, ss2);
+        actual.ss = ss;
+        actual.ct.copy_from_slice(ct.as_ref());
 
         //assert_eq!(expected, actual);
         assert_eq!(

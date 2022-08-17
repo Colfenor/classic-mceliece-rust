@@ -16,7 +16,7 @@ mod decrypt;
 mod encrypt;
 mod gf;
 mod int32_sort;
-mod operations;
+pub(crate) mod operations;
 mod params;
 mod pk_gen;
 mod root;
@@ -26,10 +26,12 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 #[cfg(feature = "kem")]
-mod kem_api;
-#[cfg(feature = "kem")]
-pub use kem_api::{Ciphertext, ClassicMcEliece, PublicKey, SecretKey};
+pub use api::kem_api::ClassicMcEliece;
+pub use api::{Ciphertext, PublicKey, SecretKey};
 
 #[cfg(test)]
 mod nist_aes_rng;
@@ -39,11 +41,13 @@ extern crate std;
 #[cfg(test)]
 use std::vec::Vec;
 
+#[cfg(feature = "alloc")]
+pub use api::keypair_boxed;
+pub use api::{decaps, encaps, keypair};
 pub use api::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
 };
-pub use operations::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
 
 mod macros {
     /// This macro(A, B, C, T) allows to get “&A[B..B+C]” of type “&[T]” as type “&[T; C]”.
@@ -69,6 +73,8 @@ mod macros {
 
     pub(crate) use sub;
 }
+
+// Test specifics below.
 
 #[cfg(test)]
 macro_rules! impl_parser_per_type {
