@@ -184,7 +184,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         transpose::transpose_64x64_inplace(&mut bs);
 
         for i in 0..64 {
-            util::store8(sub!(mut r, i * 8, 8), bs[i]);
+            *sub!(mut r, i * 8, 8) = bs[i].to_le_bytes();
         }
     } else {
         for i in 0..64 {
@@ -243,7 +243,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         transpose::transpose_64x64_inplace(&mut bs);
 
         for i in 0..64 {
-            util::store8(sub!(mut r, i * 8, 8), bs[i]);
+            *sub!(mut r, i * 8, 8) = bs[i].to_le_bytes();
         }
     }
 }
@@ -339,8 +339,8 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
     transpose::transpose(&mut r_int_v[1], r_int_h[1]);
 
     for (i, chunk) in r.chunks_mut(16).enumerate() {
-        util::store8(sub!(mut chunk, 0, 8), r_int_v[0][i]);
-        util::store8(sub!(mut chunk, 8, 8), r_int_v[1][i]);
+        *sub!(mut chunk, 0, 8) = r_int_v[0][i].to_le_bytes();
+        *sub!(mut chunk, 8, 8) = r_int_v[1][i].to_le_bytes();
     }
 }
 

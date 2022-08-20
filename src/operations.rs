@@ -12,7 +12,7 @@ use crate::{
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
     sk_gen::genpoly_gen,
-    util::{load_gf, store8, store_gf},
+    util::{load_gf, store_gf},
 };
 use rand::{CryptoRng, RngCore};
 
@@ -351,7 +351,7 @@ pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
             pivots = 0xFFFFFFFF;
         }
 
-        store8(sub!(mut sk, 32, 8), pivots);
+        *sub!(mut sk, 32, 8) = pivots.to_le_bytes();
 
         break;
     }

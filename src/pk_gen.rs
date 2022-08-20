@@ -16,7 +16,6 @@ use crate::{
     feature = "mceliece6960119f",
     feature = "mceliece8192128f"
 ))]
-use crate::util::store8;
 
 /// Return number of trailing zeros of the non-zero input `input`
 #[cfg(any(
@@ -152,7 +151,7 @@ fn mov_columns(
             t ^= d << j;
         }
 
-        store8(sub!(mut mat[i], block_idx, 8), t);
+        *sub!(mut mat[i], block_idx, 8) = t.to_le_bytes();
     }
 
     #[cfg(feature = "mceliece6960119f")]
@@ -175,7 +174,7 @@ fn mov_columns(
             t ^= d << j;
         }
 
-        store8(sub!(mut tmp, 0, 8), t);
+        *sub!(mut tmp, 0, 8) = t.to_le_bytes();
 
         mat[i][block_idx + 8] = (mat[i][block_idx + 8] >> tail << tail) | (tmp[7] >> (8 - tail));
         mat[i][block_idx + 0] = (tmp[0] << tail) | (mat[i][block_idx] << (8 - tail) >> (8 - tail));

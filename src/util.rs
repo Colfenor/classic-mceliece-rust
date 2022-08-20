@@ -19,18 +19,6 @@ pub(crate) fn load_gf(src: &[u8; 2]) -> Gf {
     a & (GFMASK as u16)
 }
 
-/// Take `input` and store it in 8 bytes, `out` points to.
-pub(crate) fn store8(out: &mut [u8; 8], input: u64) {
-    out[0] = input.wrapping_shr(0x00) as u8;
-    out[1] = input.wrapping_shr(0x08) as u8;
-    out[2] = input.wrapping_shr(0x10) as u8;
-    out[3] = input.wrapping_shr(0x18) as u8;
-    out[4] = input.wrapping_shr(0x20) as u8;
-    out[5] = input.wrapping_shr(0x28) as u8;
-    out[6] = input.wrapping_shr(0x30) as u8;
-    out[7] = input.wrapping_shr(0x38) as u8;
-}
-
 /// Reverse the bits of Gf element `a`. The LSB becomes the MSB.
 /// The 2nd LSB becomes the 2nd MSB. etc …
 pub(crate) fn bitrev(mut a: Gf) -> Gf {
