@@ -3,20 +3,15 @@
 use crate::{gf::Gf, params::GFMASK};
 
 /// Store Gf element `a` in array `dest`
-pub(crate) fn store_gf(dest: &mut [u8; 2], a: Gf) {
-    dest[0] = (a & 0xFF) as u8;
-    dest[1] = a.overflowing_shr(8).0 as u8;
+#[inline(always)]
+pub(crate) fn store_gf(dest: &mut [u8; 2], gf: Gf) {
+    *dest = gf.to_le_bytes();
 }
 
 /// Interpret 2 bytes from `src` as integer and return it as Gf element
+#[inline(always)]
 pub(crate) fn load_gf(src: &[u8; 2]) -> Gf {
-    let mut a: u16;
-
-    a = src[1] as u16;
-    a <<= 8;
-    a |= src[0] as u16;
-
-    a & (GFMASK as u16)
+    u16::from_le_bytes(*src) & (GFMASK as u16)
 }
 
 /// Reverse the bits of Gf element `a`. The LSB becomes the MSB.
