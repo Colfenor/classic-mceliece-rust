@@ -142,14 +142,14 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
     if rev == 0 {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
 
         for low in 0..6 {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, low * 256 + i * 4, 4)) as u64;
+                cond[i] = u32::from_le_bytes(*sub!(bits, low * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -159,13 +159,13 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (low + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (low + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
@@ -174,7 +174,8 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
+                cond[i] =
+                    u32::from_le_bytes(*sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -187,7 +188,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         }
     } else {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
@@ -195,7 +196,8 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         for low in 0..6 {
             for i in 0..64 {
                 cond[i] =
-                    util::load4(sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4)) as u64;
+                    u32::from_le_bytes(*sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4))
+                        as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -205,7 +207,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6) * 256 - low * 256 + i * 8,
                     8
@@ -215,7 +217,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6) * 256 - (4 - low) * 256 + i * 8,
                     8
@@ -228,7 +230,7 @@ fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(
+                cond[i] = u32::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6 - 5) * 256 - (5 - low) * 256 + i * 4,
                     4
@@ -260,8 +262,8 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
     let mut calc_index = if rev == 0 { 0 } else { 12288 };
 
     for (i, chunk) in r.chunks(16).enumerate() {
-        r_int_v[0][i] = util::load8(sub!(chunk, 0, 8));
-        r_int_v[1][i] = util::load8(sub!(chunk, 8, 8));
+        r_int_v[0][i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
+        r_int_v[1][i] = u64::from_le_bytes(*sub!(chunk, 8, 8));
     }
 
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
@@ -269,7 +271,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
 
     for iter in 0..=6 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -288,7 +290,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
 
     for iter in 0..=5 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -302,7 +304,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
 
     for iter in (0..=4).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
         calc_index = if rev == 0 {
             calc_index + 512
@@ -318,7 +320,7 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
 
     for iter in (0..=6).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
         // NOTE the second condition prevents a trailing integer underflow
         //      (recognize that calc_index is not used after the last subtraction)
