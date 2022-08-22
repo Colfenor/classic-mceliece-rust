@@ -1,6 +1,6 @@
 # classic-mceliece-rust
 
-A safe pure-rust implementation of the Classic McEliece post-quantum scheme.
+This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
 
 * Classic McEliece is a code-based key encapsulation mechanism (KEM)
 * The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
@@ -61,7 +61,6 @@ fn main()  {
     // option one: pass a reference to buffers to `keypair`
     // the key objects then only reference the buffers and do not own them.
     // See [Stack usage] below
-    #[cfg(not(windows))]
     {
         // This buffer, `pk_buf`, takes up a lot of stack space
         let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
@@ -71,7 +70,7 @@ fn main()  {
         // std::thread::spawn(move || drop((public_key, secret_key)));
     }
 
-    // Option two: Pass the ownership of an array on the heap.
+    // Option two: Pass the ownership of an array on the heap. This requires the `alloc` feature.
     #[cfg(feature = "alloc")]
     {
         let heap_pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
@@ -118,7 +117,7 @@ unless you do one of the following:
         .unwrap();
    ```
 
-#### RustCrypto APIs?
+#### RustCrypto APIs
 
 If the `kem` feature is enabled, key encapsulation and decapsulation can also be done via
 the standard traits in the `kem` crate.

@@ -1,9 +1,4 @@
-//! This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
-//!
-//! An example is provided to illustrate the API. Be aware that this documentation is generated
-//! for one specific variant (among ten). Thus the array lengths will be different if you specify
-//! a different variant via feature flags.
-
+#![doc = include_str!("../README.md")]
 #![no_std]
 #![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -575,16 +570,4 @@ mod tests {
             [0x01234567].to_vec()
         );
     }
-}
-
-#[cfg(doctest)]
-mod test_readme {
-    macro_rules! external_doc_test {
-        ($x:expr) => {
-            #[doc = $x]
-            extern "C" {}
-        };
-    }
-
-    external_doc_test!(include_str!("../README.md"));
 }
