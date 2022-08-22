@@ -59,7 +59,9 @@ fn main()  {
     // multiple ways to store the keys. On the stack or the heap (heap requires alloc)
 
     // option one: pass a reference to buffers to `keypair`
-    // the key objects then only reference the buffers and do not own them
+    // the key objects then only reference the buffers and do not own them.
+    // See [Stack usage] below
+    #[cfg(not(windows))]
     {
         // This buffer, `pk_buf`, takes up a lot of stack space
         let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
@@ -99,8 +101,67 @@ fn main()  {
 }
 ```
 
+#### Stack usage
+
+The public keys in Classic McEliece are huge. So if you store the backing buffer for them on
+the stack, your program will use a lot of stack.
+For some KEM variants it is even more than the default stack size on some
+platforms (Windows). On these platforms your program will simply crash with a stack overflow
+unless you do one of the following:
+
+1) Store the backing buffer on the heap with `Box` (requires the `alloc` feature).
+2) Run the KEM in a thread with increased stack size:
+   ```rust,ignore
+   std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| /* Run the KEM here */)
+        .unwrap();
+   ```
+
+#### RustCrypto APIs?
+
 If the `kem` feature is enabled, key encapsulation and decapsulation can also be done via
 the standard traits in the `kem` crate.
+
+#### Clear out secrets from memory (Zeroize)
+
+If the `zeroize` feature is enabled (it is by default), all key types that contain anything secret
+implements `Zeroize` and `ZeroizeOnDrop`. This makes them clear their memory when they go out of
+scope, and lowers the risk of secret key material being stolen in one way or another.
+
+Please mind that this of course makes any buffers you pass into the library useless for reading
+out the key from:
+
+```rust
+use classic_mceliece_rust::keypair;
+use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+fn main()  {
+    let mut rng = rand::thread_rng();
+
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    // Initialize to non-zero to show that it has been set to zero by the drop later
+    let mut sk_buf = [255u8; CRYPTO_SECRETKEYBYTES];
+
+    // This is the WRONG way of accessing your keys. The buffer will
+    // be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
+    // You should not rely on that array for anything except providing a temporary storage
+    // location to this library.
+    {
+        let (_, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        // Ouch! The array only has zeroes now.
+        assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
+    }
+
+    // Correct way of getting the secret key bytes if you do need them. However,
+    // if you want the secrets to stay secret, you should try to not read them out of their
+    // storage at all
+    {
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        assert_ne!(secret_key.as_array(), &[0; CRYPTO_SECRETKEYBYTES]);
+    }
+}
+```
 
 ## How does one run it?
 

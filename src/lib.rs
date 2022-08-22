@@ -99,6 +99,7 @@ impl<'a, const SIZE: usize> From<&'a mut [u8; SIZE]> for KeyBuffer<'a, SIZE> {
     }
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 #[cfg(feature = "alloc")]
 impl<const SIZE: usize> From<Box<[u8; SIZE]>> for KeyBuffer<'static, SIZE> {
     fn from(buf: Box<[u8; SIZE]>) -> Self {
