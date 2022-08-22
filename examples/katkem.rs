@@ -2,7 +2,7 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::{env, error, fmt, fs};
 
-use classic_mceliece_rust::{decaps, encaps, keypair};
+use classic_mceliece_rust::{decapsulate, encapsulate, keypair};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
@@ -208,12 +208,19 @@ fn create_response_file(filepath: &str) -> R {
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
 
-        let (sk, pk) = keypair(&mut tc.sk, &mut tc.pk, &mut tc_rng);
-        let (ct, ss) = encaps(&pk, &mut tc_rng);
-        let ss2 = decaps(&sk, &ct);
+        let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+        let mut ss_buf1 = [0u8; CRYPTO_BYTES];
+        let mut ss_buf2 = [0u8; CRYPTO_BYTES];
 
+        let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut tc_rng);
+        let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut tc_rng);
+        let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
+
+        tc.pk = *pk.as_array();
+        tc.sk = *sk.as_array();
         assert_eq!(ss, ss2);
-        tc.ss = ss;
+        tc.ss = *ss.as_array();
         tc.ct.copy_from_slice(ct.as_ref());
         tc.write_to_file(&mut fd)?;
     }
@@ -239,12 +246,20 @@ fn verify(filepath: &str) -> R {
         rng.randombytes_init(expected.seed);
 
         let mut actual = Testcase::with_seed(t, &expected.seed);
-        let (sk, pk) = keypair(&mut actual.sk, &mut actual.pk, &mut rng);
-        let (ct, ss) = encaps(&pk, &mut rng);
-        let ss2 = decaps(&sk, &ct);
 
+        let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+        let mut ss_buf1 = [0u8; CRYPTO_BYTES];
+        let mut ss_buf2 = [0u8; CRYPTO_BYTES];
+
+        let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut rng);
+        let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
+
+        actual.pk = *pk.as_array();
+        actual.sk = *sk.as_array();
         assert_eq!(ss, ss2);
-        actual.ss = ss;
+        actual.ss = *ss.as_array();
         actual.ct.copy_from_slice(ct.as_ref());
 
         //assert_eq!(expected, actual);

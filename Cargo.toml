@@ -18,10 +18,14 @@ categories = ["cryptography"]
 rand = { version = "0.8", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 kem = { version = "0.2", default-features = false, optional = true }
+zeroize = { version = "1.5.7", default-features = false, optional = true }
 
 [features]
-default = ["kem", "alloc"]
+default = ["alloc", "zeroize"]
 alloc = []
+# The kem feature is curretly depending on alloc due to how `Encapsulator::try_encap`
+# can only take 'static public keys. So it's unergonomic to use without the heap for now.
+kem = ["dep:kem", "alloc"]
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []
@@ -47,3 +51,11 @@ hex = "0.4.3"
 
 [profile.dev]
 opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s
+
+[package.metadata.docs.rs]
+# Make the types from the `kem` feature show up in the docs.rs.
+# `docsrc` allows us to have the docs highlight which feature must be enabled for each type.
+# This increases discoverability of features massively.
+# To test this out locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
+features = ["kem"]
+rustdoc-args = ["--cfg", "docsrs"]
