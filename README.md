@@ -126,10 +126,11 @@ the standard traits in the `kem` crate.
 
 If the `zeroize` feature is enabled (it is by default), all key types that contain anything secret
 implements `Zeroize` and `ZeroizeOnDrop`. This makes them clear their memory when they go out of
-scope, and lowers the risk of secret key material being stolen in one way or another.
+scope, and lowers the risk of secret key material leaking in one way or another.
 
 Please mind that this of course makes any buffers you pass into the library useless for reading
-out the key from:
+out the key from. Instead of trying to fetch the key material from the buffers you pass in,
+get it from the `as_array` method.
 
 ```rust
 use classic_mceliece_rust::keypair;
@@ -146,8 +147,10 @@ fn main()  {
     // be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
     // You should not rely on that array for anything except providing a temporary storage
     // location to this library.
+    #[cfg(feature = "zeroize")]
     {
-        let (_, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        drop(secret_key);
         // Ouch! The array only has zeroes now.
         assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
     }

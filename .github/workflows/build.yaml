@@ -28,6 +28,7 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           override: true
       - uses: Swatinem/rust-cache@v1
+      # Test all variants
       - name: Test mceliece348864
         uses: actions-rs/cargo@v1
         with:
@@ -78,6 +79,17 @@ jobs:
         with:
           command: test
           args: --features mceliece8192128f
+
+      - name: Test kem feature
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features kem
+      - name: Test no features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features
 
   fmt:
     name: Rustfmt
