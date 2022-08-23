@@ -96,7 +96,7 @@ fn main()  {
     let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
     let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
 
-    assert_eq!(shared_secret_bob, shared_secret_alice);
+    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
 }
 ```
 

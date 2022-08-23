@@ -45,7 +45,7 @@ fn main() {
         hex::encode_upper(shared_secret_alice.as_ref())
     );
 
-    if shared_secret_bob != shared_secret_alice {
+    if shared_secret_bob.as_array() != shared_secret_alice.as_array() {
         eprintln!("\nError: Bob's and Alice's shared key seem to differ.")
     }
 }

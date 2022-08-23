@@ -219,7 +219,7 @@ fn create_response_file(filepath: &str) -> R {
 
         tc.pk = *pk.as_array();
         tc.sk = *sk.as_array();
-        assert_eq!(ss, ss2);
+        assert_eq!(ss.as_array(), ss2.as_array());
         tc.ss = *ss.as_array();
         tc.ct.copy_from_slice(ct.as_ref());
         tc.write_to_file(&mut fd)?;
@@ -258,7 +258,7 @@ fn verify(filepath: &str) -> R {
 
         actual.pk = *pk.as_array();
         actual.sk = *sk.as_array();
-        assert_eq!(ss, ss2);
+        assert_eq!(ss.as_array(), ss2.as_array());
         actual.ss = *ss.as_array();
         actual.ct.copy_from_slice(ct.as_ref());
 

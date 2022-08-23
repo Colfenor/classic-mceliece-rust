@@ -16,7 +16,11 @@ pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
             let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
             let (ct, ss_bob) = encapsulate(&pk, &mut ss_buf_bob, &mut rng);
             let ss_alice = decapsulate(&ct, &sk, &mut ss_buf_alice);
-            assert_eq!(ss_bob, ss_alice, "shared keys do not match");
+            assert_eq!(
+                ss_bob.as_array(),
+                ss_alice.as_array(),
+                "shared keys do not match"
+            );
         })
     });
 }

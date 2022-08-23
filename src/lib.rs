@@ -75,10 +75,10 @@ mod macros {
 ///
 /// This type is intentionally opaque. But it implements `From<T>` for all the types `T`
 /// that can be used to hold the key material.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct KeyBuffer<'a, const SIZE: usize>(KeyBufferInner<'a, SIZE>);
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 enum KeyBufferInner<'a, const SIZE: usize> {
     Borrowed(&'a mut [u8; SIZE]),
     #[cfg(feature = "alloc")]
@@ -216,12 +216,19 @@ impl AsRef<[u8]> for Ciphertext {
 
 /// The shared secret computed by the KEM. Returned from both the
 /// encapsulator and decapsulator.
-#[derive(Debug, Eq, PartialEq)]
 pub struct SharedSecret<'a>(KeyBuffer<'a, CRYPTO_BYTES>);
 
 impl<'a> SharedSecret<'a> {
     pub fn as_array(&self) -> &[u8; CRYPTO_BYTES] {
         self.0.as_ref()
+    }
+}
+
+impl<'a> Debug for SharedSecret<'a> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("SharedSecret")
+            .field(&"-- redacted --")
+            .finish()
     }
 }
 
