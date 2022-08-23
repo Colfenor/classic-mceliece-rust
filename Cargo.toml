@@ -23,9 +23,12 @@ zeroize = { version = "1.5.7", default-features = false, optional = true }
 [features]
 default = ["alloc", "zeroize"]
 alloc = []
-# The kem feature is curretly depending on alloc due to how `Encapsulator::try_encap`
+# The kem feature is currently depending on alloc due to how `Encapsulator::try_encap`
 # can only take 'static public keys. So it's unergonomic to use without the heap for now.
 kem = ["dep:kem", "alloc"]
+
+# Select which variant of Classic McEliece to compile for. Only
+# one of these features can be enabled.
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []
@@ -53,9 +56,9 @@ hex = "0.4.3"
 opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s
 
 [package.metadata.docs.rs]
-# Make the types from the `kem` feature show up in the docs.rs.
-# `docsrc` allows us to have the docs highlight which feature must be enabled for each type.
+# Uses the #[doc(feature(...))] functionality to clearly show in the generated documentation
+# which feature of this crate is needed for each type and function to be available.
 # This increases discoverability of features massively.
-# To test this out locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
+# To use this locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
 features = ["kem"]
 rustdoc-args = ["--cfg", "docsrs"]
