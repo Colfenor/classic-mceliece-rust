@@ -39,8 +39,6 @@ extern crate std;
 use std::vec::Vec;
 
 #[cfg(feature = "kem")]
-pub use api::CryptoCiphertextBytesTypenum;
-#[cfg(feature = "kem")]
 pub use kem_api::ClassicMcEliece;
 
 pub use api::{
@@ -343,7 +341,7 @@ mod kem_api {
     use kem::{Decapsulator, EncappedKey, Encapsulator, SharedSecret};
     use rand::{CryptoRng, RngCore};
 
-    use crate::{Ciphertext, CryptoCiphertextBytesTypenum, PublicKey, SecretKey};
+    use crate::{Ciphertext, PublicKey, SecretKey};
     use crate::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES};
 
     /// A struct for encapsulating a shared key using Classic McEliece.
@@ -378,8 +376,9 @@ mod kem_api {
         }
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "kem")))]
     impl EncappedKey for Ciphertext {
-        type EncappedKeySize = CryptoCiphertextBytesTypenum;
+        type EncappedKeySize = crate::api::CryptoCiphertextBytesTypenum;
 
         type SharedSecretSize = typenum::U32;
 
@@ -394,6 +393,7 @@ mod kem_api {
         }
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "kem")))]
     impl<'sk> Decapsulator<Ciphertext> for SecretKey<'sk> {
         fn try_decap(
             &self,
