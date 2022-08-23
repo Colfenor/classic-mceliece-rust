@@ -110,3 +110,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
+
+  # Make sure the docs build without warnings
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+      - name: cargo doc
+        run: cargo doc --no-deps --features kem
+        env:
+          RUSTDOCFLAGS: "--cfg docsrs --deny warnings"

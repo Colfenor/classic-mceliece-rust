@@ -21,6 +21,9 @@ kem = { version = "0.2", optional = true }
 zeroize = { version = "1.5.7", default-features = false, optional = true }
 
 [features]
+# When adding features or changing the default features, remember to update
+# the `[package.metadata.docs.rs]` section further down as well as the docs
+# generation CI job
 default = ["alloc", "zeroize"]
 alloc = []
 # The kem feature is currently depending on alloc due to how `Encapsulator::try_encap`
