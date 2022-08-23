@@ -282,16 +282,16 @@ pub fn keypair<
     (PublicKey(public_key_buf), SecretKey(secret_key_buf))
 }
 
+/// Convenient wrapper around [`keypair`] that stores the public and private keys on the heap
+/// and returns them with the `static lifetime.
 #[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn keypair_boxed<R: CryptoRng + RngCore>(
     rng: &mut R,
 ) -> (PublicKey<'static>, SecretKey<'static>) {
-    let mut pk_buffer = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
-    let mut sk_buffer = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
-
-    operations::crypto_kem_keypair(&mut pk_buffer, &mut sk_buffer, rng);
-
-    (PublicKey(pk_buffer.into()), SecretKey(sk_buffer.into()))
+    let public_key_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    let secret_key_buf = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
+    keypair(public_key_buf, secret_key_buf, rng)
 }
 
 /// KEM Encapsulation.
@@ -322,6 +322,18 @@ pub fn encapsulate<
     (Ciphertext(ciphertext_buf), SharedSecret(shared_secret_buf))
 }
 
+/// Convenient wrapper around [`encapsulate`] that stores the shared secret on the heap
+/// and returns it with the `static lifetime.
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub fn encapsulate_boxed<R: CryptoRng + RngCore>(
+    public_key: &PublicKey<'_>,
+    rng: &mut R,
+) -> (Ciphertext, SharedSecret<'static>) {
+    let shared_secret_buf = Box::new([0u8; CRYPTO_BYTES]);
+    encapsulate(public_key, shared_secret_buf, rng)
+}
+
 /// KEM Decapsulation.
 ///
 /// Given a secret key `secret_key` and a ciphertext `ciphertext`,
@@ -340,6 +352,15 @@ pub fn decapsulate<'shared_secret, S: Into<KeyBuffer<'shared_secret, CRYPTO_BYTE
     );
 
     SharedSecret(shared_secret_buf)
+}
+
+/// Convenient wrapper around [`decapsulate`] that stores the shared secret on the heap
+/// and returns it with the `static lifetime.
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub fn decapsulate_boxed(ciphertext: &Ciphertext, secret_key: &SecretKey) -> SharedSecret<'static> {
+    let shared_secret_buf = Box::new([0u8; CRYPTO_BYTES]);
+    decapsulate(ciphertext, secret_key, shared_secret_buf)
 }
 
 #[cfg(feature = "kem")]
