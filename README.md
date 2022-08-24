@@ -48,10 +48,9 @@ classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 If you have access to `alloc` (you are not on `no_std`), then the simplest and most ergonomic
 way of using the library is with heap allocated keys and the `*_boxed` helper methods:
 ```rust
-#![cfg(feature = "alloc")]
-use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+#[cfg(feature = "alloc")] {
+    use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 
-fn main()  {
     let mut rng = rand::thread_rng();
 
     // Alice computes the keypair
@@ -78,22 +77,20 @@ further down for known issues with this.
 use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-fn main()  {
-    let mut rng = rand::thread_rng();
+let mut rng = rand::thread_rng();
 
-    // Please mind that `public_key_buf` is very large.
-    let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
-    let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
+// Please mind that `public_key_buf` is very large.
+let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
 
-    let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
-    let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
+let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
+let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
 
-    let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
-    let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
+let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
 
-    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
-}
+assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
 ```
 
 #### Stack usage
@@ -132,32 +129,30 @@ get it from the `as_array` method.
 use classic_mceliece_rust::keypair;
 use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-fn main()  {
-    let mut rng = rand::thread_rng();
+let mut rng = rand::thread_rng();
 
-    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
-    // Initialize to non-zero to show that it has been set to zero by the drop later
-    let mut sk_buf = [255u8; CRYPTO_SECRETKEYBYTES];
+let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+// Initialize to non-zero to show that it has been set to zero by the drop later
+let mut sk_buf = [255u8; CRYPTO_SECRETKEYBYTES];
 
-    // This is the WRONG way of accessing your keys. The buffer will
-    // be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
-    // You should not rely on that array for anything except providing a temporary storage
-    // location to this library.
-    #[cfg(feature = "zeroize")]
-    {
-        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
-        drop(secret_key);
-        // Ouch! The array only has zeroes now.
-        assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
-    }
+// This is the WRONG way of accessing your keys. The buffer will
+// be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
+// You should not rely on that array for anything except providing a temporary storage
+// location to this library.
+#[cfg(feature = "zeroize")]
+{
+    let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+    drop(secret_key);
+    // Ouch! The array only has zeroes now.
+    assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
+}
 
-    // Correct way of getting the secret key bytes if you do need them. However,
-    // if you want the secrets to stay secret, you should try to not read them out of their
-    // storage at all
-    {
-        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
-        assert_ne!(secret_key.as_array(), &[0; CRYPTO_SECRETKEYBYTES]);
-    }
+// Correct way of getting the secret key bytes if you do need them. However,
+// if you want the secrets to stay secret, you should try to not read them out of their
+// storage at all
+{
+    let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+    assert_ne!(secret_key.as_array(), &[0; CRYPTO_SECRETKEYBYTES]);
 }
 ```
 
