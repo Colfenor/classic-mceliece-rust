@@ -81,7 +81,9 @@ enum KeyBuffer<'a, const SIZE: usize> {
 impl<'a, const SIZE: usize> KeyBuffer<'a, SIZE> {
     #[cfg(feature = "alloc")]
     fn to_owned(&self) -> KeyBuffer<'static, SIZE> {
-        KeyBuffer::Owned(Box::new(*self.as_ref()))
+        let mut new_buffer = KeyBuffer::Owned(util::alloc_boxed_array::<SIZE>());
+        new_buffer.as_mut().copy_from_slice(self.as_ref());
+        new_buffer
     }
 }
 

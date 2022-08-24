@@ -8,7 +8,7 @@ use std::thread;
 const MIN_STACK_SIZE_FOR_THIS_CRATE: usize = (CRYPTO_PUBLICKEYBYTES as f32 * 1.8) as usize;
 
 #[test]
-fn to_owned() {
+fn to_owned_copies_correct_data() {
     fn run() {
         let mut rng = rand::thread_rng();
 
@@ -71,18 +71,17 @@ fn boxed_versions_dont_trash_the_stack() {
 
 #[test]
 fn to_owned_not_copying_to_stack() {
-    fn run_kem() {
-        let mut rng = rand::thread_rng();
+    let mut rng = rand::thread_rng();
+    let (public_key, _) = keypair_boxed(&mut rng);
 
-        let (public_key, _) = keypair_boxed(&mut rng);
-
+    let run = move || {
         let owned_public_key = public_key.to_owned();
         assert_eq!(public_key.as_array(), owned_public_key.as_array());
-    }
+    };
 
     thread::Builder::new()
-        .stack_size(MIN_STACK_SIZE_FOR_THIS_CRATE)
-        .spawn(run_kem)
+        .stack_size(512 * 1024)
+        .spawn(run)
         .unwrap()
         .join()
         .unwrap();
