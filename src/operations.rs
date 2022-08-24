@@ -12,7 +12,7 @@ use crate::{
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
     pk_gen::pk_gen,
     sk_gen::genpoly_gen,
-    util::{load4, load_gf, store8, store_gf},
+    util::{load_gf, store_gf},
 };
 use rand::{CryptoRng, RngCore};
 
@@ -292,7 +292,7 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
         // generating permutation
 
         for (i, chunk) in r[PERM..IRR_POLYS].chunks(4).enumerate() {
-            perm[i] = load4(sub!(chunk, 0, 4));
+            perm[i] = u32::from_le_bytes(*sub!(chunk, 0, 4));
         }
 
         #[cfg(any(
@@ -351,7 +351,7 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
             pivots = 0xFFFFFFFF;
         }
 
-        store8(sub!(mut sk, 32, 8), pivots);
+        *sub!(mut sk, 32, 8) = pivots.to_le_bytes();
 
         break;
     }

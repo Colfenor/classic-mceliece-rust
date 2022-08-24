@@ -16,7 +16,6 @@ use crate::{
     feature = "mceliece6960119f",
     feature = "mceliece8192128f"
 ))]
-use crate::util::{load8, store8};
 
 /// Return number of trailing zeros of the non-zero input `input`
 #[cfg(any(
@@ -81,7 +80,7 @@ fn mov_columns(
 
     #[cfg(not(feature = "mceliece6960119f"))]
     for i in 0..32 {
-        buf[i] = load8(sub!(mat[row + i], block_idx, 8));
+        buf[i] = u64::from_le_bytes(*sub!(mat[row + i], block_idx, 8));
     }
 
     #[cfg(feature = "mceliece6960119f")]
@@ -93,7 +92,7 @@ fn mov_columns(
             tmp[j] = (tmp[j] >> tail) | (tmp[j + 1] << (8 - tail));
         }
 
-        buf[i] = load8(sub!(tmp, 0, 8));
+        buf[i] = u64::from_le_bytes(*sub!(tmp, 0, 8));
     }
 
     // Compute the column indices of pivots by Gaussian elimination.
@@ -141,7 +140,7 @@ fn mov_columns(
     // moving columns of mat according to the column indices of pivots
     #[cfg(not(feature = "mceliece6960119f"))]
     for i in 0..PK_NROWS {
-        let mut t = load8(sub!(mat[i], block_idx, 8));
+        let mut t = u64::from_le_bytes(*sub!(mat[i], block_idx, 8));
 
         for j in 0..32 {
             let mut d: u64 = t >> j;
@@ -152,7 +151,7 @@ fn mov_columns(
             t ^= d << j;
         }
 
-        store8(sub!(mut mat[i], block_idx, 8), t);
+        *sub!(mut mat[i], block_idx, 8) = t.to_le_bytes();
     }
 
     #[cfg(feature = "mceliece6960119f")]
@@ -164,7 +163,7 @@ fn mov_columns(
             tmp[k] = (tmp[k] >> tail) | (tmp[k + 1] << (8 - tail));
         }
 
-        let mut t = load8(sub!(tmp, 0, 8));
+        let mut t = u64::from_le_bytes(*sub!(tmp, 0, 8));
 
         for j in 0..32 {
             let mut d = t >> j;
@@ -175,7 +174,7 @@ fn mov_columns(
             t ^= d << j;
         }
 
-        store8(sub!(mut tmp, 0, 8), t);
+        *sub!(mut tmp, 0, 8) = t.to_le_bytes();
 
         mat[i][block_idx + 8] = (mat[i][block_idx + 8] >> tail << tail) | (tmp[7] >> (8 - tail));
         mat[i][block_idx + 0] = (tmp[0] << tail) | (mat[i][block_idx] << (8 - tail) >> (8 - tail));
