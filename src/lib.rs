@@ -71,51 +71,42 @@ mod macros {
     pub(crate) use sub;
 }
 
-/// A memory location where the KEM can store key material, ciphertexts and similar.
-///
-/// This type is intentionally opaque. But it implements `From<T>` for all the types `T`
-/// that can be used to hold the key material.
 #[derive(Debug)]
-pub struct KeyBuffer<'a, const SIZE: usize>(KeyBufferInner<'a, SIZE>);
-
-#[derive(Debug)]
-enum KeyBufferInner<'a, const SIZE: usize> {
+enum KeyBuffer<'a, const SIZE: usize> {
     Borrowed(&'a mut [u8; SIZE]),
     #[cfg(feature = "alloc")]
     Owned(Box<[u8; SIZE]>),
 }
 
-// Implement `From<T>` for all `T`s that should be able to act as a key storage buffer
 impl<'a, const SIZE: usize> From<&'a mut [u8; SIZE]> for KeyBuffer<'a, SIZE> {
     fn from(buf: &'a mut [u8; SIZE]) -> Self {
-        Self(KeyBufferInner::Borrowed(buf))
+        Self::Borrowed(buf)
     }
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 #[cfg(feature = "alloc")]
 impl<const SIZE: usize> From<Box<[u8; SIZE]>> for KeyBuffer<'static, SIZE> {
     fn from(buf: Box<[u8; SIZE]>) -> Self {
-        Self(KeyBufferInner::Owned(buf))
+        Self::Owned(buf)
     }
 }
 
 impl<'a, const SIZE: usize> AsRef<[u8; SIZE]> for KeyBuffer<'a, SIZE> {
     fn as_ref(&self) -> &[u8; SIZE] {
-        match &self.0 {
-            KeyBufferInner::Borrowed(buf) => buf,
+        match &self {
+            KeyBuffer::Borrowed(buf) => buf,
             #[cfg(feature = "alloc")]
-            KeyBufferInner::Owned(buf) => buf.as_ref(),
+            KeyBuffer::Owned(buf) => buf.as_ref(),
         }
     }
 }
 
 impl<'a, const SIZE: usize> AsMut<[u8; SIZE]> for KeyBuffer<'a, SIZE> {
     fn as_mut(&mut self) -> &mut [u8; SIZE] {
-        match &mut self.0 {
-            KeyBufferInner::Borrowed(buf) => buf,
+        match self {
+            KeyBuffer::Borrowed(buf) => buf,
             #[cfg(feature = "alloc")]
-            KeyBufferInner::Owned(buf) => buf.as_mut(),
+            KeyBuffer::Owned(buf) => buf.as_mut(),
         }
     }
 }
@@ -123,10 +114,10 @@ impl<'a, const SIZE: usize> AsMut<[u8; SIZE]> for KeyBuffer<'a, SIZE> {
 #[cfg(feature = "zeroize")]
 impl<'a, const SIZE: usize> zeroize::Zeroize for KeyBuffer<'a, SIZE> {
     fn zeroize(&mut self) {
-        match &mut self.0 {
-            KeyBufferInner::Borrowed(buf) => buf.zeroize(),
+        match self {
+            KeyBuffer::Borrowed(buf) => buf.zeroize(),
             #[cfg(feature = "alloc")]
-            KeyBufferInner::Owned(buf) => buf.zeroize(),
+            KeyBuffer::Owned(buf) => buf.zeroize(),
         }
     }
 }
@@ -138,9 +129,10 @@ pub struct PublicKey<'a>(KeyBuffer<'a, CRYPTO_PUBLICKEYBYTES>);
 
 impl<'a> PublicKey<'a> {
     /// Move the key to the heap and make it `'static`
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[cfg(feature = "alloc")]
     pub fn to_owned(&self) -> PublicKey<'static> {
-        PublicKey(KeyBuffer(KeyBufferInner::Owned(Box::new(*self.0.as_ref()))))
+        PublicKey(KeyBuffer::Owned(Box::new(*self.0.as_ref())))
     }
 
     pub fn as_array(&self) -> &[u8; CRYPTO_PUBLICKEYBYTES] {
@@ -263,19 +255,13 @@ impl<'a> Drop for SharedSecret<'a> {
 /// Generate a public and secret key.
 /// The public key is meant to be shared with any party,
 /// but access to the secret key must be limited to the generating party.
-pub fn keypair<
-    'public,
-    'secret,
-    P: Into<KeyBuffer<'public, CRYPTO_PUBLICKEYBYTES>> + 'public,
-    S: Into<KeyBuffer<'secret, CRYPTO_SECRETKEYBYTES>> + 'secret,
-    R: CryptoRng + RngCore,
->(
-    public_key_buf: P,
-    secret_key_buf: S,
+pub fn keypair<'public, 'secret, R: CryptoRng + RngCore>(
+    public_key_buf: &'public mut [u8; CRYPTO_PUBLICKEYBYTES],
+    secret_key_buf: &'secret mut [u8; CRYPTO_SECRETKEYBYTES],
     rng: &mut R,
 ) -> (PublicKey<'public>, SecretKey<'secret>) {
-    let mut public_key_buf = public_key_buf.into();
-    let mut secret_key_buf = secret_key_buf.into();
+    let mut public_key_buf = KeyBuffer::from(public_key_buf);
+    let mut secret_key_buf = KeyBuffer::from(secret_key_buf);
 
     operations::crypto_kem_keypair(public_key_buf.as_mut(), secret_key_buf.as_mut(), rng);
 
@@ -289,9 +275,12 @@ pub fn keypair<
 pub fn keypair_boxed<R: CryptoRng + RngCore>(
     rng: &mut R,
 ) -> (PublicKey<'static>, SecretKey<'static>) {
-    let public_key_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
-    let secret_key_buf = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
-    keypair(public_key_buf, secret_key_buf, rng)
+    let mut public_key_buf = KeyBuffer::from(Box::new([0u8; CRYPTO_PUBLICKEYBYTES]));
+    let mut secret_key_buf = KeyBuffer::from(Box::new([0u8; CRYPTO_SECRETKEYBYTES]));
+
+    operations::crypto_kem_keypair(public_key_buf.as_mut(), secret_key_buf.as_mut(), rng);
+
+    (PublicKey(public_key_buf), SecretKey(secret_key_buf))
 }
 
 /// KEM Encapsulation.
@@ -300,16 +289,12 @@ pub fn keypair_boxed<R: CryptoRng + RngCore>(
 /// The returned ciphertext should be sent back to the entity holding
 /// the secret key corresponding to public key given here, so they can compute
 /// the same shared key.
-pub fn encapsulate<
-    'shared_secret,
-    S: Into<KeyBuffer<'shared_secret, CRYPTO_BYTES>>,
-    R: CryptoRng + RngCore,
->(
+pub fn encapsulate<'shared_secret, R: CryptoRng + RngCore>(
     public_key: &PublicKey<'_>,
-    shared_secret_buf: S,
+    shared_secret_buf: &'shared_secret mut [u8; CRYPTO_BYTES],
     rng: &mut R,
 ) -> (Ciphertext, SharedSecret<'shared_secret>) {
-    let mut shared_secret_buf = shared_secret_buf.into();
+    let mut shared_secret_buf = KeyBuffer::from(shared_secret_buf);
     let mut ciphertext_buf = [0u8; CRYPTO_CIPHERTEXTBYTES];
 
     operations::crypto_kem_enc(
@@ -330,20 +315,29 @@ pub fn encapsulate_boxed<R: CryptoRng + RngCore>(
     public_key: &PublicKey<'_>,
     rng: &mut R,
 ) -> (Ciphertext, SharedSecret<'static>) {
-    let shared_secret_buf = Box::new([0u8; CRYPTO_BYTES]);
-    encapsulate(public_key, shared_secret_buf, rng)
+    let mut shared_secret_buf = KeyBuffer::from(Box::new([0u8; CRYPTO_BYTES]));
+    let mut ciphertext_buf = [0u8; CRYPTO_CIPHERTEXTBYTES];
+
+    operations::crypto_kem_enc(
+        &mut ciphertext_buf,
+        shared_secret_buf.as_mut(),
+        public_key.0.as_ref(),
+        rng,
+    );
+
+    (Ciphertext(ciphertext_buf), SharedSecret(shared_secret_buf))
 }
 
 /// KEM Decapsulation.
 ///
 /// Given a secret key `secret_key` and a ciphertext `ciphertext`,
 /// determine the shared key negotiated by both parties.
-pub fn decapsulate<'shared_secret, S: Into<KeyBuffer<'shared_secret, CRYPTO_BYTES>>>(
+pub fn decapsulate<'shared_secret>(
     ciphertext: &Ciphertext,
     secret_key: &SecretKey,
-    shared_secret_buf: S,
+    shared_secret_buf: &'shared_secret mut [u8; CRYPTO_BYTES],
 ) -> SharedSecret<'shared_secret> {
-    let mut shared_secret_buf = shared_secret_buf.into();
+    let mut shared_secret_buf = KeyBuffer::from(shared_secret_buf);
 
     operations::crypto_kem_dec(
         shared_secret_buf.as_mut(),
@@ -359,8 +353,15 @@ pub fn decapsulate<'shared_secret, S: Into<KeyBuffer<'shared_secret, CRYPTO_BYTE
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn decapsulate_boxed(ciphertext: &Ciphertext, secret_key: &SecretKey) -> SharedSecret<'static> {
-    let shared_secret_buf = Box::new([0u8; CRYPTO_BYTES]);
-    decapsulate(ciphertext, secret_key, shared_secret_buf)
+    let mut shared_secret_buf = KeyBuffer::from(Box::new([0u8; CRYPTO_BYTES]));
+
+    operations::crypto_kem_dec(
+        shared_secret_buf.as_mut(),
+        ciphertext.as_array(),
+        secret_key.as_array(),
+    );
+
+    SharedSecret(shared_secret_buf)
 }
 
 #[cfg(feature = "kem")]
