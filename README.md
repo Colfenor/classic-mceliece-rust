@@ -51,21 +51,31 @@ way of using the library is with heap allocated keys and the `*_boxed` helper me
 #[cfg(feature = "alloc")] {
     use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 
-    let mut rng = rand::thread_rng();
+    fn run_kem() {
+        let mut rng = rand::thread_rng();
 
-    // Alice computes the keypair
-    let (public_key, secret_key) = keypair_boxed(&mut rng);
+        // Alice computes the keypair
+        let (public_key, secret_key) = keypair_boxed(&mut rng);
 
-    // Send `secret_key` over to Bob.
-    // Bob computes the shared secret and a ciphertext
-    let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
+        // Send `secret_key` over to Bob.
+        // Bob computes the shared secret and a ciphertext
+        let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
 
-    // Send `ciphertext` back to Alice.
-    // Alice decapsulates the ciphertext...
-    let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
+        // Send `ciphertext` back to Alice.
+        // Alice decapsulates the ciphertext...
+        let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
 
-    // ... and ends up with the same key material as Bob.
-    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+        // ... and ends up with the same key material as Bob.
+        assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+    }
+
+    std::thread::Builder::new()
+        // This library needs quite a lot of stack space to work
+        .stack_size(2 * 1024 * 1024)
+        .spawn(run_kem)
+        .unwrap()
+        .join()
+        .unwrap();
 }
 ```
 
