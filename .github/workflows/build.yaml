@@ -80,6 +80,12 @@ jobs:
           command: test
           args: --features mceliece8192128f
 
+      - name: Compile benchmarks
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --benches
+
       - name: Test kem feature
         uses: actions-rs/cargo@v1
         with:
