@@ -2,7 +2,7 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::{env, error, fmt, fs};
 
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+use classic_mceliece_rust::{decapsulate, encapsulate, keypair};
 use classic_mceliece_rust::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
     CRYPTO_SECRETKEYBYTES,
@@ -208,12 +208,20 @@ fn create_response_file(filepath: &str) -> R {
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
 
-        crypto_kem_keypair(&mut tc.pk, &mut tc.sk, &mut tc_rng);
-        crypto_kem_enc(&mut tc.ct, &mut tc.ss, &tc.pk, &mut tc_rng);
-        let mut ss = [0u8; CRYPTO_BYTES];
-        crypto_kem_dec(&mut ss, &tc.ct, &tc.sk);
+        let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+        let mut ss_buf1 = [0u8; CRYPTO_BYTES];
+        let mut ss_buf2 = [0u8; CRYPTO_BYTES];
 
-        assert_eq!(tc.ss, ss);
+        let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut tc_rng);
+        let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut tc_rng);
+        let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
+
+        tc.pk = *pk.as_array();
+        tc.sk = *sk.as_array();
+        assert_eq!(ss.as_array(), ss2.as_array());
+        tc.ss = *ss.as_array();
+        tc.ct.copy_from_slice(ct.as_ref());
         tc.write_to_file(&mut fd)?;
     }
 
@@ -238,9 +246,21 @@ fn verify(filepath: &str) -> R {
         rng.randombytes_init(expected.seed);
 
         let mut actual = Testcase::with_seed(t, &expected.seed);
-        crypto_kem_keypair(&mut actual.pk, &mut actual.sk, &mut rng);
-        crypto_kem_enc(&mut actual.ct, &mut actual.ss, &actual.pk, &mut rng);
-        crypto_kem_dec(&mut actual.ss, &actual.ct, &actual.sk);
+
+        let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+        let mut ss_buf1 = [0u8; CRYPTO_BYTES];
+        let mut ss_buf2 = [0u8; CRYPTO_BYTES];
+
+        let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut rng);
+        let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
+
+        actual.pk = *pk.as_array();
+        actual.sk = *sk.as_array();
+        assert_eq!(ss.as_array(), ss2.as_array());
+        actual.ss = *ss.as_array();
+        actual.ct.copy_from_slice(ct.as_ref());
 
         //assert_eq!(expected, actual);
         assert_eq!(

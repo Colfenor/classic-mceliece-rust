@@ -45,7 +45,7 @@ fn check_c_padding(c: &[u8; SYND_BYTES]) -> u8 {
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
+pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
     c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
@@ -73,7 +73,7 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
 /// This shared key is returned through parameter `key` whereas
 /// the ciphertext (meant to be used for decapsulation) is returned as `c`.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
+pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
     c: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     key: &mut [u8; CRYPTO_BYTES],
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
@@ -117,7 +117,7 @@ pub fn crypto_kem_enc<R: CryptoRng + RngCore>(
 /// Given a secret key `sk` and a ciphertext `c`,
 /// determine the shared text `key` negotiated by both parties.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-pub fn crypto_kem_dec(
+pub(crate) fn crypto_kem_dec(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
@@ -165,7 +165,7 @@ pub fn crypto_kem_dec(
 /// Given a secret key `sk` and a ciphertext `c`,
 /// determine the shared text `key` negotiated by both parties.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-pub fn crypto_kem_dec(
+pub(crate) fn crypto_kem_dec(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
@@ -227,7 +227,7 @@ pub fn crypto_kem_dec(
 /// The structure of the secret key is given by the following segments:
 /// (32 bytes seed, 8 bytes pivots, IRR_BYTES bytes, COND_BYTES bytes, SYS_N/8 bytes).
 /// The structure of the public key is simple: a matrix of PK_NROWS times PK_ROW_BYTES bytes.
-pub fn crypto_kem_keypair<R: CryptoRng + RngCore>(
+pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     pk: &mut [u8; CRYPTO_PUBLICKEYBYTES],
     sk: &mut [u8; CRYPTO_SECRETKEYBYTES],
     rng: &mut R,

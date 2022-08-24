@@ -23,7 +23,7 @@ fn main() {
         }
     }
 
-    if target_feature == "" {
+    if target_feature.is_empty() {
         println!("cargo:rustc-cfg=feature=\"mceliece348864\"");
     }
 }

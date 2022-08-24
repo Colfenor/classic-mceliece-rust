@@ -28,6 +28,7 @@ jobs:
           toolchain: ${{matrix.toolchain}}
           override: true
       - uses: Swatinem/rust-cache@v1
+      # Test all variants
       - name: Test mceliece348864
         uses: actions-rs/cargo@v1
         with:
@@ -79,6 +80,17 @@ jobs:
           command: test
           args: --features mceliece8192128f
 
+      - name: Test kem feature
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features kem
+      - name: Test no features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
@@ -110,3 +122,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
+
+  # Make sure the docs build without warnings
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+      - name: cargo doc
+        run: cargo doc --no-deps --features kem
+        env:
+          RUSTDOCFLAGS: "--cfg docsrs --deny warnings"

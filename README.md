@@ -1,6 +1,6 @@
 # classic-mceliece-rust
 
-A safe pure-rust implementation of the Classic McEliece post-quantum scheme.
+This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
 
 * Classic McEliece is a code-based key encapsulation mechanism (KEM)
 * The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
@@ -47,22 +47,121 @@ classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 
 The `simple` example illustrates the API:
 ```rust
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
+use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
+#[cfg(feature = "alloc")]
+use classic_mceliece_rust::keypair_boxed;
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 fn main()  {
-  let mut rng = rand::thread_rng();
-  let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-  let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-  let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-  let mut ss_alice = [0u8; CRYPTO_BYTES];
-  let mut ss_bob = [0u8; CRYPTO_BYTES];
+    let mut rng = rand::thread_rng();
 
-  crypto_kem_keypair(&mut pk, &mut sk, &mut rng);
-  crypto_kem_enc(&mut ct, &mut ss_bob, &pk, &mut rng);
-  crypto_kem_dec(&mut ss_alice, &ct, &sk);
+    // since the public keys in Classic McEliece are rather large, we provide
+    // multiple ways to store the keys. On the stack or the heap (heap requires alloc)
 
-  assert_eq!(ss_bob, ss_alice);
+    // option one: pass a reference to buffers to `keypair`
+    // the key objects then only reference the buffers and do not own them.
+    // See [Stack usage] below
+    {
+        // This buffer, `pk_buf`, takes up a lot of stack space
+        let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+        let (public_key, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        // Does not compile, lifetime are not 'static
+        // std::thread::spawn(move || drop((public_key, secret_key)));
+    }
+
+    // Option two: Pass the ownership of an array on the heap. This requires the `alloc` feature.
+    #[cfg(feature = "alloc")]
+    {
+        let heap_pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+        let heap_sk_buf = Box::new([0u8; CRYPTO_SECRETKEYBYTES]);
+        let (public_key, secret_key) = keypair(heap_pk_buf, heap_sk_buf, &mut rng);
+        std::thread::spawn(move || drop((public_key, secret_key)));
+
+        // there is even a helper function for this
+        let (public_key, secret_key) = keypair_boxed(&mut rng);
+        std::thread::spawn(move || drop((public_key, secret_key)));
+    }
+
+    // Let's use option one here. Mostly so this test won't depend on the alloc feature.
+    // But if you have alloc you probably want to store the public key on the heap
+    // since it's so large!
+    let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
+
+    let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
+    let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
+
+    let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+    let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
+
+    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+}
+```
+
+#### Stack usage
+
+The public keys in Classic McEliece are huge. So if you store the backing buffer for them on
+the stack, your program will use a lot of stack.
+For some KEM variants it is even more than the default stack size on some
+platforms (Windows). On these platforms your program will simply crash with a stack overflow
+unless you do one of the following:
+
+1) Store the backing buffer on the heap with `Box` (requires the `alloc` feature).
+2) Run the KEM in a thread with increased stack size:
+   ```rust,ignore
+   std::thread::Builder::new()
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| /* Run the KEM here */)
+        .unwrap();
+   ```
+
+#### RustCrypto APIs
+
+If the `kem` feature is enabled, key encapsulation and decapsulation can also be done via
+the standard traits in the `kem` crate.
+
+#### Clear out secrets from memory (Zeroize)
+
+If the `zeroize` feature is enabled (it is by default), all key types that contain anything secret
+implements `Zeroize` and `ZeroizeOnDrop`. This makes them clear their memory when they go out of
+scope, and lowers the risk of secret key material leaking in one way or another.
+
+Please mind that this of course makes any buffers you pass into the library useless for reading
+out the key from. Instead of trying to fetch the key material from the buffers you pass in,
+get it from the `as_array` method.
+
+```rust
+use classic_mceliece_rust::keypair;
+use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+fn main()  {
+    let mut rng = rand::thread_rng();
+
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    // Initialize to non-zero to show that it has been set to zero by the drop later
+    let mut sk_buf = [255u8; CRYPTO_SECRETKEYBYTES];
+
+    // This is the WRONG way of accessing your keys. The buffer will
+    // be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
+    // You should not rely on that array for anything except providing a temporary storage
+    // location to this library.
+    #[cfg(feature = "zeroize")]
+    {
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        drop(secret_key);
+        // Ouch! The array only has zeroes now.
+        assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
+    }
+
+    // Correct way of getting the secret key bytes if you do need them. However,
+    // if you want the secrets to stay secret, you should try to not read them out of their
+    // storage at all
+    {
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        assert_ne!(secret_key.as_array(), &[0; CRYPTO_SECRETKEYBYTES]);
+    }
 }
 ```
 
