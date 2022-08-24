@@ -83,6 +83,8 @@ You can also use this crate in a `no_std` environment. Then you don't have acces
 keys and you need to provide the kem functions with the storage they should use.
 You can store the key material directly on the stack. However, see the stack usage section
 further down for known issues with this.
+
+This test does not run on Windows due to the default stack size being too small.
 ```rust
 #[cfg(not(windows))] {
     use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
@@ -107,20 +109,19 @@ further down for known issues with this.
 
 #### Stack usage
 
-The public keys in Classic McEliece are huge. So if you store the backing buffer for them on
-the stack, your program will use a lot of stack.
-For some KEM variants it is even more than the default stack size on some
-platforms (Windows). On these platforms your program will simply crash with a stack overflow
-unless you do one of the following:
+The public keys in Classic McEliece are huge. As a result, running the algorithm requires a lot of
+stack space. This can be somewhat mitigated by storing the public key on the heap, like shown
+in an example above. However, even when doing this the call to `keypair` uses more stack than
+available by default on some platforms (Windows). So if you want your program to be portable
+and not unexpectedly crash, you should probably run the entire key exchange in a dedicated
+thread with a large enough stack size. Something like this:
 
-1) Store the backing buffer on the heap with `Box` (requires the `alloc` feature).
-2) Run the KEM in a thread with increased stack size:
-   ```rust,ignore
-   std::thread::Builder::new()
-        .stack_size(8 * 1024 * 1024)
-        .spawn(|| /* Run the KEM here */)
-        .unwrap();
-   ```
+```rust,no_run
+std::thread::Builder::new()
+    .stack_size(4 * 1024 * 1024)
+    .spawn(|| {/* Run the KEM here */})
+    .unwrap();
+```
 
 #### RustCrypto APIs
 
