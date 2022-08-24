@@ -32,6 +32,14 @@ pub(crate) fn bitrev(mut a: Gf) -> Gf {
     }
 }
 
+/// Ugly hack to allocate a `Box<[u8; _]>` directly on the heap without first
+/// putting the array on the stack
+#[cfg(feature = "alloc")]
+#[inline(always)]
+pub fn alloc_boxed_array<const SIZE: usize>() -> alloc::boxed::Box<[u8; SIZE]> {
+    alloc::boxed::Box::<[u8; SIZE]>::try_from(alloc::vec![0u8; SIZE].into_boxed_slice()).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
