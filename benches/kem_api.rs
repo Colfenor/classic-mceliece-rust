@@ -39,11 +39,11 @@ pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
 
 pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
     let mut rng = rand::thread_rng();
-    let pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ss_buf = [0u8; CRYPTO_BYTES];
 
-    let (pk, _) = keypair(pk_buf, &mut sk_buf, &mut rng);
+    let (pk, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
 
     criterion.bench_function("kem_enc", |b| {
         b.iter(|| {
