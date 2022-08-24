@@ -63,6 +63,7 @@ fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
 ///
 /// But the following descriptions still hold true:
 ///   out is filled with (2m-1)n/2 control bits at positions pos, pos+step, …
+#[allow(clippy::too_many_arguments)]
 fn cbrecursion(
     out: &mut [u8],
     mut pos: usize,

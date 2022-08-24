@@ -28,6 +28,7 @@ pub(crate) fn uint64_sort<const N: usize>(x: &mut [u64; N]) {
         return;
     }
     let mut top = 1;
+    #[allow(clippy::overflow_check_conditional)]
     while top < N - top {
         top += top;
     }

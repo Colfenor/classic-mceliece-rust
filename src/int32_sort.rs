@@ -24,6 +24,7 @@ pub(crate) fn int32_sort(x: &mut [i32]) {
         return;
     }
     top = 1;
+    #[allow(clippy::overflow_check_conditional)]
     while top < n - top {
         top += top;
     }
