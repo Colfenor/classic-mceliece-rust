@@ -80,7 +80,8 @@ fn to_owned_not_copying_to_stack() {
     };
 
     thread::Builder::new()
-        .stack_size(512 * 1024)
+        // Force to_owned to run with a tiny stack.
+        .stack_size(16 * 1024)
         .spawn(run)
         .unwrap()
         .join()
