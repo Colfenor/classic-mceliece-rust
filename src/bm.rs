@@ -44,9 +44,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mle = mle.wrapping_sub(1);
         mle &= mne;
 
-        for i in 0..=SYS_T {
-            t[i] = c[i];
-        }
+        t[..(SYS_T + 1)].copy_from_slice(&c[..(SYS_T + 1)]);
 
         let f: Gf = gf_frac(base, d);
 

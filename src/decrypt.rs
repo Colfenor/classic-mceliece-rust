@@ -33,9 +33,7 @@ pub(crate) fn decrypt(
     let mut locator = [0u16; SYS_T + 1];
     let mut images = [0u16; SYS_N];
 
-    for i in 0..SYND_BYTES {
-        r[i] = c[i];
-    }
+    r[..SYND_BYTES].copy_from_slice(&c[..SYND_BYTES]);
 
     r[SYND_BYTES..SYS_N / 8].fill(0);
 
@@ -46,11 +44,11 @@ pub(crate) fn decrypt(
 
     support_gen(&mut l, sub!(sk, IRR_BYTES, COND_BYTES));
 
-    synd(&mut s, &mut g, &mut l, &r);
+    synd(&mut s, &g, &l, &r);
 
     bm(&mut locator, &mut s);
 
-    root(&mut images, &mut locator, &mut l);
+    root(&mut images, &locator, &l);
 
     e[0..SYS_N / 8].fill(0);
 
@@ -61,7 +59,7 @@ pub(crate) fn decrypt(
         w += t as i32;
     }
 
-    synd(&mut s_cmp, &mut g, &mut l, e);
+    synd(&mut s_cmp, &g, &l, e);
 
     let mut check = w as u16;
     check ^= SYS_T as u16;

@@ -30,11 +30,11 @@ fn layer(data: &mut [u64], bits: &[u64], lgs: usize) {
     let mut i = 0usize;
     while i < 64 {
         for j in i..(i + s) {
-            let mut d = data[j + 0] ^ data[j + s];
+            let mut d = data[j] ^ data[j + s];
             d &= bits[index];
             index += 1;
 
-            data[j + 0] ^= d;
+            data[j] ^= d;
             data[j + s] ^= d;
         }
         i += s * 2;
@@ -351,27 +351,26 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
     for i in 0..(1 << GFBITS) {
         a = util::bitrev(i as Gf);
 
-        for j in 0..GFBITS {
-            l[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
+        for (j, itr_l) in l.iter_mut().enumerate().take(GFBITS) {
+            itr_l[i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
     }
 
-    for j in 0..GFBITS {
+    for itr_l in l.iter_mut().take(GFBITS) {
         #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
-            apply_benes(&mut l[j], c, 0);
+            apply_benes(itr_l, c, 0);
         }
         #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            apply_benes(&mut l[j], c, 0);
+            apply_benes(itr_l, c, 0);
         }
     }
 
-    for i in 0..SYS_N {
-        s[i] = 0;
+    for (i, itr_s) in s.iter_mut().enumerate().take(SYS_N) {
         for j in (0..=(GFBITS - 1)).rev() {
-            s[i] <<= 1;
-            s[i] |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
+            *itr_s <<= 1;
+            *itr_s |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
 }

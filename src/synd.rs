@@ -19,8 +19,8 @@ pub(crate) fn synd(
         let e: Gf = eval(f, l[i]);
         let mut e_inv: Gf = gf_inv(gf_mul(e, e));
 
-        for j in 0..SYS_T * 2 {
-            out[j] = gf_add(out[j], gf_mul(e_inv, c));
+        for itr_out in out.iter_mut().take(SYS_T * 2) {
+            *itr_out = gf_add(*itr_out, gf_mul(e_inv, c));
             e_inv = gf_mul(e_inv, l[i]);
         }
     }

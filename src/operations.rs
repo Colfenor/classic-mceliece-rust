@@ -281,7 +281,7 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
             f[i] = load_gf(sub!(chunk, 0, 2));
         }
 
-        if genpoly_gen(&mut irr, &mut f) != 0 {
+        if genpoly_gen(&mut irr, &f) != 0 {
             continue;
         }
 
@@ -322,14 +322,14 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
             feature = "mceliece8192128"
         ))]
         {
-            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &mut perm, &mut pi) != 0 {
+            if pk_gen(pk, sub!(mut sk, 40, IRR_BYTES), &perm, &mut pi) != 0 {
                 continue;
             }
         }
 
         controlbitsfrompermutation(
             &mut sk[(40 + IRR_BYTES)..(40 + IRR_BYTES + COND_BYTES)],
-            &mut pi,
+            &pi,
             GFBITS,
             1 << GFBITS,
         );
