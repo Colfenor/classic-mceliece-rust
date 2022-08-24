@@ -5,7 +5,7 @@ use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 use std::thread;
 
 /// The smallest amount of stack needed to reliably run the KEM from this library.
-const MIN_STACK_SIZE_FOR_THIS_CRATE: usize = (CRYPTO_PUBLICKEYBYTES as f32 * 1.65) as usize;
+const MIN_STACK_SIZE_FOR_THIS_CRATE: usize = (CRYPTO_PUBLICKEYBYTES as f32 * 1.8) as usize;
 
 #[test]
 fn to_owned() {
