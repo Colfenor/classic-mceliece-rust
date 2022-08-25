@@ -19,7 +19,7 @@ pub(crate) fn synd(
         let e: Gf = eval(f, l[i]);
         let mut e_inv: Gf = gf_inv(gf_mul(e, e));
 
-        for itr_out in out.iter_mut().take(SYS_T * 2) {
+        for itr_out in out.iter_mut() {
             *itr_out = gf_add(*itr_out, gf_mul(e_inv, c));
             e_inv = gf_mul(e_inv, l[i]);
         }

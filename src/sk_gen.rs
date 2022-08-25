@@ -35,7 +35,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
         let inv = gf_inv(mat[j][j]);
 
-        for itr_mat in mat.iter_mut().take(SYS_T + 1).skip(j) {
+        for itr_mat in mat.iter_mut() {
             itr_mat[j] = gf_mul(itr_mat[j], inv);
         }
 
@@ -43,7 +43,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
             if k != j {
                 let t = mat[j][k];
 
-                for itr_mat in mat.iter_mut().take(SYS_T + 1).skip(j) {
+                for itr_mat in mat.iter_mut() {
                     itr_mat[k] ^= gf_mul(itr_mat[j], t);
                 }
             }

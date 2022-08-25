@@ -243,7 +243,7 @@ pub(crate) fn pk_gen(
 
     root(&mut inv, &g, &l);
 
-    for itr_inv in inv.iter_mut().take(SYS_N) {
+    for itr_inv in inv.iter_mut() {
         *itr_inv = gf_inv(*itr_inv);
     }
 

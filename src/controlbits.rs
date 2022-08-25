@@ -307,10 +307,8 @@ pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n
         cbrecursion(sub, 0, 1, 0, w, n, &mut temp, &pi_as_i32);
 
         let mut pi_test = [0i16; 1 << GFBITS];
-        /*for i in 0..n {
-            pi_test[i] = i as i16;
-        }*/
-        for (i, itr_pi_test) in pi_test.iter_mut().enumerate().take(n) {
+
+        for (i, itr_pi_test) in pi_test.iter_mut().enumerate() {
             *itr_pi_test = i as i16;
         }
 

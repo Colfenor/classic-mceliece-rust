@@ -351,12 +351,12 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
     for i in 0..(1 << GFBITS) {
         a = util::bitrev(i as Gf);
 
-        for (j, itr_l) in l.iter_mut().enumerate().take(GFBITS) {
+        for (j, itr_l) in l.iter_mut().enumerate() {
             itr_l[i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
     }
 
-    for itr_l in l.iter_mut().take(GFBITS) {
+    for itr_l in l.iter_mut() {
         #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
             apply_benes(itr_l, c, 0);
@@ -367,7 +367,8 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
         }
     }
 
-    for (i, itr_s) in s.iter_mut().enumerate().take(SYS_N) {
+    for (i, itr_s) in s.iter_mut().enumerate() {
+        *itr_s = 0;
         for j in (0..=(GFBITS - 1)).rev() {
             *itr_s <<= 1;
             *itr_s |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
