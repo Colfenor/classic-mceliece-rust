@@ -11,7 +11,7 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
     mat[0][1..SYS_T].fill(0);
 
-    mat[1][..SYS_T].copy_from_slice(&f[..SYS_T]);
+    mat[1] = *f;
 
     for j in 2..=SYS_T {
         let (left, right) = mat.split_at_mut(j);

@@ -12,7 +12,7 @@ pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
         [0x00000000FFFFFFFF, 0xFFFFFFFF00000000],
     ];
 
-    output[..64].copy_from_slice(&input[..64]);
+    *output = input;
 
     for d in (0..=5).rev() {
         let s = 1 << d;
