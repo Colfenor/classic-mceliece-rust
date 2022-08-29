@@ -212,6 +212,12 @@ impl AsRef<[u8]> for Ciphertext {
     }
 }
 
+impl From<[u8; CRYPTO_CIPHERTEXTBYTES]> for Ciphertext {
+    fn from(data: [u8; CRYPTO_CIPHERTEXTBYTES]) -> Self {
+        Self(data)
+    }
+}
+
 /// The shared secret computed by the KEM. Returned from both the
 /// encapsulator and decapsulator.
 #[must_use]
