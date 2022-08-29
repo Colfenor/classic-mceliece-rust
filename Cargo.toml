@@ -4,14 +4,14 @@ description = "Pure rust implementation of the PQC scheme Classic McEliece"
 repository = "https://github.com/Colfenor/classic-mceliece-rust"
 readme = "README.md"
 license = "MIT"
-version = "1.0.1"
+version = "2.0.0"
 authors = [
     "Bernhard Berg <b.b_erg@outlook.com>",
     "Lukas Prokop <admin@lukas-prokop.at>",
     "Daniel Kales <daniel.kales@gmail.com>",
 ]
 edition = "2021"
-keywords = ["pqc", "post-quantum", "cryptography", "lattice"]
+keywords = ["pqc", "post-quantum", "cryptography", "decoding"]
 categories = ["cryptography"]
 
 [dependencies]
