@@ -4,8 +4,8 @@
 //! The implementation follows the design discussed in this blogpost:
 //! <https://lukas-prokop.at/articles/2021-12-31-nists-rng-in-rust>
 
-use aes::BlockEncrypt;
-use aes::NewBlockCipher;
+use aes::cipher::BlockEncrypt;
+use aes::cipher::KeyInit;
 use rand::CryptoRng;
 use rand::RngCore;
 use std::fmt;

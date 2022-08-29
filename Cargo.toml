@@ -51,8 +51,8 @@ harness = false
 rand = { version = "0.8", features = ["default"] }
 criterion = { version = "0.3", features = ["html_reports"] }
 criterion-cycles-per-byte = "0.1.2"
-aes = "0.7"
-block-modes = "0.8"
+aes = "0.8"
+block-modes = "0.9"
 hex = "0.4.3"
 
 [profile.dev]
