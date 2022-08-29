@@ -198,6 +198,12 @@ impl<'a> SecretKey<'a> {
         SecretKey(self.0.to_owned())
     }
 
+    /// Returns the secret key as an array of bytes.
+    ///
+    /// Please note that depending on your threat model, moving the data out of the
+    /// `SecretKey` can be bad for security. The `SecretKey` type is designed to keep the
+    /// backing data in a single location in memory and zeroing it out when it goes out
+    /// of scope.
     pub fn as_array(&self) -> &[u8; CRYPTO_SECRETKEYBYTES] {
         self.0.as_ref()
     }
@@ -212,6 +218,22 @@ impl<'a> Debug for SecretKey<'a> {
 impl<'a> AsRef<[u8]> for SecretKey<'a> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl<'a> From<&'a mut [u8; CRYPTO_SECRETKEYBYTES]> for SecretKey<'a> {
+    /// Represents a mutable byte array of the correct size as a `SecretKey`.
+    /// Please note that the array will be zeroed on drop.
+    fn from(data: &'a mut [u8; CRYPTO_SECRETKEYBYTES]) -> Self {
+        Self(KeyBufferMut::Borrowed(data))
+    }
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+#[cfg(feature = "alloc")]
+impl From<Box<[u8; CRYPTO_SECRETKEYBYTES]>> for SecretKey<'static> {
+    fn from(data: Box<[u8; CRYPTO_SECRETKEYBYTES]>) -> Self {
+        Self(KeyBufferMut::Owned(data))
     }
 }
 
