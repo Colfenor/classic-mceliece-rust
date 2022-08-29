@@ -2,6 +2,7 @@
 //! Performing a the key exchange between two computers over a network.
 //! Here the "network" is simulated by simple message passing channels sending heap
 //! allocated byte buffers.
+#![cfg(feature = "alloc")]
 
 use classic_mceliece_rust::{
     decapsulate_boxed, encapsulate_boxed, keypair_boxed, Ciphertext, PublicKey, SharedSecret,

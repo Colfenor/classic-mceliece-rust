@@ -43,6 +43,10 @@ mceliece6960119f = []
 mceliece8192128 = []
 mceliece8192128f = []
 
+[[example]]
+name = "client-server"
+required-features = ["alloc"]
+
 [[bench]]
 name = "kem_api"
 harness = false
