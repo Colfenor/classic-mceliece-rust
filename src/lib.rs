@@ -121,6 +121,7 @@ impl<'a, const SIZE: usize> zeroize::Zeroize for KeyBuffer<'a, SIZE> {
 /// A Classic McEliece public key. These are very large compared to keys
 /// in most other cryptographic algorithms.
 #[derive(Debug)]
+#[must_use]
 pub struct PublicKey<'a>(KeyBuffer<'a, CRYPTO_PUBLICKEYBYTES>);
 
 impl<'a> PublicKey<'a> {
@@ -146,6 +147,7 @@ impl<'a> AsRef<[u8]> for PublicKey<'a> {
 ///
 /// Should be kept on the device where it's generated. Used to decapsulate the [`SharedSecret`]
 /// from the [`Ciphertext`] received from the encapsulator.
+#[must_use]
 pub struct SecretKey<'a>(KeyBuffer<'a, CRYPTO_SECRETKEYBYTES>);
 
 impl<'a> SecretKey<'a> {
@@ -195,6 +197,7 @@ impl<'a> Drop for SecretKey<'a> {
 
 /// The ciphertext computed by the encapsulator.
 #[derive(Debug)]
+#[must_use]
 pub struct Ciphertext([u8; CRYPTO_CIPHERTEXTBYTES]);
 
 impl Ciphertext {
@@ -211,6 +214,7 @@ impl AsRef<[u8]> for Ciphertext {
 
 /// The shared secret computed by the KEM. Returned from both the
 /// encapsulator and decapsulator.
+#[must_use]
 pub struct SharedSecret<'a>(KeyBuffer<'a, CRYPTO_BYTES>);
 
 impl<'a> SharedSecret<'a> {
