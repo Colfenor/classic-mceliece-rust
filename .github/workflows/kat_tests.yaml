@@ -1,3 +1,5 @@
+name: "KAT tests"
+
 on: 
   workflow_dispatch
 
