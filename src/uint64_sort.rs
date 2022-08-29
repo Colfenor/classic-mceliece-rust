@@ -28,7 +28,8 @@ pub(crate) fn uint64_sort<const N: usize>(x: &mut [u64; N]) {
         return;
     }
     let mut top = 1;
-    while top < N - top {
+
+    while top < N.wrapping_sub(top) {
         top += top;
     }
 
@@ -104,8 +105,7 @@ mod tests {
             let (x, y) = uint64_minmax(x, y);
 
             if x > y {
-                assert!(
-                    false,
+                panic!(
                     "erroneous behaviour with inputs: x: 0x{:016X}u64 y: 0x{:016X}u64",
                     x, y
                 );
@@ -117,8 +117,8 @@ mod tests {
     fn test_uint64_sort_random_numbers() {
         let mut array: [u64; 64] = [0; 64];
 
-        for i in 0..array.len() {
-            array[i] = gen_random_u64();
+        for a in array.iter_mut() {
+            *a = gen_random_u64();
         }
 
         uint64_sort(&mut array);

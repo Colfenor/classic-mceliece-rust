@@ -243,8 +243,8 @@ pub(crate) fn pk_gen(
 
     root(&mut inv, &g, &l);
 
-    for i in 0..SYS_N {
-        inv[i] = gf_inv(inv[i]);
+    for itr_inv in inv.iter_mut() {
+        *itr_inv = gf_inv(*itr_inv);
     }
 
     for i in 0..SYS_T {
@@ -264,7 +264,7 @@ pub(crate) fn pk_gen(
                 b <<= 1;
                 b |= ((inv[j + 1] >> k) & 1) as u8;
                 b <<= 1;
-                b |= ((inv[j + 0] >> k) & 1) as u8;
+                b |= ((inv[j] >> k) & 1) as u8;
 
                 mat[i * GFBITS + k][j / 8] = b;
             }

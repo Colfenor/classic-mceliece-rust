@@ -12,9 +12,7 @@ pub(crate) fn transpose(output: &mut [u64; 64], input: [u64; 64]) {
         [0x00000000FFFFFFFF, 0xFFFFFFFF00000000],
     ];
 
-    for h in 0..64 {
-        output[h] = input[h];
-    }
+    *output = input;
 
     for d in (0..=5).rev() {
         let s = 1 << d;
@@ -357,19 +355,19 @@ mod tests {
             ],
         };
 
-        for i in 0..2 {
+        for testcase in testcases {
             #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
             {
                 let mut test_output: [u64; 64] = [0; 64];
-                transpose(&mut test_output, testcases[i].input);
-                assert_eq!(test_output, testcases[i].output);
+                transpose(&mut test_output, testcase.input);
+                assert_eq!(test_output, testcase.output);
             }
 
             #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
             {
-                let mut data = testcases[i].input;
+                let mut data = testcase.input;
                 transpose_64x64_inplace(&mut data);
-                assert_eq!(data, testcases[i].output);
+                assert_eq!(data, testcase.output);
             }
         }
     }

@@ -74,7 +74,7 @@ impl Testcase {
 
     fn write_to_file(&self, fd: &mut fs::File) -> R {
         let repr_bytes = |bytes: &[u8]| -> String {
-            if is_zero(&bytes) {
+            if is_zero(bytes) {
                 "".to_string()
             } else {
                 format!(" {}", hex::encode_upper(bytes))
@@ -106,12 +106,12 @@ impl Testcase {
             return Ok(false);
         }
 
-        let mut fields = line.split("=");
-        let name = match fields.nth(0) {
+        let mut fields = line.split('=');
+        let name = match fields.next() {
             Some(n) => n.trim(),
             None => return err("could not split key with '=' assignment operator"),
         };
-        let value = match fields.nth(0) {
+        let value = match fields.next() {
             Some(v) => v.trim(),
             None => return err("could not split value with '=' assignment operator"),
         };
@@ -148,7 +148,7 @@ impl fmt::Display for Testcase {
         //   to abstract Testcase.write_to_file(…) for stdout AND files.
         //   As a result, I decided to duplicate the code.
         let repr_bytes = |bytes: &[u8]| -> String {
-            if is_zero(&bytes) {
+            if is_zero(bytes) {
                 "".to_string()
             } else {
                 format!(" {}", hex::encode_upper(bytes))
@@ -169,8 +169,8 @@ fn create_request_file(filepath: &str) -> R {
 
     // initialize RNG
     let mut entropy_input = [0u8; 48];
-    for i in 0..48 {
-        entropy_input[i] = i as u8;
+    for (i, e) in entropy_input.iter_mut().enumerate() {
+        *e = i as u8;
     }
     let mut rng = AesState::new();
     rng.randombytes_init(entropy_input);
@@ -193,8 +193,8 @@ fn create_response_file(filepath: &str) -> R {
 
     // initialize RNG
     let mut entropy_input = [0u8; 48];
-    for i in 0..48 {
-        entropy_input[i] = i as u8;
+    for (i, e) in entropy_input.iter_mut().enumerate() {
+        *e = i as u8;
     }
     let mut rng = AesState::new();
     rng.randombytes_init(entropy_input);

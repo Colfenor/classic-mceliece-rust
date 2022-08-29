@@ -38,12 +38,12 @@ fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8; SYS_N / 8], rng: &mut R) {
         // moving and counting indices in the correct range
 
         let mut count = 0;
-        for i in 0..(SYS_T * 2) {
+        for itr_num in nums.iter() {
             if count >= SYS_T {
                 break;
             }
-            if nums[i] < SYS_N as u16 {
-                ind[count] = nums[i];
+            if *itr_num < SYS_N as u16 {
+                ind[count] = *itr_num;
                 count += 1;
             }
         }
@@ -73,13 +73,13 @@ fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8; SYS_N / 8], rng: &mut R) {
         val[j] = 1 << (ind[j] & 7);
     }
 
-    for i in 0..SYS_N / 8 {
-        e[i] = 0;
+    for (i, itr_e) in e.iter_mut().enumerate() {
+        *itr_e = 0;
 
         for j in 0..SYS_T {
             let mask: u8 = same_mask_u8(i as u16, ind[j] >> 3);
 
-            e[i] |= val[j] & mask;
+            *itr_e |= val[j] & mask;
         }
     }
 }

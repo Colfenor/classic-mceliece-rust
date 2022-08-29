@@ -19,7 +19,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
     let mut mle: u16;
     let mut mne: u16;
 
-    let mut t = [0u16; SYS_T + 1];
+    let mut t;
     let mut c = [0u16; SYS_T + 1];
     let mut b = [0u16; SYS_T + 1];
 
@@ -44,9 +44,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mle = mle.wrapping_sub(1);
         mle &= mne;
 
-        for i in 0..=SYS_T {
-            t[i] = c[i];
-        }
+        t = c;
 
         let f: Gf = gf_frac(base, d);
 
