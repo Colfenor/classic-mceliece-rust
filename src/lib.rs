@@ -175,6 +175,8 @@ impl<'a> From<&'a [u8; CRYPTO_PUBLICKEYBYTES]> for PublicKey<'a> {
     }
 }
 
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+#[cfg(feature = "alloc")]
 impl From<Box<[u8; CRYPTO_PUBLICKEYBYTES]>> for PublicKey<'static> {
     fn from(data: Box<[u8; CRYPTO_PUBLICKEYBYTES]>) -> Self {
         Self(KeyBuffer::Owned(data))
