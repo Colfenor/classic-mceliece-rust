@@ -398,11 +398,11 @@ mod tests {
     fn test_layer() {
         let mut data = [0u64; 64];
         let mut bits = [0u64; 32];
-        for i in 0..64 {
-            data[i] = 0xAAAA ^ (i as u64 * 17);
+        for (i, d) in data.iter_mut().enumerate() {
+            *d = 0xAAAA ^ (i as u64 * 17);
         }
-        for i in 0..32 {
-            bits[i] = (i as u64) << 3;
+        for (i, d) in bits.iter_mut().enumerate() {
+            *d = (i as u64) << 3;
         }
         layer(&mut data, &bits, 4);
         assert_eq!(
