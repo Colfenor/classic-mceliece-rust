@@ -144,3 +144,17 @@ jobs:
         run: cargo doc --no-deps --features kem
         env:
           RUSTDOCFLAGS: "--cfg docsrs --deny warnings"
+
+  # Test the generated KAT files against known hashes 
+  kat-tests:
+    name: Full KAT tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: KATKEMS
+        run: bash tests/katkem.sh
