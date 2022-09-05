@@ -301,7 +301,7 @@ fn main() -> R {
             let rsp_file = args.next().unwrap();
             verify(&rsp_file)?;
 
-            println!("Verification successful.");
+            println!("verification successful.");
         }
 
         3 => {
@@ -310,9 +310,10 @@ fn main() -> R {
             let rsp_file = args.next().unwrap();
 
             create_request_file(&req_file)?;
-            create_response_file(&rsp_file)?;
+            println!("request file '{}' created.", &req_file);
 
-            println!("request and response file created.");
+            create_response_file(&rsp_file)?;
+            println!("request file '{}' created.", &rsp_file);
         }
 
         _ => {
