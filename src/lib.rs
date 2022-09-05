@@ -351,7 +351,7 @@ pub fn keypair<'public, 'secret, R: CryptoRng + RngCore>(
 }
 
 /// Convenient wrapper around [`keypair`] that stores the public and private keys on the heap
-/// and returns them with the `static lifetime.
+/// and returns them with the ``'static`` lifetime.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn keypair_boxed<R: CryptoRng + RngCore>(
@@ -393,7 +393,7 @@ pub fn encapsulate<'shared_secret, R: CryptoRng + RngCore>(
 }
 
 /// Convenient wrapper around [`encapsulate`] that stores the shared secret on the heap
-/// and returns it with the `static lifetime.
+/// and returns it with the ``'static`` lifetime.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encapsulate_boxed<R: CryptoRng + RngCore>(
@@ -434,7 +434,7 @@ pub fn decapsulate<'shared_secret>(
 }
 
 /// Convenient wrapper around [`decapsulate`] that stores the shared secret on the heap
-/// and returns it with the `static lifetime.
+/// and returns it with the ``'static`` lifetime.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn decapsulate_boxed(ciphertext: &Ciphertext, secret_key: &SecretKey) -> SharedSecret<'static> {
