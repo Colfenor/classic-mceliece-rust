@@ -169,6 +169,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
+* **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
 * **2022-04-01 version 1.0.0:** public release (no April fools though)
 
 ## Where can I ask you to fix a bug?
