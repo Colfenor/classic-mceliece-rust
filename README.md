@@ -204,16 +204,16 @@ The rust implementation yielded the following runtime results:
   <thead>
     <tr><td></td><td>complete KEM</td><td>keypair</td><td>enc</td><td>dec</td></tr>
   </thead><tbody>
-    <tr><td>mceliece348864</td><td>439,132,283</td><td>418,968,068</td><td>268,722</td><td>43,444,716</td></tr>
-    <tr><td>mceliece348864f</td><td>265,775,807</td><td>222,549,540</td><td>269,555</td><td>43,245,009</td></tr>
-    <tr><td>mceliece460896</td><td>1,231,610,738</td><td>1,211,071,786</td><td>461,924</td><td>107,828,642</td></tr>
-    <tr><td>mceliece460896f</td><td>723,224,611</td><td>650,813,812</td><td>435,803</td><td>104,153,026</td></tr>
-    <tr><td>mceliece6688128</td><td>2,559,092,096</td><td>2,231,201,954</td><td>947,605</td><td>198,260,095</td></tr>
-    <tr><td>mceliece6688128f</td><td>1,166,028,776</td><td>1,210,393,799</td><td>1,210,453</td><td>200,919,923</td></tr>
-    <tr><td>mceliece6960119</td><td>2,684,515,149</td><td>2,194,168,253</td><td>3,135,087</td><td>194,131,917</td></tr>
-    <tr><td>mceliece6960119f</td><td>1,146,146,983</td><td>1,038,560,469</td><td>3,101,435</td><td>194,415,995</td></tr>
-    <tr><td>mceliece8192128</td><td>3,044,572,096</td><td>2,873,255,542</td><td>1,068,166</td><td>249,912,972</td></tr>
-    <tr><td>mceliece8192128f</td><td>1,362,327,626</td><td>2,009,006,653</td><td>1,790,924</td><td>272,566,816</td></tr>
+    <tr><td>mceliece348864</td><td>460,062,191</td><td>439,682,143</td><td>222,424</td><td>42,046,357</td></tr>
+    <tr><td>mceliece348864f</td><td>244,943,900</td><td>203,564,820</td><td>215,971</td><td>41,648,773</td></tr>
+    <tr><td>mceliece460896</td><td>1,326,425,784</td><td>1,434,864,061</td><td>487,522</td><td>111,547,716</td></tr>
+    <tr><td>mceliece460896f</td><td>789,636,856</td><td>652,117,200</td><td>553,301</td><td>106,521,703</td></tr>
+    <tr><td>mceliece6688128</td><td>3,188,205,266</td><td>2,596,052,574</td><td>785,763</td><td>202,774,928</td></tr>
+    <tr><td>mceliece6688128f</td><td>1,236,809,020</td><td>1,059,087,715</td><td>826,899</td><td>203,907,226</td></tr>
+    <tr><td>mceliece6960119</td><td>2,639,852,573</td><td>2,532,146,126</td><td>3,864,285</td><td>203,959,009</td></tr>
+    <tr><td>mceliece6960119f</td><td>1,165,079,187</td><td>965,134,546</td><td>3,416,795</td><td>197,089,546</td></tr>
+    <tr><td>mceliece8192128</td><td>3,129,183,262</td><td>2,754,933,130</td><td>965,822</td><td>247,083,745</td></tr>
+    <tr><td>mceliece8192128f</td><td>1,342,438,451</td><td>1,150,297,595</td><td>1,068,317</td><td>242,545,160</td></tr>
   </tbody>
 </table>
 
