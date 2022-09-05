@@ -45,7 +45,7 @@ To use a specific Classic McEliece variant, you need to import it with the corre
 classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 ```
 
-If you have access to `alloc` (you are not on `no_std`), then the simplest and most ergonomic
+If you have access to feature `alloc` (you are not on `no_std`), then the simplest and most ergonomic
 way of using the library is with heap allocated keys and the `*_boxed` helper methods:
 ```rust
 #[cfg(feature = "alloc")] {
@@ -107,7 +107,7 @@ This test does not run on Windows due to the default stack size being too small.
 }
 ```
 
-#### Stack usage
+### Stack usage
 
 The public keys in Classic McEliece are huge. As a result, running the algorithm requires a lot of
 stack space. This can be somewhat mitigated by storing the public key on the heap, like shown
@@ -123,12 +123,12 @@ std::thread::Builder::new()
     .unwrap();
 ```
 
-#### RustCrypto APIs
+### Feature kem: RustCrypto APIs
 
 If the `kem` feature is enabled, key encapsulation and decapsulation can also be done via
 the standard traits in the `kem` crate.
 
-#### Clear out secrets from memory (Zeroize)
+### Feature zeroize: Clear out secrets from memory
 
 If the `zeroize` feature is enabled (it is by default), all key types that contain anything secret
 implements `Zeroize` and `ZeroizeOnDrop`. This makes them clear their memory when they go out of
