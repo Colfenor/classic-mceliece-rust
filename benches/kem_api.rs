@@ -31,6 +31,7 @@ pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
 
     criterion.bench_function("kem_keypair", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
             black_box(keypair(&mut pk_buf, &mut sk_buf, &mut rng));
         })
@@ -46,6 +47,7 @@ pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
     let (pk, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
 
     criterion.bench_function("kem_enc", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
             black_box(encapsulate(&pk, &mut ss_buf, &mut rng));
         })
@@ -62,6 +64,7 @@ pub fn bench_kem_dec(criterion: &mut Criterion<CyclesPerByte>) {
     let (ct, _) = encapsulate(&pk, &mut ss_buf, &mut rng);
 
     criterion.bench_function("kem_dec", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
             black_box(decapsulate(&ct, &sk, &mut ss_buf));
         })
