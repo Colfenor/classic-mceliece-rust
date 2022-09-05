@@ -21,17 +21,19 @@ kem = { version = "0.2", optional = true }
 zeroize = { version = "1.5.7", default-features = false, optional = true }
 
 [features]
-# When adding features or changing the default features, remember to update
-# the `[package.metadata.docs.rs]` section further down as well as the docs
-# generation CI job
+## When adding features or changing the default features, remember to update
+## the `[package.metadata.docs.rs]` section further down as well as the docs
+## generation CI job
+# alloc := enable, if the platform supports dynamic memory allocation
+# zeroize := enable to nullify sensitive memory sections after they go out of scope
 default = ["alloc", "zeroize"]
 alloc = []
 # The kem feature is currently depending on alloc due to how `Encapsulator::try_encap`
 # can only take 'static public keys. So it's unergonomic to use without the heap for now.
 kem = ["dep:kem", "alloc"]
 
-# Select which variant of Classic McEliece to compile for. Only
-# one of these features can be enabled.
+# Select which variant of Classic McEliece to compile for.
+# Only one of these features can be enabled.
 mceliece348864 = []
 mceliece348864f = []
 mceliece460896 = []
@@ -56,16 +58,15 @@ rand = { version = "0.8", features = ["default"] }
 criterion = { version = "0.3", features = ["html_reports"] }
 criterion-cycles-per-byte = "0.1.2"
 aes = "0.8"
-block-modes = "0.9"
 hex = "0.4.3"
 
 [profile.dev]
 opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s
 
 [package.metadata.docs.rs]
-# Uses the #[doc(feature(...))] functionality to clearly show in the generated documentation
-# which feature of this crate is needed for each type and function to be available.
-# This increases discoverability of features massively.
-# To use this locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
+## Uses the #[doc(feature(...))] functionality to clearly show in the generated documentation
+## which feature of this crate is needed for each type and function to be available.
+## This increases discoverability of features massively.
+## To use this locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
 features = ["kem"]
 rustdoc-args = ["--cfg", "docsrs"]
