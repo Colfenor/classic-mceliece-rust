@@ -169,6 +169,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
+* **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
 * **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
 * **2022-04-01 version 1.0.0:** public release (no April fools though)
 
