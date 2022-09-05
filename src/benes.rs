@@ -10,7 +10,6 @@ use crate::params::SYS_N;
 use crate::params::{COND_BYTES, GFBITS};
 use crate::transpose;
 use crate::util;
-use std::error;
 
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
 /// NOTE const expressions are not sophisticated enough in rust yet to represent this relationship.
@@ -31,11 +30,11 @@ fn layer(data: &mut [u64], bits: &[u64], lgs: usize) {
     let mut i = 0usize;
     while i < 64 {
         for j in i..(i + s) {
-            let mut d = data[j + 0] ^ data[j + s];
+            let mut d = data[j] ^ data[j + s];
             d &= bits[index];
             index += 1;
 
-            data[j + 0] ^= d;
+            data[j] ^= d;
             data[j + s] ^= d;
         }
         i += s * 2;
@@ -137,24 +136,20 @@ fn layer_ex(data: &mut [[u64; 64]; 2], bits: &[u64], lgs: usize) {
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
-fn apply_benes(
-    r: &mut [u8; 512],
-    bits: &[u8; COND_BYTES],
-    rev: usize,
-) -> Result<(), Box<dyn error::Error>> {
+fn apply_benes(r: &mut [u8; 512], bits: &[u8; COND_BYTES], rev: usize) {
     let mut bs = [0u64; 64];
     let mut cond = [0u64; 64];
 
     if rev == 0 {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
 
         for low in 0..6 {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, low * 256 + i * 4, 4)) as u64;
+                cond[i] = u32::from_le_bytes(*sub!(bits, low * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -164,13 +159,13 @@ fn apply_benes(
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (low + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (low + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
+                cond[i] = u64::from_le_bytes(*sub!(bits, (4 - low + 6 + 6) * 256 + i * 8, 8));
             }
             layer(&mut bs, &cond, low);
         }
@@ -179,7 +174,8 @@ fn apply_benes(
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
+                cond[i] =
+                    u32::from_le_bytes(*sub!(bits, (5 - low + 6 + 6 + 5) * 256 + i * 4, 4)) as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -188,11 +184,11 @@ fn apply_benes(
         transpose::transpose_64x64_inplace(&mut bs);
 
         for i in 0..64 {
-            util::store8(sub!(mut r, i * 8, 8), bs[i]);
+            *sub!(mut r, i * 8, 8) = bs[i].to_le_bytes();
         }
     } else {
         for i in 0..64 {
-            bs[i] = util::load8(sub!(r, i * 8, 8));
+            bs[i] = u64::from_le_bytes(*sub!(r, i * 8, 8));
         }
 
         transpose::transpose_64x64_inplace(&mut bs);
@@ -200,7 +196,8 @@ fn apply_benes(
         for low in 0..6 {
             for i in 0..64 {
                 cond[i] =
-                    util::load4(sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4)) as u64;
+                    u32::from_le_bytes(*sub!(bits, (2 * GFBITS - 2) * 256 - low * 256 + i * 4, 4))
+                        as u64;
             }
             transpose::transpose_64x64_inplace(&mut cond);
             layer(&mut bs, &cond, low);
@@ -210,7 +207,7 @@ fn apply_benes(
 
         for low in 0..6 {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6) * 256 - low * 256 + i * 8,
                     8
@@ -220,7 +217,7 @@ fn apply_benes(
         }
         for low in (0..5).rev() {
             for i in 0..32 {
-                cond[i] = util::load8(sub!(
+                cond[i] = u64::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6) * 256 - (4 - low) * 256 + i * 8,
                     8
@@ -233,7 +230,7 @@ fn apply_benes(
 
         for low in (0..6).rev() {
             for i in 0..64 {
-                cond[i] = util::load4(sub!(
+                cond[i] = u32::from_le_bytes(*sub!(
                     bits,
                     (2 * GFBITS - 2 - 6 - 6 - 5) * 256 - (5 - low) * 256 + i * 4,
                     4
@@ -246,11 +243,9 @@ fn apply_benes(
         transpose::transpose_64x64_inplace(&mut bs);
 
         for i in 0..64 {
-            util::store8(sub!(mut r, i * 8, 8), bs[i]);
+            *sub!(mut r, i * 8, 8) = bs[i].to_le_bytes();
         }
     }
-
-    Ok(())
 }
 
 /// Apply Beneš network in-place to array `r` based on configuration `bits` and `rev`.
@@ -258,11 +253,7 @@ fn apply_benes(
 /// `bits` defines the condition bits configuring the Beneš network and
 /// `rev` toggles between normal application (0) or its inverse (!0).
 #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
-fn apply_benes(
-    r: &mut [u8; 1024],
-    bits: &[u8; COND_BYTES],
-    rev: usize,
-) -> Result<(), Box<dyn error::Error>> {
+fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
     let mut r_int_v = [[0u64; 64]; 2];
     let mut r_int_h = [[0u64; 64]; 2];
     let mut b_int_v = [0u64; 64];
@@ -271,8 +262,8 @@ fn apply_benes(
     let mut calc_index = if rev == 0 { 0 } else { 12288 };
 
     for (i, chunk) in r.chunks(16).enumerate() {
-        r_int_v[0][i] = util::load8(sub!(chunk, 0, 8));
-        r_int_v[1][i] = util::load8(sub!(chunk, 8, 8));
+        r_int_v[0][i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
+        r_int_v[1][i] = u64::from_le_bytes(*sub!(chunk, 8, 8));
     }
 
     transpose::transpose(&mut r_int_h[0], r_int_v[0]);
@@ -280,7 +271,7 @@ fn apply_benes(
 
     for iter in 0..=6 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -299,7 +290,7 @@ fn apply_benes(
 
     for iter in 0..=5 {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
 
         calc_index = if rev == 0 {
@@ -313,7 +304,7 @@ fn apply_benes(
 
     for iter in (0..=4).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
         calc_index = if rev == 0 {
             calc_index + 512
@@ -329,7 +320,7 @@ fn apply_benes(
 
     for iter in (0..=6).rev() {
         for (i, chunk) in bits[calc_index..(calc_index + 512)].chunks(8).enumerate() {
-            b_int_v[i] = util::load8(sub!(chunk, 0, 8));
+            b_int_v[i] = u64::from_le_bytes(*sub!(chunk, 0, 8));
         }
         // NOTE the second condition prevents a trailing integer underflow
         //      (recognize that calc_index is not used after the last subtraction)
@@ -348,52 +339,47 @@ fn apply_benes(
     transpose::transpose(&mut r_int_v[1], r_int_h[1]);
 
     for (i, chunk) in r.chunks_mut(16).enumerate() {
-        util::store8(sub!(mut chunk, 0, 8), r_int_v[0][i]);
-        util::store8(sub!(mut chunk, 8, 8), r_int_v[1][i]);
+        *sub!(mut chunk, 0, 8) = r_int_v[0][i].to_le_bytes();
+        *sub!(mut chunk, 8, 8) = r_int_v[1][i].to_le_bytes();
     }
-
-    Ok(())
 }
 
-pub(crate) fn support_gen(
-    s: &mut [Gf; SYS_N],
-    c: &[u8; COND_BYTES],
-) -> Result<(), Box<dyn error::Error>> {
+pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
     let mut a: Gf;
     let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
 
     for i in 0..(1 << GFBITS) {
         a = util::bitrev(i as Gf);
 
-        for j in 0..GFBITS {
-            l[j][i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
+        for (j, itr_l) in l.iter_mut().enumerate() {
+            itr_l[i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
     }
 
-    for j in 0..GFBITS {
+    for itr_l in l.iter_mut() {
         #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
-            apply_benes(&mut l[j], c, 0)?;
+            apply_benes(itr_l, c, 0);
         }
         #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
         {
-            apply_benes(&mut l[j], c, 0)?;
+            apply_benes(itr_l, c, 0);
         }
     }
 
-    for i in 0..SYS_N {
-        s[i] = 0;
+    for (i, itr_s) in s.iter_mut().enumerate() {
+        *itr_s = 0;
         for j in (0..=(GFBITS - 1)).rev() {
-            s[i] <<= 1;
-            s[i] |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
+            *itr_s <<= 1;
+            *itr_s |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::vec::Vec;
+
     use super::*;
     use crate::api::CRYPTO_PRIMITIVE;
     use std::convert::TryFrom;
@@ -412,11 +398,11 @@ mod tests {
     fn test_layer() {
         let mut data = [0u64; 64];
         let mut bits = [0u64; 32];
-        for i in 0..64 {
-            data[i] = 0xAAAA ^ (i as u64 * 17);
+        for (i, d) in data.iter_mut().enumerate() {
+            *d = 0xAAAA ^ (i as u64 * 17);
         }
-        for i in 0..32 {
-            bits[i] = (i as u64) << 3;
+        for (i, d) in bits.iter_mut().enumerate() {
+            *d = (i as u64) << 3;
         }
         layer(&mut data, &bits, 4);
         assert_eq!(
@@ -505,23 +491,22 @@ mod tests {
 
     #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
     #[test]
-    fn test_apply_benes() -> Result<(), Box<dyn error::Error>> {
+    fn test_apply_benes() {
         let t = crate::TestData::new();
         let mut r_arg =
             <[u8; 512]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_r_before")).unwrap();
         let bits_arg =
             <[u8; 5888]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_bits")).unwrap();
-        apply_benes(&mut r_arg, &bits_arg, 0)?;
+        apply_benes(&mut r_arg, &bits_arg, 0);
         let actual_r = r_arg;
         let expected_r =
             <[u8; 512]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_r_after")).unwrap();
         assert_eq!(actual_r, expected_r);
-        Ok(())
     }
 
     #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
-    fn test_apply_benes() -> Result<(), Box<dyn error::Error>> {
+    fn test_apply_benes() {
         let t = crate::TestData::new();
         let mut r_arg =
             <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_before"))
@@ -529,12 +514,11 @@ mod tests {
         let bits_arg =
             <[u8; COND_BYTES]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_bits"))
                 .unwrap(); // TODO actual array has wrong size of 12_800
-        apply_benes(&mut r_arg, &bits_arg, 0)?;
+        apply_benes(&mut r_arg, &bits_arg, 0);
         let actual_r = r_arg;
         let expected_r =
             <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_after"))
                 .unwrap();
         assert_eq!(actual_r, expected_r);
-        Ok(())
     }
 }

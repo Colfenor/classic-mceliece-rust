@@ -24,7 +24,7 @@ pub(crate) fn int32_sort(x: &mut [i32]) {
         return;
     }
     top = 1;
-    while top < n - top {
+    while top < n.wrapping_sub(top) {
         top += top;
     }
 
@@ -121,8 +121,8 @@ mod tests {
     fn test_int32_sort() {
         let mut array: [i32; 64] = [0; 64];
 
-        for i in 0..array.len() {
-            array[i] = gen_random_i32();
+        for a in array.iter_mut() {
+            *a = gen_random_i32();
             //println!("{}", array[i]);
         }
 
@@ -131,7 +131,7 @@ mod tests {
         for i in 0..array.len() {
             //println!("{}", array[i]);
             if i >= 1 {
-                assert_eq!(array[i] > array[i - 1], true);
+                assert!(array[i] > array[i - 1]);
             }
         }
     }

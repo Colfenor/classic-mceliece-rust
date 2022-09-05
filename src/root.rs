@@ -57,8 +57,8 @@ mod tests {
             out[i] = (i as Gf).wrapping_add(3);
             l[i] = (i as Gf).wrapping_add(7);
         }
-        for i in 0..(SYS_T + 1) {
-            f[i] = (i as Gf).wrapping_mul(3);
+        for (i, f) in f.iter_mut().enumerate() {
+            *f = (i as Gf).wrapping_mul(3);
         }
 
         root(&mut out, &f, &l);

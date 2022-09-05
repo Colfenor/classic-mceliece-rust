@@ -4,6 +4,7 @@ use sha3::digest::ExtendableOutput;
 use sha3::Shake256;
 
 /// Utilizes the SHAKE256 hash function. Input and output is of arbitrary length.
+#[inline]
 pub(crate) fn shake256(output: &mut [u8], input: &[u8]) {
     Shake256::digest_xof(input, output);
 }

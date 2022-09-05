@@ -1,48 +1,51 @@
 //! Simple example illustrating shared key negotiation.
 
-use classic_mceliece_rust::AesState;
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{
-    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
-};
+use classic_mceliece_rust::{decapsulate, encapsulate, keypair};
+use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-use hex;
-use std::error;
+use rand::thread_rng;
 
-fn main() -> Result<(), Box<dyn error::Error>> {
-    let mut rng = AesState::new();
-    let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-    let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut ss_alice = [0u8; CRYPTO_BYTES];
-    let mut ss_bob = [0u8; CRYPTO_BYTES];
+fn main() {
+    let mut rng = thread_rng();
 
     // key generation
-    crypto_kem_keypair(&mut pk, &mut sk, &mut rng)?;
+    let mut pubkey_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut secret_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     println!("[Alice]\tRunning key generation …");
-    println!("[Alice]\tI generated public key {}", hex::encode_upper(pk));
-    println!("[Alice]\tI generated secret key {}", hex::encode_upper(sk));
+    let (public_key, secret_key) = keypair(&mut pubkey_buf, &mut secret_buf, &mut rng);
+    println!(
+        "[Alice]\tI generated public key {}",
+        hex::encode_upper(public_key.as_ref())
+    );
+    println!(
+        "[Alice]\tI generated secret key {}",
+        hex::encode_upper(secret_key.as_ref())
+    );
 
     // encapsulation
-    crypto_kem_enc(&mut ct, &mut ss_bob, &pk, &mut rng)?;
+    let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
     println!("[Bob]\tRunning encapsulation …");
+    let (ciphertext, shared_secret_bob) =
+        encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
     println!(
         "[Bob]\tI generated shared key {}",
-        hex::encode_upper(ss_bob)
+        hex::encode_upper(shared_secret_bob.as_ref())
     );
-    println!("[Bob]\tI generated ciphertext {}", hex::encode_upper(ct));
+    println!(
+        "[Bob]\tI generated ciphertext {}",
+        hex::encode_upper(ciphertext.as_ref())
+    );
 
     // decapsulation
-    crypto_kem_dec(&mut ss_alice, &ct, &sk)?;
+    let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+    let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
     println!("[Alice]\tRunning decapsulation …");
     println!(
         "[Alice]\tI decapsulated shared key {}",
-        hex::encode_upper(ss_alice)
+        hex::encode_upper(shared_secret_alice.as_ref())
     );
 
-    if ss_bob != ss_alice {
+    if shared_secret_bob.as_array() != shared_secret_alice.as_array() {
         eprintln!("\nError: Bob's and Alice's shared key seem to differ.")
     }
-
-    Ok(())
 }

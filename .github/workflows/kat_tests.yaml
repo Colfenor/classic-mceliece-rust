@@ -1,0 +1,22 @@
+name: "KAT tests"
+
+on: 
+  workflow_dispatch: 
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Test the generated KAT files against known hashes 
+  kat-tests:
+    name: Full KAT tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: KATKEMS
+        run: bash tests/katkem.sh

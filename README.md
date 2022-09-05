@@ -1,6 +1,6 @@
 # classic-mceliece-rust
 
-A safe pure-rust implementation of the Classic McEliece post-quantum scheme.
+This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
 
 * Classic McEliece is a code-based key encapsulation mechanism (KEM)
 * The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
@@ -45,25 +45,129 @@ To use a specific Classic McEliece variant, you need to import it with the corre
 classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
 ```
 
-The `simple` example illustrates the API:
+If you have access to feature `alloc` (you are not on `no_std`), then the simplest and most ergonomic
+way of using the library is with heap allocated keys and the `*_boxed` helper methods:
 ```rust
-use classic_mceliece_rust::AesState;
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+#[cfg(feature = "alloc")] {
+    use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 
-fn main() -> Result<(), Box<dyn error::Error>> {
-  let mut rng = AesState::new();
-  let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-  let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-  let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-  let mut ss_alice = [0u8; CRYPTO_BYTES];
-  let mut ss_bob = [0u8; CRYPTO_BYTES];
+    fn run_kem() {
+        let mut rng = rand::thread_rng();
 
-  crypto_kem_keypair(&mut pk, &mut sk, &mut rng)?;
-  crypto_kem_enc(&mut ct, &mut ss_bob, &pk, &mut rng)?;
-  crypto_kem_dec(&mut ss_alice, &ct, &sk)?;
+        // Alice computes the keypair
+        let (public_key, secret_key) = keypair_boxed(&mut rng);
 
-  assert_eq!(ss_bob, ss_alice);
+        // Send `secret_key` over to Bob.
+        // Bob computes the shared secret and a ciphertext
+        let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
+
+        // Send `ciphertext` back to Alice.
+        // Alice decapsulates the ciphertext...
+        let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
+
+        // ... and ends up with the same key material as Bob.
+        assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+    }
+
+    std::thread::Builder::new()
+        // This library needs quite a lot of stack space to work
+        .stack_size(2 * 1024 * 1024)
+        .spawn(run_kem)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+```
+
+You can also use this crate in a `no_std` environment. Then you don't have access to boxed
+keys and you need to provide the kem functions with the storage they should use.
+You can store the key material directly on the stack. However, see the stack usage section
+further down for known issues with this.
+
+This test does not run on Windows due to the default stack size being too small.
+```rust
+#[cfg(not(windows))] {
+    use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
+    use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+    let mut rng = rand::thread_rng();
+
+    // Please mind that `public_key_buf` is very large.
+    let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
+
+    let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
+    let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
+
+    let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+    let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
+
+    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+}
+```
+
+### Stack usage
+
+The public keys in Classic McEliece are huge. As a result, running the algorithm requires a lot of
+stack space. This can be somewhat mitigated by storing the public key on the heap, like shown
+in an example above. However, even when doing this the call to `keypair` uses more stack than
+available by default on some platforms (Windows). So if you want your program to be portable
+and not unexpectedly crash, you should probably run the entire key exchange in a dedicated
+thread with a large enough stack size. Something like this:
+
+```rust,no_run
+std::thread::Builder::new()
+    .stack_size(4 * 1024 * 1024)
+    .spawn(|| {/* Run the KEM here */})
+    .unwrap();
+```
+
+### Feature kem: RustCrypto APIs
+
+If the `kem` feature is enabled, key encapsulation and decapsulation can also be done via
+the standard traits in the `kem` crate.
+
+### Feature zeroize: Clear out secrets from memory
+
+If the `zeroize` feature is enabled (it is by default), all key types that contain anything secret
+implements `Zeroize` and `ZeroizeOnDrop`. This makes them clear their memory when they go out of
+scope, and lowers the risk of secret key material leaking in one way or another.
+
+Please mind that this of course makes any buffers you pass into the library useless for reading
+out the key from. Instead of trying to fetch the key material from the buffers you pass in,
+get it from the `as_array` method.
+
+```rust
+#[cfg(not(windows))] {
+    use classic_mceliece_rust::keypair;
+    use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+    let mut rng = rand::thread_rng();
+
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    // Initialize to non-zero to show that it has been set to zero by the drop later
+    let mut sk_buf = [255u8; CRYPTO_SECRETKEYBYTES];
+
+    // This is the WRONG way of accessing your keys. The buffer will
+    // be cleared once the `PrivateKey` returned from `keypair` goes out of scope.
+    // You should not rely on that array for anything except providing a temporary storage
+    // location to this library.
+    #[cfg(feature = "zeroize")]
+    {
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        drop(secret_key);
+        // Ouch! The array only has zeroes now.
+        assert_eq!(sk_buf, [0; CRYPTO_SECRETKEYBYTES]);
+    }
+
+    // Correct way of getting the secret key bytes if you do need them. However,
+    // if you want the secrets to stay secret, you should try to not read them out of their
+    // storage at all
+    {
+        let (_, secret_key) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+        assert_ne!(secret_key.as_array(), &[0; CRYPTO_SECRETKEYBYTES]);
+    }
 }
 ```
 
@@ -100,16 +204,16 @@ The rust implementation yielded the following runtime results:
   <thead>
     <tr><td></td><td>complete KEM</td><td>keypair</td><td>enc</td><td>dec</td></tr>
   </thead><tbody>
-    <tr><td>mceliece348864</td><td>439,132,283</td><td>418,968,068</td><td>268,722</td><td>43,444,716</td></tr>
-    <tr><td>mceliece348864f</td><td>265,775,807</td><td>222,549,540</td><td>269,555</td><td>43,245,009</td></tr>
-    <tr><td>mceliece460896</td><td>1,231,610,738</td><td>1,211,071,786</td><td>461,924</td><td>107,828,642</td></tr>
-    <tr><td>mceliece460896f</td><td>723,224,611</td><td>650,813,812</td><td>435,803</td><td>104,153,026</td></tr>
-    <tr><td>mceliece6688128</td><td>2,559,092,096</td><td>2,231,201,954</td><td>947,605</td><td>198,260,095</td></tr>
-    <tr><td>mceliece6688128f</td><td>1,166,028,776</td><td>1,210,393,799</td><td>1,210,453</td><td>200,919,923</td></tr>
-    <tr><td>mceliece6960119</td><td>2,684,515,149</td><td>2,194,168,253</td><td>3,135,087</td><td>194,131,917</td></tr>
-    <tr><td>mceliece6960119f</td><td>1,146,146,983</td><td>1,038,560,469</td><td>3,101,435</td><td>194,415,995</td></tr>
-    <tr><td>mceliece8192128</td><td>3,044,572,096</td><td>2,873,255,542</td><td>1,068,166</td><td>249,912,972</td></tr>
-    <tr><td>mceliece8192128f</td><td>1,362,327,626</td><td>2,009,006,653</td><td>1,790,924</td><td>272,566,816</td></tr>
+    <tr><td>mceliece348864</td><td>460,062,191</td><td>439,682,143</td><td>222,424</td><td>42,046,357</td></tr>
+    <tr><td>mceliece348864f</td><td>244,943,900</td><td>203,564,820</td><td>215,971</td><td>41,648,773</td></tr>
+    <tr><td>mceliece460896</td><td>1,326,425,784</td><td>1,434,864,061</td><td>487,522</td><td>111,547,716</td></tr>
+    <tr><td>mceliece460896f</td><td>789,636,856</td><td>652,117,200</td><td>553,301</td><td>106,521,703</td></tr>
+    <tr><td>mceliece6688128</td><td>3,188,205,266</td><td>2,596,052,574</td><td>785,763</td><td>202,774,928</td></tr>
+    <tr><td>mceliece6688128f</td><td>1,236,809,020</td><td>1,059,087,715</td><td>826,899</td><td>203,907,226</td></tr>
+    <tr><td>mceliece6960119</td><td>2,639,852,573</td><td>2,532,146,126</td><td>3,864,285</td><td>203,959,009</td></tr>
+    <tr><td>mceliece6960119f</td><td>1,165,079,187</td><td>965,134,546</td><td>3,416,795</td><td>197,089,546</td></tr>
+    <tr><td>mceliece8192128</td><td>3,129,183,262</td><td>2,754,933,130</td><td>965,822</td><td>247,083,745</td></tr>
+    <tr><td>mceliece8192128f</td><td>1,342,438,451</td><td>1,150,297,595</td><td>1,068,317</td><td>242,545,160</td></tr>
   </tbody>
 </table>
 
@@ -169,6 +273,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
+* **2022-09-06 version 2.0.0:** refined API with heap-allocated keys and RustCrypto integration
 * **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
 * **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
 * **2022-04-01 version 1.0.0:** public release (no April fools though)

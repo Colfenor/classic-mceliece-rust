@@ -1,14 +1,12 @@
 //! Encryption function to compute error vector and syndrome to get ciphertext
 
-use std::error;
-
 use crate::{
     api::CRYPTO_CIPHERTEXTBYTES,
     macros::sub,
     params::{PK_NROWS, PK_ROW_BYTES, SYND_BYTES, SYS_N, SYS_T},
-    randombytes::RNGState,
     util::load_gf,
 };
+use rand::{CryptoRng, RngCore};
 
 /// Takes two 16-bit integers and determines whether they are equal (u8::MAX) or different (0)
 fn same_mask_u8(x: u16, y: u16) -> u8 {
@@ -24,13 +22,13 @@ fn same_mask_u8(x: u16, y: u16) -> u8 {
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(not(any(feature = "mceliece8192128", feature = "mceliece8192128f")))]
-fn gen_e(e: &mut [u8; SYS_N / 8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8; SYS_N / 8], rng: &mut R) {
     let mut ind = [0u16; SYS_T];
     let mut val = [0u8; SYS_T];
 
     loop {
         let mut bytes = [0u8; SYS_T * 4];
-        rng.randombytes(&mut bytes)?;
+        rng.fill_bytes(&mut bytes);
 
         let mut nums = [0u16; SYS_T * 2];
         for (i, chunk) in bytes.chunks(2).enumerate() {
@@ -40,12 +38,12 @@ fn gen_e(e: &mut [u8; SYS_N / 8], rng: &mut impl RNGState) -> Result<(), Box<dyn
         // moving and counting indices in the correct range
 
         let mut count = 0;
-        for i in 0..(SYS_T * 2) {
+        for itr_num in nums.iter() {
             if count >= SYS_T {
                 break;
             }
-            if nums[i] < SYS_N as u16 {
-                ind[count] = nums[i];
+            if *itr_num < SYS_N as u16 {
+                ind[count] = *itr_num;
                 count += 1;
             }
         }
@@ -75,30 +73,28 @@ fn gen_e(e: &mut [u8; SYS_N / 8], rng: &mut impl RNGState) -> Result<(), Box<dyn
         val[j] = 1 << (ind[j] & 7);
     }
 
-    for i in 0..SYS_N / 8 {
-        e[i] = 0;
+    for (i, itr_e) in e.iter_mut().enumerate() {
+        *itr_e = 0;
 
         for j in 0..SYS_T {
             let mask: u8 = same_mask_u8(i as u16, ind[j] >> 3);
 
-            e[i] |= val[j] & mask;
+            *itr_e |= val[j] & mask;
         }
     }
-
-    Ok(())
 }
 
 /// Generation of `e`, an error vector of weight `t`.
 /// Does not take any input arguments.
 /// If generation of pseudo-random numbers fails, an error is returned.
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
-fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Error>> {
+fn gen_e<R: CryptoRng + RngCore>(e: &mut [u8], rng: &mut R) {
     let mut ind = [0u16; SYS_T];
     let mut bytes = [0u8; SYS_T * 2];
     let mut val = [0u8; SYS_T];
 
     loop {
-        rng.randombytes(&mut bytes)?;
+        rng.fill_bytes(&mut bytes);
 
         for (i, chunk) in bytes.chunks(2).enumerate() {
             ind[i] = load_gf(sub!(chunk, 0, 2));
@@ -134,8 +130,6 @@ fn gen_e(e: &mut [u8], rng: &mut impl RNGState) -> Result<(), Box<dyn error::Err
             e[i] |= val[j] & mask;
         }
     }
-
-    Ok(())
 }
 
 /// Syndrome computation.
@@ -225,15 +219,14 @@ fn syndrome(
 
 /// Encryption routine.
 /// Takes a public key `pk` to compute error vector `e` and syndrome `s`.
-pub(crate) fn encrypt(
+pub(crate) fn encrypt<R: CryptoRng + RngCore>(
     s: &mut [u8; CRYPTO_CIPHERTEXTBYTES],
     pk: &[u8; PK_NROWS * PK_ROW_BYTES],
     e: &mut [u8; SYS_N / 8],
-    rng: &mut impl RNGState,
-) -> Result<(), Box<dyn error::Error>> {
-    gen_e(e, rng)?;
+    rng: &mut R,
+) {
+    gen_e(e, rng);
     syndrome(sub!(mut s, 0, (PK_NROWS + 7) / 8), pk, e);
-    Ok(())
 }
 
 #[cfg(test)]
@@ -245,11 +238,11 @@ mod tests {
     #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
     #[cfg(all(feature = "mceliece8192128f", test))]
-    use crate::randombytes::AesState;
+    use crate::nist_aes_rng::AesState;
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_encrypt() -> Result<(), Box<dyn error::Error>> {
+    fn test_encrypt() {
         let entropy_input = [
             6, 21, 80, 35, 77, 21, 140, 94, 201, 85, 149, 254, 4, 239, 122, 37, 118, 127, 46, 36,
             204, 43, 196, 121, 208, 157, 134, 220, 154, 188, 253, 231, 5, 106, 140, 38, 111, 158,
@@ -262,7 +255,7 @@ mod tests {
         let mut second_seed = [0u8; 33];
         second_seed[0] = 64;
 
-        rng_state.randombytes(&mut second_seed[1..])?;
+        rng_state.fill_bytes(&mut second_seed[1..]);
 
         let mut two_e = [0u8; 1 + SYS_N / 8];
         two_e[0] = 2;
@@ -278,10 +271,8 @@ mod tests {
             sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
             sub!(mut two_e, 1, SYS_N / 8),
             &mut rng_state,
-        )?;
+        );
 
         assert_eq!(compare_ct, c);
-
-        Ok(())
     }
 }

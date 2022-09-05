@@ -1,72 +1,72 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use criterion_cycles_per_byte::CyclesPerByte;
 
-use classic_mceliece_rust::AesState;
-use classic_mceliece_rust::{crypto_kem_dec, crypto_kem_enc, crypto_kem_keypair};
-use classic_mceliece_rust::{
-    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES,
-};
+use classic_mceliece_rust::{decapsulate, encapsulate, keypair, CRYPTO_BYTES};
+use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
-    let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-    let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut ss_alice = [0u8; CRYPTO_BYTES];
-    let mut ss_bob = [0u8; CRYPTO_BYTES];
+    let mut rng = rand::thread_rng();
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let mut ss_buf_bob = [0u8; CRYPTO_BYTES];
+    let mut ss_buf_alice = [0u8; CRYPTO_BYTES];
 
     criterion.bench_function("kem", |b| {
         b.iter(|| {
-            crypto_kem_keypair(&mut pk, &mut sk, &mut rng).expect("crypto_kem_keypair failed!");
-            crypto_kem_enc(&mut ct, &mut ss_alice, &pk, &mut rng).expect("crypto_kem_enc failed!");
-            crypto_kem_dec(&mut ss_bob, &ct, &sk).expect("crypto_kem_dec failed!");
-            assert_eq!(ss_bob, ss_alice, "shared keys do not match");
+            let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+            let (ct, ss_bob) = encapsulate(&pk, &mut ss_buf_bob, &mut rng);
+            let ss_alice = decapsulate(&ct, &sk, &mut ss_buf_alice);
+            assert_eq!(
+                ss_bob.as_array(),
+                ss_alice.as_array(),
+                "shared keys do not match"
+            );
         })
     });
 }
 
 pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
-    let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
+    let mut rng = rand::thread_rng();
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
 
     criterion.bench_function("kem_keypair", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
-            crypto_kem_keypair(&mut pk, &mut sk, &mut rng).expect("crypto_kem_keypair failed!");
+            black_box(keypair(&mut pk_buf, &mut sk_buf, &mut rng));
         })
     });
 }
 
 pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
-    let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-    let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut ss_alice = [0u8; CRYPTO_BYTES];
+    let mut rng = rand::thread_rng();
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let mut ss_buf = [0u8; CRYPTO_BYTES];
 
-    crypto_kem_keypair(&mut pk, &mut sk, &mut rng).expect("crypto_kem_keypair failed!");
+    let (pk, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
 
     criterion.bench_function("kem_enc", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
-            crypto_kem_enc(&mut ct, &mut ss_alice, &pk, &mut rng).expect("crypto_kem_enc failed!");
+            black_box(encapsulate(&pk, &mut ss_buf, &mut rng));
         })
     });
 }
 
 pub fn bench_kem_dec(criterion: &mut Criterion<CyclesPerByte>) {
-    let mut rng = AesState::new();
-    let mut pk = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut sk = [0u8; CRYPTO_SECRETKEYBYTES];
-    let mut ct = [0u8; CRYPTO_CIPHERTEXTBYTES];
-    let mut ss_alice = [0u8; CRYPTO_BYTES];
-    let mut ss_bob = [0u8; CRYPTO_BYTES];
+    let mut rng = rand::thread_rng();
+    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let mut ss_buf = [0u8; CRYPTO_BYTES];
 
-    crypto_kem_keypair(&mut pk, &mut sk, &mut rng).expect("crypto_kem_keypair failed!");
-    crypto_kem_enc(&mut ct, &mut ss_alice, &pk, &mut rng).expect("crypto_kem_enc failed!");
+    let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
+    let (ct, _) = encapsulate(&pk, &mut ss_buf, &mut rng);
 
     criterion.bench_function("kem_dec", |b| {
+        #[allow(unused_must_use)]
         b.iter(|| {
-            crypto_kem_dec(&mut ss_bob, &ct, &sk).expect("crypto_kem_dec failed!");
+            black_box(decapsulate(&ct, &sk, &mut ss_buf));
         })
     });
 }

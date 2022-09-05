@@ -19,7 +19,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
     let mut mle: u16;
     let mut mne: u16;
 
-    let mut t = [0u16; SYS_T + 1];
+    let mut t;
     let mut c = [0u16; SYS_T + 1];
     let mut b = [0u16; SYS_T + 1];
 
@@ -44,9 +44,7 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
         mle = mle.wrapping_sub(1);
         mle &= mne;
 
-        for i in 0..=SYS_T {
-            t[i] = c[i];
-        }
+        t = c;
 
         let f: Gf = gf_frac(base, d);
 
@@ -79,7 +77,6 @@ pub(crate) fn bm(out: &mut [Gf; SYS_T + 1], s: &mut [Gf; 2 * SYS_T]) {
 mod tests {
     use super::*;
     use crate::macros::sub;
-    use std::error;
 
     #[test]
     fn test_simple_bm() {
@@ -111,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn test_first_round_bm() -> Result<(), Box<dyn error::Error>> {
+    fn test_first_round_bm() {
         let compare_array =
             crate::TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
         let compare_array_slice = sub!(compare_array.as_slice(), 0, SYS_T + 1, u16);
@@ -122,7 +119,5 @@ mod tests {
         bm(&mut locator, s_input_slice);
 
         assert_eq!(&locator, compare_array_slice);
-
-        Ok(())
     }
 }

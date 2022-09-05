@@ -268,14 +268,14 @@ pub(crate) fn gf_mul_inplace(out: &mut [Gf; SYS_T], in0: &[Gf; SYS_T], in1: &[Gf
         {
             prod[i - SYS_T + 3] ^= prod[i];
             prod[i - SYS_T + 1] ^= prod[i];
-            prod[i - SYS_T + 0] ^= gf_mul(prod[i], 2);
+            prod[i - SYS_T] ^= gf_mul(prod[i], 2);
         }
         #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
         {
             prod[i - SYS_T + 10] ^= prod[i];
             prod[i - SYS_T + 9] ^= prod[i];
             prod[i - SYS_T + 6] ^= prod[i];
-            prod[i - SYS_T + 0] ^= prod[i];
+            prod[i - SYS_T] ^= prod[i];
         }
         #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
         {

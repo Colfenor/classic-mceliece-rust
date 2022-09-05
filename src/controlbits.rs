@@ -63,6 +63,7 @@ fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
 ///
 /// But the following descriptions still hold true:
 ///   out is filled with (2m-1)n/2 control bits at positions pos, pos+step, …
+#[allow(clippy::too_many_arguments)]
 fn cbrecursion(
     out: &mut [u8],
     mut pos: usize,
@@ -115,8 +116,8 @@ fn cbrecursion(
     }
     /* B = (p<<16)+c */
 
-    for x in 0..n {
-        temp[x] = (temp[x] << 16) | (x as i32); /* A = (pibar<<16)+id */
+    for (x, itr_temp) in temp.iter_mut().enumerate().take(n) {
+        *itr_temp = (*itr_temp << 16) | (x as i32); /* A = (pibar<<16)+id */
     }
     int32_sort(&mut temp[0..n]); /* A = (id<<16)+pibar^-1 */
 
@@ -306,8 +307,9 @@ pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n
         cbrecursion(sub, 0, 1, 0, w, n, &mut temp, &pi_as_i32);
 
         let mut pi_test = [0i16; 1 << GFBITS];
-        for i in 0..n {
-            pi_test[i] = i as i16;
+
+        for (i, itr_pi_test) in pi_test.iter_mut().enumerate() {
+            *itr_pi_test = i as i16;
         }
 
         for i in 0..w as usize {

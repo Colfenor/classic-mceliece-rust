@@ -10,7 +10,6 @@ use crate::{
     synd::synd,
     util::load_gf,
 };
-use std::error;
 
 /// Niederreiter decryption with the Berlekamp decoder.
 ///
@@ -20,7 +19,7 @@ pub(crate) fn decrypt(
     e: &mut [u8; SYS_N / 8],
     sk: &[u8; IRR_BYTES + COND_BYTES],
     c: &[u8; SYND_BYTES],
-) -> Result<u8, Box<dyn error::Error>> {
+) -> u8 {
     let mut t: u16;
     let mut w: i32 = 0;
 
@@ -34,9 +33,7 @@ pub(crate) fn decrypt(
     let mut locator = [0u16; SYS_T + 1];
     let mut images = [0u16; SYS_N];
 
-    for i in 0..SYND_BYTES {
-        r[i] = c[i];
-    }
+    r[..SYND_BYTES].copy_from_slice(&c[..SYND_BYTES]);
 
     r[SYND_BYTES..SYS_N / 8].fill(0);
 
@@ -45,13 +42,13 @@ pub(crate) fn decrypt(
     }
     g[SYS_T] = 1;
 
-    support_gen(&mut l, sub!(sk, IRR_BYTES, COND_BYTES))?;
+    support_gen(&mut l, sub!(sk, IRR_BYTES, COND_BYTES));
 
-    synd(&mut s, &mut g, &mut l, &r);
+    synd(&mut s, &g, &l, &r);
 
     bm(&mut locator, &mut s);
 
-    root(&mut images, &mut locator, &mut l);
+    root(&mut images, &locator, &l);
 
     e[0..SYS_N / 8].fill(0);
 
@@ -62,7 +59,7 @@ pub(crate) fn decrypt(
         w += t as i32;
     }
 
-    synd(&mut s_cmp, &mut g, &mut l, e);
+    synd(&mut s_cmp, &g, &l, e);
 
     let mut check = w as u16;
     check ^= SYS_T as u16;
@@ -74,17 +71,16 @@ pub(crate) fn decrypt(
     check = check.wrapping_sub(1);
     check >>= 15;
 
-    Ok((check ^ 1) as u8)
+    (check ^ 1) as u8
 }
 
 #[cfg(test)]
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 mod tests {
     use super::*;
-    use std::error;
 
     #[test]
-    fn test_decrypt() -> Result<(), Box<dyn error::Error>> {
+    fn test_decrypt() {
         let sk = crate::TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
         let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
         let expected_error_vector = crate::TestData::new().u8vec("mceliece8192128f_decrypt_errvec");
@@ -96,13 +92,11 @@ mod tests {
             sub!(mut actual_error_vector, 1, SYS_N / 8),
             sub!(sk, 40, IRR_BYTES + COND_BYTES),
             sub!(mut c, 0, SYND_BYTES),
-        )?;
+        );
 
         assert_eq!(
             &actual_error_vector[1..SYS_N / 8],
             &expected_error_vector[1..SYS_N / 8]
         );
-
-        Ok(())
     }
 }

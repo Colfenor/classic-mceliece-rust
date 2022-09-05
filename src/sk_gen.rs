@@ -11,13 +11,11 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
     mat[0][1..SYS_T].fill(0);
 
-    for i in 0..SYS_T {
-        mat[1][i] = f[i];
-    }
+    mat[1] = *f;
 
     for j in 2..=SYS_T {
         let (left, right) = mat.split_at_mut(j);
-        gf_mul_inplace(&mut right[0], &mut left[j - 1], f);
+        gf_mul_inplace(&mut right[0], &left[j - 1], f);
     }
 
     for j in 0..SYS_T {
@@ -37,16 +35,16 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 
         let inv = gf_inv(mat[j][j]);
 
-        for c in j..(SYS_T + 1) {
-            mat[c][j] = gf_mul(mat[c][j], inv);
+        for itr_mat in mat.iter_mut() {
+            itr_mat[j] = gf_mul(itr_mat[j], inv);
         }
 
         for k in 0..SYS_T {
             if k != j {
                 let t = mat[j][k];
 
-                for c in j..(SYS_T + 1) {
-                    mat[c][k] ^= gf_mul(mat[c][j], t);
+                for itr_mat in mat.iter_mut() {
+                    itr_mat[k] ^= gf_mul(itr_mat[j], t);
                 }
             }
         }
@@ -62,10 +60,9 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 mod tests {
     use super::*;
     use crate::macros::sub;
-    use std::error;
 
     #[test]
-    fn test_genpoly_gen() -> Result<(), Box<dyn error::Error>> {
+    fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
         let input_src =
@@ -79,7 +76,5 @@ mod tests {
         genpoly_gen(&mut output, first_round_input);
 
         assert_eq!(&output, first_round_output.as_slice());
-
-        Ok(())
     }
 }
