@@ -1,5 +1,4 @@
-//! This example tries to mimic what a real application would use the library for:
-//! Performing a the key exchange between two computers over a network.
+//! This example tries to mimic a key exchange between two computers over a network.
 //! Here the "network" is simulated by simple message passing channels sending heap
 //! allocated byte buffers.
 #![cfg(feature = "alloc")]
