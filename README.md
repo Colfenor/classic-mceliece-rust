@@ -30,91 +30,109 @@ The 10 variants have the following designated identifiers:
 
 Anyone, how wants to use Classic McEliece to negotiate a key between two parties.
 
-## How does one use it?
+## How does one use it storing keys on the heap (default feature `alloc`)?
 
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-classic-mceliece-rust = "1.0"
+classic-mceliece-rust = "2.0"
 ```
 
 To use a specific Classic McEliece variant, you need to import it with the corresponding feature flag:
 
 ```toml
 [dependencies]
-classic-mceliece-rust = { version = "1.0", features = ["mceliece6960119"] }
+classic-mceliece-rust = { version = "2.0", features = ["mceliece6960119"] }
 ```
 
-If you have access to feature `alloc` (you are not on `no_std`), then the simplest and most ergonomic
-way of using the library is with heap allocated keys and the `*_boxed` helper methods:
+Assuming this dependency, the simplest and most ergonomic way of using the library
+is with heap allocated keys and the `*_boxed` KEM step functions. First, we import them:
+
 ```rust
-#[cfg(feature = "alloc")] {
-    use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+```
 
-    fn run_kem() {
-        let mut rng = rand::thread_rng();
+Followingly, we run the KEM and provide generated keys accordingly.
+Here, we consider an example where we run it in a separate thread (be aware that the example also depends on the rand crate):
 
-        // Alice computes the keypair
-        let (public_key, secret_key) = keypair_boxed(&mut rng);
+```rust
+fn run_kem() {
+  let mut rng = rand::thread_rng();
 
-        // Send `secret_key` over to Bob.
-        // Bob computes the shared secret and a ciphertext
-        let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
+  // Alice computes the keypair
+  let (public_key, secret_key) = keypair_boxed(&mut rng);
 
-        // Send `ciphertext` back to Alice.
-        // Alice decapsulates the ciphertext...
-        let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
+  // Send `secret_key` over to Bob.
+  // Bob computes the shared secret and a ciphertext
+  let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
 
-        // ... and ends up with the same key material as Bob.
-        assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
-    }
+  // Send `ciphertext` back to Alice.
+  // Alice decapsulates the ciphertext...
+  let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
 
-    std::thread::Builder::new()
-        // This library needs quite a lot of stack space to work
-        .stack_size(2 * 1024 * 1024)
-        .spawn(run_kem)
-        .unwrap()
-        .join()
-        .unwrap();
+  // ... and ends up with the same key material as Bob.
+  assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+}
+
+fn main() {
+  std::thread::Builder::new()
+    // This library needs quite a lot of stack space to work
+    .stack_size(2 * 1024 * 1024)
+    .spawn(run_kem)
+    .unwrap()
+    .join()
+    .unwrap();
 }
 ```
 
-You can also use this crate in a `no_std` environment. Then you don't have access to boxed
-keys and you need to provide the kem functions with the storage they should use.
-You can store the key material directly on the stack. However, see the stack usage section
-further down for known issues with this.
+Pay attention that public keys in Classic McEliece are huge (between 255 KB and 1.3 MB). As a result, running the algorithm requires a lot of memory. You need to consider where you store it. In case of this API, the advantages are …
 
-This test does not run on Windows due to the default stack size being too small.
+* you don't need to handle the memory manually
+* on Windows, the call to `keypair` uses more stack than is available by default. Such stack size limitations can be avoided with the heap-allocation API (see Windows remark below).
+
+## How does one use it storing keys on the stack (disabled feature `alloc`)?
+
+The other option is that you exclude the heap-allocation API and use the provided stack-allocation API. Its advantages are:
+
+* stack allocation also works in a `no_std` environment.
+* on some microcontroller platforms, a heap is not available.
+* stack [de]allocation in general is faster than heap [de]allocation
+
+Thus, in this section we want to show you how to use this API without the heap. For this, you need to disable feature `alloc` which is enabled per default (this line retains default feature `zeroize` but removes default feature `alloc`):
+
+```toml
+classic-mceliece-rust = { version = "2.0", default-features = false, features = ["zeroize"] }
+```
+
+How does one use the API then (be aware that the example also depends on the rand crate)?
+
 ```rust
-#[cfg(not(windows))] {
-    use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
-    use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
+use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-    let mut rng = rand::thread_rng();
+fn main() {
+  let mut rng = rand::thread_rng();
 
-    // Please mind that `public_key_buf` is very large.
-    let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
-    let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
-    let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
+  // Please mind that `public_key_buf` is very large.
+  let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+  let mut secret_key_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+  let (public_key, secret_key) = keypair(&mut public_key_buf, &mut secret_key_buf, &mut rng);
 
-    let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
-    let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
+  let mut shared_secret_bob_buf = [0u8; CRYPTO_BYTES];
+  let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
 
-    let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
-    let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
+  let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+  let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
 
-    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+  assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
 }
 ```
 
-### Stack usage
+Here, you can see how the keys are allocated explicitly.
 
-The public keys in Classic McEliece are huge. As a result, running the algorithm requires a lot of
-stack space. This can be somewhat mitigated by storing the public key on the heap, like shown
-in an example above. However, even when doing this the call to `keypair` uses more stack than
-available by default on some platforms (Windows). So if you want your program to be portable
-and not unexpectedly crash, you should probably run the entire key exchange in a dedicated
-thread with a large enough stack size. Something like this:
+#### A remark on Windows
+
+If you want your program to be portable with stack allocation and not unexpectedly crash, you should probably run the entire key exchange in a dedicated thread with a large enough stack size. This code snippet shows the idea:
 
 ```rust,no_run
 std::thread::Builder::new()
@@ -273,6 +291,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
+* **2022-09-08 version 2.0.1:** fix README documentation
 * **2022-09-06 version 2.0.0:** refined API with heap-allocated keys and RustCrypto integration
 * **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
 * **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
