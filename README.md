@@ -56,6 +56,8 @@ Followingly, we run the KEM and provide generated keys accordingly.
 Here, we consider an example where we run it in a separate thread (be aware that the example also depends on the rand crate):
 
 ```rust
+use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+
 fn run_kem() {
   let mut rng = rand::thread_rng();
 
@@ -96,7 +98,7 @@ The other option is that you exclude the heap-allocation API and use the provide
 
 * stack allocation also works in a `no_std` environment.
 * on some microcontroller platforms, a heap is not available.
-* stack [de]allocation in general is faster than heap [de]allocation
+* stack (de-)allocation in general is faster than heap (de-)allocation
 
 Thus, in this section we want to show you how to use this API without the heap. For this, you need to disable feature `alloc` which is enabled per default (this line retains default feature `zeroize` but removes default feature `alloc`):
 
