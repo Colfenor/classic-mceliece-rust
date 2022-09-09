@@ -56,6 +56,8 @@ Followingly, we run the KEM and provide generated keys accordingly.
 Here, we consider an example where we run it in a separate thread (be aware that the example also depends on the rand crate):
 
 ```rust
+use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+
 fn run_kem() {
   let mut rng = rand::thread_rng();
 
