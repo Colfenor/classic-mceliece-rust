@@ -3,7 +3,7 @@
 This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
 
 * Classic McEliece is a code-based key encapsulation mechanism (KEM)
-* The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-3-submissions)
+* The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/post-quantum-cryptography-standardization/round-3-submissions)
 * The implementation does not utilize any concurrency techniques (SIMD/threading/…, except maybe auto-vectorization on your CPU)
 * It depends on `sha3` as SHA-3 implementation and `aes` as AES block cipher (used as RNG) implementation
 * It passes the 100 testcases of the C reference implementation
@@ -261,6 +261,8 @@ The tests were done on a Lenovo Thinkpad x260 (Intel Core i5-6200U CPU @ 2.30GHz
 ```bash
 $ cargo bench --features mceliece348864
 ```
+
+For optimal benchmark results you can run the rust benchmarks with CPU optimization using `RUSTFLAGS="-C target-cpu=native"`, setting the cargo bench optimization profile to `opt-level = 3` and set link time optimizations to `lto = "fat"`. For further insight into the cargo bench settings refer to the official [cargo bench profile](https://doc.rust-lang.org/cargo/reference/profiles.html) documentation.
 
 ## Is it correct?
 
