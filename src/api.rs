@@ -11,7 +11,7 @@ pub const CRYPTO_PUBLICKEYBYTES: usize = 261120;
 pub const CRYPTO_SECRETKEYBYTES: usize = 6492;
 #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 128;
+pub const CRYPTO_CIPHERTEXTBYTES: usize = 96;
 
 #[cfg(all(
     feature = "kem",
@@ -35,7 +35,7 @@ pub const CRYPTO_PUBLICKEYBYTES: usize = 524160;
 pub const CRYPTO_SECRETKEYBYTES: usize = 13608;
 #[cfg(any(feature = "mceliece460896", feature = "mceliece460896f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 188;
+pub const CRYPTO_CIPHERTEXTBYTES: usize = 156;
 #[cfg(all(
     feature = "kem",
     any(feature = "mceliece460896", feature = "mceliece460896f")
@@ -58,7 +58,7 @@ pub const CRYPTO_PUBLICKEYBYTES: usize = 1044992;
 pub const CRYPTO_SECRETKEYBYTES: usize = 13932;
 #[cfg(any(feature = "mceliece6688128", feature = "mceliece6688128f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 240;
+pub const CRYPTO_CIPHERTEXTBYTES: usize = 208;
 #[cfg(all(
     feature = "kem",
     any(feature = "mceliece6688128", feature = "mceliece6688128f")
@@ -81,7 +81,7 @@ pub const CRYPTO_PUBLICKEYBYTES: usize = 1047319;
 pub const CRYPTO_SECRETKEYBYTES: usize = 13948;
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 226;
+pub const CRYPTO_CIPHERTEXTBYTES: usize = 194;
 #[cfg(all(
     feature = "kem",
     any(feature = "mceliece6960119", feature = "mceliece6960119f")
@@ -104,7 +104,7 @@ pub const CRYPTO_PUBLICKEYBYTES: usize = 1357824;
 pub const CRYPTO_SECRETKEYBYTES: usize = 14120;
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 /// The number of bytes required to store the ciphertext resulting from the encryption
-pub const CRYPTO_CIPHERTEXTBYTES: usize = 240;
+pub const CRYPTO_CIPHERTEXTBYTES: usize = 208;
 #[cfg(all(
     feature = "kem",
     any(feature = "mceliece8192128", feature = "mceliece8192128f")

@@ -1,16 +1,16 @@
 #!/bin/bash
 
 declare -A variants
-variants["mceliece348864"]="d2def196fde89e938d3d45b2c6f806aa"
-variants["mceliece348864f"]="84b5357d8dd656bed9297e28beb15057"
-variants["mceliece460896"]="8aac2122916b901172e49e009efeede6"
-variants["mceliece460896f"]="d84d3b179e303b9f3fc32ccb6befb886"
-variants["mceliece6688128"]="b86987d56c45da2e326556864e66bda7"
-variants["mceliece6688128f"]="ae1e42cac2a885a87a2c241e05391481"
-variants["mceliece6960119"]="9d9b3c9e8d7595503248131c584394be"
-variants["mceliece6960119f"]="c79b1bd28fd307f8d157bd566374bfb3"
-variants["mceliece8192128"]="b233e2585359a1133a1135c66fa48282"
-variants["mceliece8192128f"]="d21bcb80dde24826e2c14254da917df3"
+variants["mceliece348864f"]="7a6f5262fa013fe7eedda0765a625789"
+variants["mceliece348864"]="11fd67ba1e2b93cceaec6f5e6fe4ddd1"
+variants["mceliece460896f"]="cb08e0e3f2122c62692111d684f1cbe7"
+variants["mceliece460896"]="c9acefa82aa705cd324f12df532744c2"
+variants["mceliece6688128f"]="6d959c2bf54f7d3576a8e49475a74df5"
+variants["mceliece6688128"]="7e300cc0990b05f5edca3219ac769023"
+variants["mceliece6960119f"]="2f5d759cb579c6f85c1ee1306082ffdf"
+variants["mceliece6960119"]="b4960a35e249d55fd48371f793608aa5"
+variants["mceliece8192128f"]="a4cd676dc2c774d644f18de05762c51c"
+variants["mceliece8192128"]="26a47e6d01eec28e91abfdbdf19c3067"
 
 RET=0
 TMPDIR=$(mktemp -d) 
