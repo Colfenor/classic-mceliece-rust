@@ -257,8 +257,7 @@ mod tests {
 
         rng_state.fill_bytes(&mut second_seed[1..]);
 
-        let mut two_e = [0u8; 1 + SYS_N / 8];
-        two_e[0] = 2;
+        let mut e = [0u8; SYS_N / 8];
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
         let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
@@ -269,7 +268,7 @@ mod tests {
         encrypt(
             &mut c,
             sub!(mut pk, 0, CRYPTO_PUBLICKEYBYTES),
-            sub!(mut two_e, 1, SYS_N / 8),
+            sub!(mut e, 0, SYS_N / 8),
             &mut rng_state,
         );
 

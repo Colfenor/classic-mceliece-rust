@@ -86,8 +86,7 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
     encrypt(c, pk, sub!(mut e, 0, SYS_N / 8), rng);
 
     one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&e[..SYS_N / 8]);
-    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES]
-        .copy_from_slice(&c[0..SYND_BYTES]);
+    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &one_ec);
 
