@@ -18,7 +18,7 @@ pub const CRYPTO_CIPHERTEXTBYTES: usize = 96;
     any(feature = "mceliece348864", feature = "mceliece348864f")
 ))]
 /// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
-pub type CryptoCiphertextBytesTypenum = typenum::U128;
+pub type CryptoCiphertextBytesTypenum = typenum::U96;
 
 #[cfg(feature = "mceliece348864")]
 /// Name of the variant
@@ -41,7 +41,7 @@ pub const CRYPTO_CIPHERTEXTBYTES: usize = 156;
     any(feature = "mceliece460896", feature = "mceliece460896f")
 ))]
 /// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
-pub type CryptoCiphertextBytesTypenum = typenum::U188;
+pub type CryptoCiphertextBytesTypenum = typenum::U156;
 
 #[cfg(feature = "mceliece460896")]
 /// Name of the variant
@@ -64,7 +64,7 @@ pub const CRYPTO_CIPHERTEXTBYTES: usize = 208;
     any(feature = "mceliece6688128", feature = "mceliece6688128f")
 ))]
 /// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
-pub type CryptoCiphertextBytesTypenum = typenum::U240;
+pub type CryptoCiphertextBytesTypenum = typenum::U208;
 
 #[cfg(feature = "mceliece6688128")]
 /// Name of the variant
@@ -87,7 +87,7 @@ pub const CRYPTO_CIPHERTEXTBYTES: usize = 194;
     any(feature = "mceliece6960119", feature = "mceliece6960119f")
 ))]
 /// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
-pub type CryptoCiphertextBytesTypenum = typenum::U226;
+pub type CryptoCiphertextBytesTypenum = typenum::U194;
 
 #[cfg(feature = "mceliece6960119")]
 /// Name of the variant
@@ -110,7 +110,7 @@ pub const CRYPTO_CIPHERTEXTBYTES: usize = 208;
     any(feature = "mceliece8192128", feature = "mceliece8192128f")
 ))]
 /// The number of bytes required to store the ciphertext resulting from the encryption, as a typenum
-pub type CryptoCiphertextBytesTypenum = typenum::U240;
+pub type CryptoCiphertextBytesTypenum = typenum::U208;
 
 #[cfg(feature = "mceliece8192128")]
 /// Name of the variant
