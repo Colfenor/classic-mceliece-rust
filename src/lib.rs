@@ -551,9 +551,26 @@ mod kem_api {
         }
 
         #[test]
+        #[cfg(feature = "zeroize")]
+        fn test_zeroize() {
+            use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+            let mut pk_buffer = [0u8; CRYPTO_PUBLICKEYBYTES];
+            let mut sk_buffer = [5u8; CRYPTO_SECRETKEYBYTES];
+            let mut rng = rand::thread_rng();
+
+            let zeroed_key = [0; CRYPTO_SECRETKEYBYTES];
+
+            let (_, secret_key) = keypair(&mut pk_buffer, &mut sk_buffer, &mut rng);
+            drop(secret_key);
+
+            assert_eq!(zeroed_key, sk_buffer);
+        }
+
+        #[test]
         #[cfg(feature = "mceliece8192128f")]
         fn test_crypto_kem_api_keypair() {
-            use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+            use crate::{keypair_boxed, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
             let entropy_input = <[u8; 48]>::try_from(
                 crate::TestData::new()
@@ -573,7 +590,7 @@ mod kem_api {
             let mut rng_state = crate::nist_aes_rng::AesState::new();
             rng_state.randombytes_init(entropy_input);
 
-            let (sk, pk) = keypair_boxed(&mut rng_state);
+            let (pk, sk) = keypair_boxed(&mut rng_state);
 
             assert_eq!(compare_sk.as_slice(), sk.0.as_ref());
             assert_eq!(compare_pk.as_slice(), pk.0.as_ref());
