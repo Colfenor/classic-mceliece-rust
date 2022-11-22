@@ -111,7 +111,7 @@ classic-mceliece-rust = { version = "2.0", default-features = false, features = 
 
 How does one use the API then (be aware that the example also depends on the rand crate)?
 
-```rust
+```rust,no_run
 use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
