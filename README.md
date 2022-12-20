@@ -290,7 +290,7 @@ Yes, besides passing unittests (derived from the C implementation), the generate
 
 ## Where is the source code?
 
-On [github](https://github.com/prokls/classic-mceliece-rust).
+On [github](https://github.com/Colfenor/classic-mceliece-rust).
 
 ## What is the content's license?
 
@@ -306,4 +306,4 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Where can I ask you to fix a bug?
 
-On [github](https://github.com/prokls/classic-mceliece-rust/issues).
+On [github](https://github.com/Colfenor/classic-mceliece-rust/issues).
