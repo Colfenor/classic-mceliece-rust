@@ -34,12 +34,12 @@ fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
 
     for i in (0..n as usize).step_by(stride * 2) {
         for j in 0..stride {
-            let mut d = (p[(i + j) as usize] ^ p[(i + j + stride) as usize]) as i16;
+            let mut d = p[(i + j)] ^ p[(i + j + stride)];
             let mut m = ((cb[index >> 3] >> (index & 7)) & 1) as i16;
             m = -m;
             d &= m;
-            p[(i + j) as usize] ^= d as i16;
-            p[(i + j + stride) as usize] ^= d as i16;
+            p[(i + j)] ^= d;
+            p[(i + j + stride)] ^= d;
             index += 1;
         }
     }
@@ -312,17 +312,17 @@ pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n
             *itr_pi_test = i as i16;
         }
 
-        for i in 0..w as usize {
+        for i in 0..w {
             layer(&mut pi_test, sub, i as i32, n as i32);
-            sub = &mut sub[(n >> 4) as usize..];
+            sub = &mut sub[(n >> 4)..];
         }
 
         for i in (0..w - 1).rev() {
             layer(&mut pi_test, sub, i as i32, n as i32);
-            sub = &mut sub[(n >> 4) as usize..];
+            sub = &mut sub[(n >> 4)..];
         }
 
-        for i in 0..n as usize {
+        for i in 0..n {
             diff |= pi[i] ^ pi_test[i];
         }
 
