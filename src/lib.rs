@@ -1026,7 +1026,10 @@ mod tests {
                         panic!("wrong number of arguments");
                     }
                 }
-            }).unwrap().join().unwrap();
+            })
+            .unwrap()
+            .join()
+            .unwrap();
     }
 
     #[test]
