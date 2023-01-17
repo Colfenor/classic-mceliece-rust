@@ -16,7 +16,8 @@ RET=0
 TMPDIR=$(mktemp -d) 
 for var in "${!variants[@]}" 
 do
-    cargo run --release --features "$var" --example katkem -- $TMPDIR/$var.req $TMPDIR/$var.rsp
+    cargo test --features "$var" --package classic-mceliece-rust --lib -- tests::test_katkem $TMPDIR/$var.req $TMPDIR/$var.rsp --nocapture
+    # cargo run --release --features "$var" --example katkem -- $TMPDIR/$var.req $TMPDIR/$var.rsp
     MD5HASH=$(md5sum ${TMPDIR}/${var}.rsp | awk '{print $1}')
     if [[ "$MD5HASH" != "${variants[$var]}" ]]; then
         echo "KAT not as expected for ${var}."
