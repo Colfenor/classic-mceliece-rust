@@ -628,7 +628,7 @@ impl fmt::Display for InvalidFileFormat {
 }
 
 #[cfg(test)]
-pub type R = Result<(), Box<dyn error::Error>>;
+type R = Result<(), Box<dyn error::Error>>;
 
 #[derive(Debug, PartialEq)]
 struct Testcase {
@@ -770,7 +770,7 @@ impl fmt::Display for Testcase {
 }
 
 #[cfg(test)]
-pub fn create_request_file(filepath: &str) -> R {
+fn create_request_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
 
     // initialize RNG
@@ -794,7 +794,7 @@ pub fn create_request_file(filepath: &str) -> R {
 }
 
 #[cfg(test)]
-pub fn create_response_file(filepath: &str) -> R {
+fn create_response_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
     writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
 
@@ -836,7 +836,7 @@ pub fn create_response_file(filepath: &str) -> R {
 }
 
 #[cfg(test)]
-pub fn verify(filepath: &str) -> R {
+fn verify(filepath: &str) -> R {
     let fd = fs::File::open(filepath)?;
     let mut reader = BufReader::new(fd);
     let mut rng = AesState::new();
