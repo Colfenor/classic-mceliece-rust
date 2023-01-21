@@ -22,16 +22,16 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 use alloc::string::{String, ToString};
 use core::fmt::Debug;
 use rand::{CryptoRng, RngCore};
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 use std::io::Write;
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 use std::io::{BufRead, BufReader};
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 use std::{error, fmt, fs};
 
 #[cfg(feature = "alloc")]
@@ -41,7 +41,7 @@ use alloc::boxed::Box;
 
 #[cfg(test)]
 mod nist_aes_rng;
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 use nist_aes_rng::AesState;
 #[cfg(test)]
 #[macro_use]
@@ -610,24 +610,24 @@ mod kem_api {
 }
 
 // Test specifics below.
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 const KATNUM: usize = 100;
 
 #[derive(Debug)]
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 struct InvalidFileFormat(String, usize);
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 impl error::Error for InvalidFileFormat {}
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 impl fmt::Display for InvalidFileFormat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "file has invalid format at line {}: {}", self.1, self.0)
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 type R = Result<(), Box<dyn error::Error>>;
 
 #[derive(Debug, PartialEq)]
@@ -640,7 +640,7 @@ struct Testcase {
     ss: [u8; CRYPTO_BYTES],
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 fn is_zero(x: &[u8]) -> bool {
     for b in x.iter() {
         if *b != 0 {
@@ -651,7 +651,7 @@ fn is_zero(x: &[u8]) -> bool {
     true
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 impl Testcase {
     fn new() -> Testcase {
         Testcase {
@@ -743,10 +743,10 @@ impl Testcase {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 impl Eq for Testcase {}
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 impl fmt::Display for Testcase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // NOTE it requires a new struct with multiple implementations
@@ -769,7 +769,7 @@ impl fmt::Display for Testcase {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 fn create_request_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
 
@@ -793,7 +793,7 @@ fn create_request_file(filepath: &str) -> R {
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 fn create_response_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
     writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
@@ -835,7 +835,7 @@ fn create_response_file(filepath: &str) -> R {
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 fn verify(filepath: &str) -> R {
     let fd = fs::File::open(filepath)?;
     let mut reader = BufReader::new(fd);
@@ -986,10 +986,12 @@ impl TestData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
 
+    #[cfg(all(test, feature = "alloc"))]
     #[test]
     fn test_katkem() {
+        use std::env;
+
         std::thread::Builder::new()
             .stack_size(10 * 1024 * 1024)
             .spawn(|| {
