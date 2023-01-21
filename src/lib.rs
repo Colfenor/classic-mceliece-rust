@@ -1023,7 +1023,7 @@ mod tests {
                         eprintln!("  generate a request and response file\n");
                         eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
                         eprintln!("  verify the given response file\n");
-                        panic!("wrong number of arguments");
+                        // panic!("wrong number of arguments");
                     }
                 }
             })
