@@ -610,17 +610,17 @@ mod kem_api {
 }
 
 // Test specifics below.
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 const KATNUM: usize = 100;
 
 #[derive(Debug)]
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 struct InvalidFileFormat(String, usize);
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl error::Error for InvalidFileFormat {}
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl fmt::Display for InvalidFileFormat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "file has invalid format at line {}: {}", self.1, self.0)
@@ -634,13 +634,18 @@ type R = Result<(), Box<dyn error::Error>>;
 struct Testcase {
     count: usize,
     seed: [u8; 48],
+    seed_kem: [u8; 48],
     pk: [u8; CRYPTO_PUBLICKEYBYTES],
     sk: [u8; CRYPTO_SECRETKEYBYTES],
     ct: [u8; CRYPTO_CIPHERTEXTBYTES],
     ss: [u8; CRYPTO_BYTES],
+    pk_kem: [u8; CRYPTO_PUBLICKEYBYTES],
+    sk_kem: [u8; CRYPTO_SECRETKEYBYTES],
+    ct_kem: [u8; CRYPTO_CIPHERTEXTBYTES],
+    ss_kem: [u8; CRYPTO_BYTES],
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 fn is_zero(x: &[u8]) -> bool {
     for b in x.iter() {
         if *b != 0 {
@@ -651,27 +656,37 @@ fn is_zero(x: &[u8]) -> bool {
     true
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl Testcase {
     fn new() -> Testcase {
         Testcase {
             count: 0,
             seed: [0u8; 48],
+            seed_kem: [0u8; 48],
             pk: [0u8; CRYPTO_PUBLICKEYBYTES],
             sk: [0u8; CRYPTO_SECRETKEYBYTES],
             ct: [0u8; CRYPTO_CIPHERTEXTBYTES],
             ss: [0u8; CRYPTO_BYTES],
+            pk_kem: [0u8; CRYPTO_PUBLICKEYBYTES],
+            sk_kem: [0u8; CRYPTO_SECRETKEYBYTES],
+            ct_kem: [0u8; CRYPTO_CIPHERTEXTBYTES],
+            ss_kem: [0u8; CRYPTO_BYTES],
         }
     }
 
-    fn with_seed(count: usize, seed: &[u8; 48]) -> Testcase {
+    fn with_seed(count: usize, seed: &[u8; 48], seed_kem: &[u8; 48]) -> Testcase {
         Testcase {
             count,
             seed: *seed,
+            seed_kem: *seed_kem,
             pk: [0u8; CRYPTO_PUBLICKEYBYTES],
             sk: [0u8; CRYPTO_SECRETKEYBYTES],
             ct: [0u8; CRYPTO_CIPHERTEXTBYTES],
             ss: [0u8; CRYPTO_BYTES],
+            pk_kem: [0u8; CRYPTO_PUBLICKEYBYTES],
+            sk_kem: [0u8; CRYPTO_SECRETKEYBYTES],
+            ct_kem: [0u8; CRYPTO_CIPHERTEXTBYTES],
+            ss_kem: [0u8; CRYPTO_BYTES],
         }
     }
 
@@ -686,10 +701,15 @@ impl Testcase {
 
         writeln!(fd, "count = {}", self.count)?;
         writeln!(fd, "seed = {}", hex::encode_upper(self.seed))?;
+        writeln!(fd, "seed_kem = {}", hex::encode_upper(self.seed_kem))?;
         writeln!(fd, "pk ={}", repr_bytes(&self.pk).as_str())?;
         writeln!(fd, "sk ={}", repr_bytes(&self.sk).as_str())?;
         writeln!(fd, "ct ={}", repr_bytes(&self.ct).as_str())?;
-        writeln!(fd, "ss ={}\n", repr_bytes(&self.ss).as_str())?;
+        writeln!(fd, "ss ={}", repr_bytes(&self.ss).as_str())?;
+        writeln!(fd, "pk_kem ={}", repr_bytes(&self.pk_kem).as_str())?;
+        writeln!(fd, "sk_kem ={}", repr_bytes(&self.sk_kem).as_str())?;
+        writeln!(fd, "ct_kem ={}", repr_bytes(&self.ct_kem).as_str())?;
+        writeln!(fd, "ss_kem ={}\n", repr_bytes(&self.ss_kem).as_str())?;
 
         Ok(())
     }
@@ -722,10 +742,15 @@ impl Testcase {
         match name {
             "count" => self.count = value.parse::<usize>()?,
             "seed" => hex::decode_to_slice(value, &mut self.seed as &mut [u8])?,
+            "seed_kem" => hex::decode_to_slice(value, &mut self.seed_kem as &mut [u8])?,
             "pk" => hex::decode_to_slice(value, &mut self.pk as &mut [u8])?,
             "sk" => hex::decode_to_slice(value, &mut self.sk as &mut [u8])?,
             "ct" => hex::decode_to_slice(value, &mut self.ct as &mut [u8])?,
             "ss" => hex::decode_to_slice(value, &mut self.ss as &mut [u8])?,
+            "pk_kem" => hex::decode_to_slice(value, &mut self.pk_kem as &mut [u8])?,
+            "sk_kem" => hex::decode_to_slice(value, &mut self.sk_kem as &mut [u8])?,
+            "ct_kem" => hex::decode_to_slice(value, &mut self.ct_kem as &mut [u8])?,
+            "ss_kem" => hex::decode_to_slice(value, &mut self.ss_kem as &mut [u8])?,
             _ => return err(&format!("assignment to unknown key '{}'", name)),
         };
 
@@ -743,10 +768,10 @@ impl Testcase {
     }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl Eq for Testcase {}
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl fmt::Display for Testcase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // NOTE it requires a new struct with multiple implementations
@@ -762,14 +787,19 @@ impl fmt::Display for Testcase {
 
         writeln!(f, "count = {}", self.count)?;
         writeln!(f, "seed = {}", hex::encode_upper(self.seed))?;
+        writeln!(f, "seed_kem = {}", hex::encode_upper(self.seed_kem))?;
         writeln!(f, "pk ={}", repr_bytes(&self.pk).as_str())?;
         writeln!(f, "sk ={}", repr_bytes(&self.sk).as_str())?;
         writeln!(f, "ct ={}", repr_bytes(&self.ct).as_str())?;
-        writeln!(f, "ss ={}\n", repr_bytes(&self.ss).as_str())
+        writeln!(f, "ss ={}", repr_bytes(&self.ss).as_str())?;
+        writeln!(f, "pk_kem ={}", repr_bytes(&self.pk_kem).as_str())?;
+        writeln!(f, "sk_kem ={}", repr_bytes(&self.sk_kem).as_str())?;
+        writeln!(f, "ct_kem ={}", repr_bytes(&self.ct_kem).as_str())?;
+        writeln!(f, "ss_kem ={}\n", repr_bytes(&self.ss_kem).as_str())
     }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 fn create_request_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
 
@@ -781,11 +811,15 @@ fn create_request_file(filepath: &str) -> R {
     let mut rng = AesState::new();
     rng.randombytes_init(entropy_input);
 
+    let mut rng_kem = AesState::new();
+    rng_kem.randombytes_init(entropy_input);
+
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
         let mut tc = Testcase::new();
         tc.count = t;
         rng.fill_bytes(&mut tc.seed);
+        rng_kem.fill_bytes(&mut tc.seed_kem);
 
         tc.write_to_file(&mut fd)?;
     }
@@ -793,8 +827,10 @@ fn create_request_file(filepath: &str) -> R {
     Ok(())
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 fn create_response_file(filepath: &str) -> R {
+    use kem::{Decapsulator, Encapsulator};
+
     let mut fd = fs::File::create(filepath)?;
     writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
 
@@ -804,7 +840,9 @@ fn create_response_file(filepath: &str) -> R {
         *e = i as u8;
     }
     let mut rng = AesState::new();
+    let mut rng_kem = AesState::new();
     rng.randombytes_init(entropy_input);
+    rng_kem.randombytes_init(entropy_input);
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
@@ -829,17 +867,31 @@ fn create_response_file(filepath: &str) -> R {
         assert_eq!(ss.as_array(), ss2.as_array());
         tc.ss = *ss.as_array();
         tc.ct.copy_from_slice(ct.as_ref());
+
+        let (pk_kem, sk_kem) = keypair_boxed(&mut rng_kem);
+        let (ct_kem, ss_kem) = ClassicMcEliece.try_encap(&mut rng_kem, &pk_kem).unwrap();
+        let ss2_kem = sk_kem.try_decap(&ct_kem).unwrap();
+
+        tc.pk_kem = *pk_kem.as_array();
+        tc.sk_kem = *sk_kem.as_array();
+        assert_eq!(ss_kem.as_bytes(), ss2_kem.as_bytes());
+        tc.ss_kem.copy_from_slice(ss_kem.as_bytes());
+        tc.ct_kem.copy_from_slice(ct_kem.as_ref());
+
         tc.write_to_file(&mut fd)?;
     }
 
     Ok(())
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 fn verify(filepath: &str) -> R {
+    use kem::{Decapsulator, Encapsulator};
+
     let fd = fs::File::open(filepath)?;
     let mut reader = BufReader::new(fd);
     let mut rng = AesState::new();
+    let mut rng_kem = AesState::new();
 
     // first record in a response file is empty (e.g. “# ntruhps2048509\n”)
     // hence, skip it
@@ -852,8 +904,9 @@ fn verify(filepath: &str) -> R {
         expected.read_from_file(&mut reader)?;
 
         rng.randombytes_init(expected.seed);
+        rng_kem.randombytes_init(expected.seed_kem);
 
-        let mut actual = Testcase::with_seed(t, &expected.seed);
+        let mut actual = Testcase::with_seed(t, &expected.seed, &expected.seed_kem);
 
         let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
@@ -869,6 +922,16 @@ fn verify(filepath: &str) -> R {
         assert_eq!(ss.as_array(), ss2.as_array());
         actual.ss = *ss.as_array();
         actual.ct.copy_from_slice(ct.as_ref());
+
+        let (pk_kem, sk_kem) = keypair_boxed(&mut rng_kem);
+        let (ct_kem, ss_kem) = ClassicMcEliece.try_encap(&mut rng_kem, &pk_kem).unwrap();
+        let ss2_kem = sk_kem.try_decap(&ct_kem).unwrap();
+
+        actual.pk_kem = *pk_kem.as_array();
+        actual.sk_kem = *sk_kem.as_array();
+        assert_eq!(ss_kem.as_bytes(), ss2_kem.as_bytes());
+        actual.ss_kem.copy_from_slice(ss_kem.as_bytes());
+        actual.ct_kem.copy_from_slice(ct_kem.as_ref());
 
         //assert_eq!(expected, actual);
         assert_eq!(
@@ -893,6 +956,26 @@ fn verify(filepath: &str) -> R {
         );
         assert_eq!(
             expected.ss, actual.ss,
+            "shared secrets of testcase {} don't match",
+            expected.count
+        );
+        assert_eq!(
+            expected.pk_kem, actual.pk_kem,
+            "public keys of testcase {} don't match",
+            expected.count
+        );
+        assert_eq!(
+            expected.sk_kem, actual.sk_kem,
+            "secret keys of testcase {} don't match",
+            expected.count
+        );
+        assert_eq!(
+            expected.ct_kem, actual.ct_kem,
+            "ciphertexts of testcase {} don't match",
+            expected.count
+        );
+        assert_eq!(
+            expected.ss_kem, actual.ss_kem,
             "shared secrets of testcase {} don't match",
             expected.count
         );
@@ -987,7 +1070,7 @@ impl TestData {
 mod tests {
     use super::*;
 
-    #[cfg(all(test, feature = "alloc"))]
+    #[cfg(all(test, feature = "alloc", feature = "kem"))]
     #[test]
     fn test_katkem() {
         use std::env;
@@ -1006,7 +1089,7 @@ mod tests {
                         println!("verification successful.");
                     }
 
-                    5 => {
+                    4 => {
                         args.next().unwrap();
                         args.next().unwrap();
 
@@ -1025,7 +1108,7 @@ mod tests {
                         eprintln!("  generate a request and response file\n");
                         eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
                         eprintln!("  verify the given response file\n");
-                        // panic!("wrong number of arguments");
+                        eprintln!("wrong number of arguments");
                     }
                 }
             })
