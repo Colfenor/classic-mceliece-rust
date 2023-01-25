@@ -531,18 +531,18 @@ mod kem_api {
 
     #[cfg(test)]
     mod tests {
-        use kem::{Decapsulator, Encapsulator};
+        use crate::{Ciphertext, CRYPTO_CIPHERTEXTBYTES};
+        use kem::generic_array::GenericArray;
+        use kem::{Decapsulator, EncappedKey, Encapsulator};
 
         #[test]
-        fn test_crypto_kem_api() -> Result<(), kem::Error> {
+        fn crypto_kem_api() -> Result<(), kem::Error> {
             use super::ClassicMcEliece;
 
             let mut rng_state = crate::nist_aes_rng::AesState::new();
 
             let (pk, sk) = crate::keypair_boxed(&mut rng_state);
-
             let (ciphertext, shared_secret) = ClassicMcEliece.try_encap(&mut rng_state, &pk)?;
-
             let shared_secret2 = sk.try_decap(&ciphertext)?;
 
             assert_eq!(shared_secret.as_bytes(), shared_secret2.as_bytes());
@@ -551,49 +551,24 @@ mod kem_api {
         }
 
         #[test]
-        #[cfg(feature = "zeroize")]
-        fn test_zeroize() {
-            use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
-
-            let mut pk_buffer = [0u8; CRYPTO_PUBLICKEYBYTES];
-            let mut sk_buffer = [5u8; CRYPTO_SECRETKEYBYTES];
-            let mut rng = rand::thread_rng();
-
-            let zeroed_key = [0; CRYPTO_SECRETKEYBYTES];
-
-            let (_, secret_key) = keypair(&mut pk_buffer, &mut sk_buffer, &mut rng);
-            drop(secret_key);
-
-            assert_eq!(zeroed_key, sk_buffer);
+        fn ciphertext_generic_array_length() {
+            let ciphertext =
+                GenericArray::<u8, <Ciphertext as EncappedKey>::EncappedKeySize>::default();
+            assert_eq!(ciphertext.len(), CRYPTO_CIPHERTEXTBYTES);
         }
 
         #[test]
-        #[cfg(feature = "mceliece8192128f")]
-        fn test_crypto_kem_api_keypair() {
-            use crate::{keypair_boxed, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+        fn ciphertext_from_bytes() {
+            let mut key_material = GenericArray::<_, _>::default();
+            for (i, byte) in key_material.iter_mut().enumerate() {
+                *byte = i as u8;
+            }
+            let ciphertext = <Ciphertext as EncappedKey>::from_bytes(&key_material).unwrap();
 
-            let entropy_input = <[u8; 48]>::try_from(
-                crate::TestData::new()
-                    .u8vec("mceliece8192128f_operations_entropy_input")
-                    .as_slice(),
-            )
-            .unwrap();
-
-            let compare_sk =
-                crate::TestData::new().u8vec("mceliece8192128f_operations_sk_expected");
-            assert_eq!(compare_sk.len(), CRYPTO_SECRETKEYBYTES);
-
-            let compare_pk =
-                crate::TestData::new().u8vec("mceliece8192128f_operations_pk_expected");
-            assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
-
-            let mut rng_state = crate::nist_aes_rng::AesState::new();
-            rng_state.randombytes_init(entropy_input);
-
-            let (pk, sk) = keypair_boxed(&mut rng_state);
-
-            assert_eq!(compare_sk.as_slice(), sk.0.as_ref());
-            assert_eq!(compare_pk.as_slice(), pk.0.as_ref());
+            // Verify that the ciphertext contains CRYPTO_CIPHERTEXTBYTES bytes and all with the correct value
+            for i in 0..CRYPTO_CIPHERTEXTBYTES {
+                assert_eq!(ciphertext.as_array()[i], i as u8)
+            }
         }
     }
 }
@@ -685,6 +660,60 @@ impl TestData {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[cfg(feature = "zeroize")]
+    fn zeroize() {
+        fn run() {
+            use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+            let mut pk_buffer = [0u8; CRYPTO_PUBLICKEYBYTES];
+            let mut sk_buffer = [5u8; CRYPTO_SECRETKEYBYTES];
+            let mut rng = rand::thread_rng();
+
+            let zeroed_key = [0; CRYPTO_SECRETKEYBYTES];
+
+            let (_, secret_key) = keypair(&mut pk_buffer, &mut sk_buffer, &mut rng);
+            drop(secret_key);
+
+            assert_eq!(zeroed_key, sk_buffer);
+        }
+
+        std::thread::Builder::new()
+            // Use a large enough stack size to run all kem variants with the key buffers on the stack.
+            .stack_size(4 * 1024 * 1024)
+            .spawn(run)
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
+    #[test]
+    #[cfg(feature = "mceliece8192128f")]
+    fn crypto_alloc_api_keypair() {
+        use crate::{keypair_boxed, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+
+        let entropy_input = <[u8; 48]>::try_from(
+            crate::TestData::new()
+                .u8vec("mceliece8192128f_operations_entropy_input")
+                .as_slice(),
+        )
+        .unwrap();
+
+        let compare_sk = crate::TestData::new().u8vec("mceliece8192128f_operations_sk_expected");
+        assert_eq!(compare_sk.len(), CRYPTO_SECRETKEYBYTES);
+
+        let compare_pk = crate::TestData::new().u8vec("mceliece8192128f_operations_pk_expected");
+        assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
+
+        let mut rng_state = crate::nist_aes_rng::AesState::new();
+        rng_state.randombytes_init(entropy_input);
+
+        let (pk, sk) = keypair_boxed(&mut rng_state);
+
+        assert_eq!(compare_sk.as_slice(), sk.0.as_ref());
+        assert_eq!(compare_pk.as_slice(), pk.0.as_ref());
+    }
 
     #[test]
     fn testdata_sanity_check() {
