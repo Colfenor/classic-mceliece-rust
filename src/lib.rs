@@ -536,15 +536,13 @@ mod kem_api {
         use kem::{Decapsulator, EncappedKey, Encapsulator};
 
         #[test]
-        fn test_crypto_kem_api() -> Result<(), kem::Error> {
+        fn crypto_kem_api() -> Result<(), kem::Error> {
             use super::ClassicMcEliece;
 
             let mut rng_state = crate::nist_aes_rng::AesState::new();
 
             let (pk, sk) = crate::keypair_boxed(&mut rng_state);
-
             let (ciphertext, shared_secret) = ClassicMcEliece.try_encap(&mut rng_state, &pk)?;
-
             let shared_secret2 = sk.try_decap(&ciphertext)?;
 
             assert_eq!(shared_secret.as_bytes(), shared_secret2.as_bytes());
@@ -665,7 +663,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "zeroize")]
-    fn test_zeroize() {
+    fn zeroize() {
         fn run() {
             use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
@@ -692,7 +690,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
-    fn test_crypto_kem_api_keypair() {
+    fn crypto_alloc_api_keypair() {
         use crate::{keypair_boxed, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
         let entropy_input = <[u8; 48]>::try_from(
