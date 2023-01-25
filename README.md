@@ -49,6 +49,7 @@ Assuming this dependency, the simplest and most ergonomic way of using the libra
 is with heap allocated keys and the `*_boxed` KEM step functions. First, we import them:
 
 ```rust
+#[cfg(feature = "alloc")]
 use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 ```
 
@@ -56,34 +57,36 @@ Followingly, we run the KEM and provide generated keys accordingly.
 Here, we consider an example where we run it in a separate thread (be aware that the example also depends on the rand crate):
 
 ```rust
-use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
+#[cfg(feature = "alloc")] {
+  use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 
-fn run_kem() {
-  let mut rng = rand::thread_rng();
+  fn run_kem() {
+    let mut rng = rand::thread_rng();
 
-  // Alice computes the keypair
-  let (public_key, secret_key) = keypair_boxed(&mut rng);
+    // Alice computes the keypair
+    let (public_key, secret_key) = keypair_boxed(&mut rng);
 
-  // Send `secret_key` over to Bob.
-  // Bob computes the shared secret and a ciphertext
-  let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
+    // Send `secret_key` over to Bob.
+    // Bob computes the shared secret and a ciphertext
+    let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
 
-  // Send `ciphertext` back to Alice.
-  // Alice decapsulates the ciphertext...
-  let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
+    // Send `ciphertext` back to Alice.
+    // Alice decapsulates the ciphertext...
+    let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
 
-  // ... and ends up with the same key material as Bob.
-  assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
-}
+    // ... and ends up with the same key material as Bob.
+    assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
+  }
 
-fn main() {
-  std::thread::Builder::new()
-    // This library needs quite a lot of stack space to work
-    .stack_size(2 * 1024 * 1024)
-    .spawn(run_kem)
-    .unwrap()
-    .join()
-    .unwrap();
+  fn main() {
+    std::thread::Builder::new()
+      // This library needs quite a lot of stack space to work
+      .stack_size(2 * 1024 * 1024)
+      .spawn(run_kem)
+      .unwrap()
+      .join()
+      .unwrap();
+  }
 }
 ```
 
@@ -108,7 +111,7 @@ classic-mceliece-rust = { version = "2.0", default-features = false, features = 
 
 How does one use the API then (be aware that the example also depends on the rand crate)?
 
-```rust
+```rust,no_run
 use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
@@ -287,7 +290,7 @@ Yes, besides passing unittests (derived from the C implementation), the generate
 
 ## Where is the source code?
 
-On [github](https://github.com/prokls/classic-mceliece-rust).
+On [github](https://github.com/Colfenor/classic-mceliece-rust).
 
 ## What is the content's license?
 
@@ -303,4 +306,4 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Where can I ask you to fix a bug?
 
-On [github](https://github.com/prokls/classic-mceliece-rust/issues).
+On [github](https://github.com/Colfenor/classic-mceliece-rust/issues).
