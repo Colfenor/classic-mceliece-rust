@@ -298,11 +298,7 @@ On [github](https://github.com/Colfenor/classic-mceliece-rust).
 
 ## Changelog
 
-* **2022-09-08 version 2.0.1:** fix README documentation
-* **2022-09-06 version 2.0.0:** refined API with heap-allocated keys and RustCrypto integration
-* **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
-* **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
-* **2022-04-01 version 1.0.0:** public release (no April fools though)
+Please see [the changelog](./CHANGELOG.md)
 
 ## Where can I ask you to fix a bug?
 
