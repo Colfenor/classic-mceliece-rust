@@ -21,10 +21,18 @@ Line wrap the file at 100 chars.                                              Th
 * **Security**: in case of vulnerabilities.
 
 
-## [Unreleased]
+## [3.0.0] - 2022-01-26
 ### Changed
 - Change from implementing NIST round 3 specification of Classic McEliece to
   [NIST round 4](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-4-submissions)
+- Move non kem-API interface related tests out of kem module
+### Added
+- Add a separate CHANGELOG.md file to the project
+- Added tests for the Ciphertext EncappedKeySize, such that
+  `CryptoCiphertextBytesTypenum` always matches the length of `CRYPTO_CIPHERTEXTBYTES`
+### Fixed
+- Improve & fix unit tests
+- fix casting to same type clippy warnings
 
 
 ## [2.0.1] - 2022-09-08
