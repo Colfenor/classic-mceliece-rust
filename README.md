@@ -3,7 +3,7 @@
 This is a pure-rust safe-rust implementation of the Classic McEliece post-quantum scheme.
 
 * Classic McEliece is a code-based key encapsulation mechanism (KEM)
-* The implementation is based on the Classic McEliece reference implementation of [NIST round 3](https://csrc.nist.gov/Projects/post-quantum-cryptography/post-quantum-cryptography-standardization/round-3-submissions)
+* The implementation is based on the Classic McEliece reference implementation of [NIST round 4](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-4-submissions)
 * The implementation does not utilize any concurrency techniques (SIMD/threading/…, except maybe auto-vectorization on your CPU)
 * It depends on `sha3` as SHA-3 implementation and `aes` as AES block cipher (used as RNG) implementation
 * It passes the 100 testcases of the C reference implementation
@@ -35,14 +35,14 @@ Anyone, how wants to use Classic McEliece to negotiate a key between two parties
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-classic-mceliece-rust = "2.0"
+classic-mceliece-rust = "3.0"
 ```
 
 To use a specific Classic McEliece variant, you need to import it with the corresponding feature flag:
 
 ```toml
 [dependencies]
-classic-mceliece-rust = { version = "2.0", features = ["mceliece6960119"] }
+classic-mceliece-rust = { version = "3.0", features = ["mceliece6960119"] }
 ```
 
 Assuming this dependency, the simplest and most ergonomic way of using the library
@@ -106,7 +106,7 @@ The other option is that you exclude the heap-allocation API and use the provide
 Thus, in this section we want to show you how to use this API without the heap. For this, you need to disable feature `alloc` which is enabled per default (this line retains default feature `zeroize` but removes default feature `alloc`):
 
 ```toml
-classic-mceliece-rust = { version = "2.0", default-features = false, features = ["zeroize"] }
+classic-mceliece-rust = { version = "3.0", default-features = false, features = ["zeroize"] }
 ```
 
 How does one use the API then (be aware that the example also depends on the rand crate)?
@@ -221,7 +221,7 @@ $ cargo run --example katkem --features mceliece6960119 -- PQCkemKAT_1450.req PQ
 ## How fast is it?
 
 All data uses clock cycles as unit (the smaller the better).
-The rust implementation yielded the following runtime results:
+The rust implementation v2.0.0 yielded the following runtime results:
 
 <table>
   <thead>
@@ -275,16 +275,16 @@ Yes, besides passing unittests (derived from the C implementation), the generate
   <thead>
     <tr><td>variant</td><td>expected MD5 hash</td></tr>
   </thead><tbody>
-    <tr><td>mceliece348864</td><td><code>d2def196fde89e938d3d45b2c6f806aa</code></td></tr>
-    <tr><td>mceliece348864f</td><td><code>84b5357d8dd656bed9297e28beb15057</code></td></tr>
-    <tr><td>mceliece460896</td><td><code>8aac2122916b901172e49e009efeede6</code></td></tr>
-    <tr><td>mceliece460896f</td><td><code>d84d3b179e303b9f3fc32ccb6befb886</code></td></tr>
-    <tr><td>mceliece6688128</td><td><code>b86987d56c45da2e326556864e66bda7</code></td></tr>
-    <tr><td>mceliece6688128f</td><td><code>ae1e42cac2a885a87a2c241e05391481</code></td></tr>
-    <tr><td>mceliece6960119</td><td><code>9d9b3c9e8d7595503248131c584394be</code></td></tr>
-    <tr><td>mceliece6960119f</td><td><code>c79b1bd28fd307f8d157bd566374bfb3</code></td></tr>
-    <tr><td>mceliece8192128</td><td><code>b233e2585359a1133a1135c66fa48282</code></td></tr>
-    <tr><td>mceliece8192128f</td><td><code>d21bcb80dde24826e2c14254da917df3</code></td></tr>
+    <tr><td>mceliece348864</td><td><code>11fd67ba1e2b93cceaec6f5e6fe4ddd1</code></td></tr>
+    <tr><td>mceliece348864f</td><td><code>7a6f5262fa013fe7eedda0765a625789</code></td></tr>
+    <tr><td>mceliece460896</td><td><code>c9acefa82aa705cd324f12df532744c2</code></td></tr>
+    <tr><td>mceliece460896f</td><td><code>cb08e0e3f2122c62692111d684f1cbe7</code></td></tr>
+    <tr><td>mceliece6688128</td><td><code>7e300cc0990b05f5edca3219ac769023</code></td></tr>
+    <tr><td>mceliece6688128f</td><td><code>6d959c2bf54f7d3576a8e49475a74df5</code></td></tr>
+    <tr><td>mceliece6960119</td><td><code>b4960a35e249d55fd48371f793608aa5</code></td></tr>
+    <tr><td>mceliece6960119f</td><td><code>2f5d759cb579c6f85c1ee1306082ffdf</code></td></tr>
+    <tr><td>mceliece8192128</td><td><code>26a47e6d01eec28e91abfdbdf19c3067</code></td></tr>
+    <tr><td>mceliece8192128f</td><td><code>a4cd676dc2c774d644f18de05762c51c</code></td></tr>
   </tbody>
 </table>
 
@@ -298,11 +298,7 @@ On [github](https://github.com/Colfenor/classic-mceliece-rust).
 
 ## Changelog
 
-* **2022-09-08 version 2.0.1:** fix README documentation
-* **2022-09-06 version 2.0.0:** refined API with heap-allocated keys and RustCrypto integration
-* **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
-* **2022-04-12 version 1.0.1:** fix C&P mistakes in documentation
-* **2022-04-01 version 1.0.0:** public release (no April fools though)
+Please see [the changelog](https://github.com/Colfenor/classic-mceliece-rust/blob/main/CHANGELOG.md)
 
 ## Where can I ask you to fix a bug?
 

@@ -51,18 +51,15 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
     rng: &mut R,
 ) {
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+    let mut e = [0u8; SYS_N / 8];
 
-    let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    let mut one_ec = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
     one_ec[0] = 1;
 
-    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng);
+    encrypt(c, pk, sub!(mut e, 0, SYS_N / 8), rng);
 
-    shake256(&mut c[SYND_BYTES..SYND_BYTES + 32], &two_e);
-
-    one_ec[1..1 + SYS_N / 8].copy_from_slice(&two_e[1..1 + SYS_N / 8]);
-    one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
+    one_ec[1..1 + SYS_N / 8].copy_from_slice(&e[..SYS_N / 8]);
+    one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &one_ec);
 }
@@ -79,21 +76,17 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
     pk: &[u8; CRYPTO_PUBLICKEYBYTES],
     rng: &mut R,
 ) -> u8 {
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+    let mut e = [0u8; SYS_N / 8];
 
-    let mut one_ec = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    let mut one_ec = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
     one_ec[0] = 1;
 
     let padding_ok = check_pk_padding(pk);
 
-    encrypt(c, pk, sub!(mut two_e, 1, SYS_N / 8), rng);
+    encrypt(c, pk, sub!(mut e, 0, SYS_N / 8), rng);
 
-    shake256(&mut c[SYND_BYTES..(SYND_BYTES + 32)], &two_e);
-
-    one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&two_e[1..(SYS_N / 8) + 1]);
-    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES + 32]
-        .copy_from_slice(&c[0..SYND_BYTES + 32]);
+    one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&e[..SYS_N / 8]);
+    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &one_ec);
 
@@ -101,7 +94,7 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
 
     let mask = padding_ok ^ 0xFF;
 
-    for i in 0..SYND_BYTES + 32 {
+    for i in 0..SYND_BYTES {
         c[i] &= mask;
     }
 
@@ -122,26 +115,17 @@ pub(crate) fn crypto_kem_dec(
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
 ) -> u8 {
-    let mut conf = [0u8; 32];
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+    let mut e = [0u8; SYS_N / 8];
 
-    let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    let mut preimage = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
 
     let ret_decrypt: u8 = decrypt(
-        sub!(mut two_e, 1, SYS_N / 8),
+        sub!(mut e, 0, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
     );
 
-    shake256(&mut conf[0..32], &two_e);
-
-    let mut ret_confirm: u8 = 0;
-    for i in 0..32 {
-        ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
-    }
-
-    let mut m = (ret_decrypt | ret_confirm) as u16;
+    let mut m = ret_decrypt as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
@@ -150,10 +134,10 @@ pub(crate) fn crypto_kem_dec(
     let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
     for i in 0..SYS_N / 8 {
-        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
+        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & e[i]);
     }
 
-    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &preimage);
 
@@ -170,28 +154,19 @@ pub(crate) fn crypto_kem_dec(
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
 ) -> u8 {
-    let mut conf = [0u8; 32];
-    let mut two_e = [0u8; 1 + SYS_N / 8];
-    two_e[0] = 2;
+    let mut e = [0u8; SYS_N / 8];
 
-    let mut preimage = [0u8; 1 + SYS_N / 8 + (SYND_BYTES + 32)];
+    let mut preimage = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
 
     let padding_ok = check_c_padding(sub!(c, 0, SYND_BYTES));
 
     let ret_decrypt: u8 = decrypt(
-        sub!(mut two_e, 1, SYS_N / 8),
+        sub!(mut e, 0, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
     );
 
-    shake256(&mut conf[0..32], &two_e);
-
-    let mut ret_confirm: u8 = 0;
-    for i in 0..32 {
-        ret_confirm |= conf[i] ^ c[SYND_BYTES + i];
-    }
-
-    let mut m = (ret_decrypt | ret_confirm) as u16;
+    let mut m = ret_decrypt as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
@@ -200,10 +175,10 @@ pub(crate) fn crypto_kem_dec(
     let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
     for i in 0..SYS_N / 8 {
-        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & two_e[1 + i]);
+        preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & e[i]);
     }
 
-    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES + 32].copy_from_slice(&c[0..SYND_BYTES + 32]);
+    (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &preimage);
 
