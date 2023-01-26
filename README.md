@@ -35,14 +35,14 @@ Anyone, how wants to use Classic McEliece to negotiate a key between two parties
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-classic-mceliece-rust = "2.0"
+classic-mceliece-rust = "3.0"
 ```
 
 To use a specific Classic McEliece variant, you need to import it with the corresponding feature flag:
 
 ```toml
 [dependencies]
-classic-mceliece-rust = { version = "2.0", features = ["mceliece6960119"] }
+classic-mceliece-rust = { version = "3.0", features = ["mceliece6960119"] }
 ```
 
 Assuming this dependency, the simplest and most ergonomic way of using the library
@@ -106,7 +106,7 @@ The other option is that you exclude the heap-allocation API and use the provide
 Thus, in this section we want to show you how to use this API without the heap. For this, you need to disable feature `alloc` which is enabled per default (this line retains default feature `zeroize` but removes default feature `alloc`):
 
 ```toml
-classic-mceliece-rust = { version = "2.0", default-features = false, features = ["zeroize"] }
+classic-mceliece-rust = { version = "3.0", default-features = false, features = ["zeroize"] }
 ```
 
 How does one use the API then (be aware that the example also depends on the rand crate)?
@@ -221,7 +221,7 @@ $ cargo run --example katkem --features mceliece6960119 -- PQCkemKAT_1450.req PQ
 ## How fast is it?
 
 All data uses clock cycles as unit (the smaller the better).
-The rust implementation yielded the following runtime results:
+The rust implementation v2.0.0 yielded the following runtime results:
 
 <table>
   <thead>
