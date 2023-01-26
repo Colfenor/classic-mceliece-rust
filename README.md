@@ -298,7 +298,7 @@ On [github](https://github.com/Colfenor/classic-mceliece-rust).
 
 ## Changelog
 
-Please see [the changelog](./CHANGELOG.md)
+Please see [the changelog](https://github.com/Colfenor/classic-mceliece-rust/blob/main/CHANGELOG.md)
 
 ## Where can I ask you to fix a bug?
 
