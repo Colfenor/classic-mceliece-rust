@@ -26,6 +26,7 @@ Line wrap the file at 100 chars.                                              Th
 - Change from implementing NIST round 3 specification of Classic McEliece to
   [NIST round 4](https://csrc.nist.gov/Projects/post-quantum-cryptography/round-4-submissions)
 - Move non kem-API interface related tests out of kem module
+- Exclude testdata folder & files from published crates in order reduce crate size
 ### Added
 - Add a separate CHANGELOG.md file to the project
 - Added tests for the Ciphertext EncappedKeySize, such that
