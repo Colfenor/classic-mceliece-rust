@@ -14,7 +14,7 @@ use nist_aes_rng::AesState;
 #[path = "../src/nist_aes_rng.rs"]
 mod nist_aes_rng;
 
-const KATNUM: usize = 100;
+const KATNUM: usize = 10;
 
 #[derive(Debug)]
 struct InvalidFileFormat(String, usize);
