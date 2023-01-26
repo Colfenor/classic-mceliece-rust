@@ -17,7 +17,7 @@ fn main() {
     let mut target_feature = "";
     for (feature, used) in features {
         if !target_feature.is_empty() && used {
-            panic!("Config error: \n\t{} and {} cannot be used simultaneously!\n\tPlease select only one feature.", target_feature, feature);
+            panic!("Config error: \n\t{target_feature} and {feature} cannot be used simultaneously!\n\tPlease select only one feature.");
         } else if used {
             target_feature = feature;
         }
