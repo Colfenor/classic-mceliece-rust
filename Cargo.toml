@@ -13,6 +13,7 @@ authors = [
 edition = "2021"
 keywords = ["pqc", "post-quantum", "cryptography", "decoding"]
 categories = ["cryptography"]
+exclude = ["/data"]
 
 [dependencies]
 rand = { version = "0.8", default-features = false }
