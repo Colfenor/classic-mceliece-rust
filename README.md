@@ -291,7 +291,7 @@ On [github](https://github.com/prokls/classic-mceliece-rust).
 
 ## Changelog
 
-* **2022-09-08 version 2.0.2:** exclude testdata folder & files in order to reduce published crate size
+* **2023-01-29 version 2.0.2:** exclude testdata folder & files in order to reduce published crate size
 * **2022-09-08 version 2.0.1:** fix README documentation
 * **2022-09-06 version 2.0.0:** refined API with heap-allocated keys and RustCrypto integration
 * **2022-09-06 version 1.1.0:** add CI, clippy, infallible SHAKE impl, forbid unsafe code
