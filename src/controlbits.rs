@@ -34,12 +34,12 @@ fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
 
     for i in (0..n as usize).step_by(stride * 2) {
         for j in 0..stride {
-            let mut d = p[(i + j)] ^ p[(i + j + stride)];
+            let mut d = p[i + j] ^ p[i + j + stride];
             let mut m = ((cb[index >> 3] >> (index & 7)) & 1) as i16;
             m = -m;
             d &= m;
-            p[(i + j)] ^= d;
-            p[(i + j + stride)] ^= d;
+            p[i + j] ^= d;
+            p[i + j + stride] ^= d;
             index += 1;
         }
     }
