@@ -1048,45 +1048,46 @@ mod tests {
     #[cfg(all(test, feature = "alloc", feature = "kem"))]
     #[test]
     fn test_katkem() {
-        use std::env;
+        use std::env::{self, Args};
+
+        fn run_katkem(mut args: Args) {
+            match args.len() {
+                3 => {
+                    args.next().unwrap();
+                    args.next().unwrap();
+                    let rsp_file = args.next().unwrap();
+                    verify(&rsp_file).unwrap();
+
+                    println!("verification successful.");
+                }
+
+                4 => {
+                    args.next().unwrap();
+                    args.next().unwrap();
+
+                    let req_file = args.next().unwrap();
+                    let rsp_file = args.next().unwrap();
+
+                    create_request_file(&req_file).unwrap();
+                    println!("request file '{}' created.", &req_file);
+
+                    create_response_file(&rsp_file).unwrap();
+                    println!("response file '{}' created.", &rsp_file);
+                }
+
+                _ => {
+                    eprintln!("usage: ./PQCgenKAT_kem <request:filepath> <response:filepath>");
+                    eprintln!("  generate a request and response file\n");
+                    eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
+                    eprintln!("  verify the given response file\n");
+                    eprintln!("wrong number of arguments");
+                }
+            }
+        }
 
         std::thread::Builder::new()
             .stack_size(10 * 1024 * 1024)
-            .spawn(|| {
-                let mut args = env::args();
-                match args.len() {
-                    3 => {
-                        args.next().unwrap();
-                        args.next().unwrap();
-                        let rsp_file = args.next().unwrap();
-                        verify(&rsp_file).unwrap();
-
-                        println!("verification successful.");
-                    }
-
-                    4 => {
-                        args.next().unwrap();
-                        args.next().unwrap();
-
-                        let req_file = args.next().unwrap();
-                        let rsp_file = args.next().unwrap();
-
-                        create_request_file(&req_file).unwrap();
-                        println!("request file '{}' created.", &req_file);
-
-                        create_response_file(&rsp_file).unwrap();
-                        println!("request file '{}' created.", &rsp_file);
-                    }
-
-                    _ => {
-                        eprintln!("usage: ./PQCgenKAT_kem <request:filepath> <response:filepath>");
-                        eprintln!("  generate a request and response file\n");
-                        eprintln!("usage: ./PQCgenKAT_kem <response:filepath>");
-                        eprintln!("  verify the given response file\n");
-                        eprintln!("wrong number of arguments");
-                    }
-                }
-            })
+            .spawn(|| run_katkem(env::args()))
             .unwrap()
             .join()
             .unwrap();
@@ -1095,7 +1096,7 @@ mod tests {
     #[test]
     #[cfg(feature = "zeroize")]
     fn zeroize() {
-        fn run() {
+        fn run_zeroize() {
             use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
             let mut pk_buffer = [0u8; CRYPTO_PUBLICKEYBYTES];
@@ -1111,9 +1112,9 @@ mod tests {
         }
 
         std::thread::Builder::new()
-            // Use a large enough stack size to run all kem variants with the key buffers on the stack.
+            // Use a large enough stack size to run_zeroize all kem variants with the key buffers on the stack.
             .stack_size(4 * 1024 * 1024)
-            .spawn(run)
+            .spawn(run_zeroize)
             .unwrap()
             .join()
             .unwrap();
