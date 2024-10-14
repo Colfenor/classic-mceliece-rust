@@ -26,8 +26,8 @@ macro_rules! CONTROLBYTES {
 /// The following requirement is undocumented in C:
 ///   `assert!(1 << (s + 1) <= n);`
 fn layer(p: &mut [i16], cb: &[u8], s: i32, n: i32) {
-    assert_eq!(p.len(), n as usize);
-    assert!(1 << (s + 1) <= n);
+    debug_assert_eq!(p.len(), n as usize);
+    debug_assert!(1 << (s + 1) <= n);
 
     let stride = 1 << s;
     let mut index = 0;
@@ -74,10 +74,10 @@ fn cbrecursion(
     temp: &mut [i32],
     aux: &[i32],
 ) {
-    assert!(out.len() >= CONTROLBYTES!(w, step));
-    assert!(temp.len() >= 2 * n);
-    assert!(aux.len() >= n / 2);
-    assert!(pi_offset <= 3 * n);
+    debug_assert!(out.len() >= CONTROLBYTES!(w, step));
+    debug_assert!(temp.len() >= 2 * n);
+    debug_assert!(aux.len() >= n / 2);
+    debug_assert!(pi_offset <= 3 * n);
 
     if w == 1 {
         let first = if pi_offset == 0 {
@@ -286,15 +286,15 @@ fn cbrecursion(
 /// to implement the permutation specified by `pi`. The first control bit is
 /// the LSB of out[0].
 pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n: usize) {
-    assert_eq!(n, 1 << w);
-    assert_eq!(pi.len(), n);
-    assert_eq!(out.len(), (((2 * w - 1) * n / 2) + 7) / 8);
+    debug_assert_eq!(n, 1 << w);
+    debug_assert_eq!(pi.len(), n);
+    debug_assert_eq!(out.len(), (((2 * w - 1) * n / 2) + 7) / 8);
 
     let mut temp = [0i32; 2 * (1 << GFBITS)];
     let mut diff: i16 = 0;
 
     // reinterpret pi as i32 array
-    assert_eq!(pi.len(), 1 << GFBITS);
+    debug_assert_eq!(pi.len(), 1 << GFBITS);
     let mut pi_as_i32 = [0i32; 1 << (GFBITS - 1)];
     for i in 0..(1 << (GFBITS - 1)) {
         pi_as_i32[i] = pi[2 * i] as i32 | ((pi[2 * i + 1] as i32) << 16);
