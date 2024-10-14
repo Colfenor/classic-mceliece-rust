@@ -208,7 +208,16 @@ pub(crate) fn pk_gen(
     pivots: &mut u64,
 ) -> i32 {
     let mut buf = [0u64; 1 << GFBITS];
-    let mut mat = [[0u8; SYS_N / 8]; PK_NROWS];
+    let mut mat;
+    #[cfg(feature = "alloc")]
+    {
+        use alloc::boxed::Box;
+        mat = Box::new([[0u8; SYS_N / 8]; PK_NROWS]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        mat = [[0u8; SYS_N / 8]; PK_NROWS];
+    }
 
     let mut g = [0u16; SYS_T + 1];
     let mut l = [0u16; SYS_N];
