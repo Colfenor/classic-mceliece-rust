@@ -621,17 +621,6 @@ struct Testcase {
 }
 
 #[cfg(all(test, feature = "alloc", feature = "kem"))]
-fn is_zero(x: &[u8]) -> bool {
-    for b in x.iter() {
-        if *b != 0 {
-            return false;
-        }
-    }
-
-    true
-}
-
-#[cfg(all(test, feature = "alloc", feature = "kem"))]
 impl Testcase {
     fn new() -> Testcase {
         Testcase {
@@ -667,7 +656,7 @@ impl Testcase {
 
     fn write_to_file(&self, fd: &mut fs::File) -> R {
         let repr_bytes = |bytes: &[u8]| -> String {
-            if is_zero(bytes) {
+            if bytes.iter().all(|b| *b == 0) {
                 "".to_string()
             } else {
                 format!(" {}", hex::encode_upper(bytes))
@@ -753,7 +742,7 @@ impl fmt::Display for Testcase {
         //   to abstract Testcase.write_to_file(…) for stdout AND files.
         //   As a result, I decided to duplicate the code.
         let repr_bytes = |bytes: &[u8]| -> String {
-            if is_zero(bytes) {
+            if bytes.iter().all(|b| *b == 0) {
                 "".to_string()
             } else {
                 format!(" {}", hex::encode_upper(bytes))
