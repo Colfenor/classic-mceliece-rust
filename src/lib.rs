@@ -22,16 +22,16 @@ mod transpose;
 mod uint64_sort;
 mod util;
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 use alloc::string::{String, ToString};
 use core::fmt::Debug;
 use rand::{CryptoRng, RngCore};
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 use std::io::Write;
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 use std::io::{BufRead, BufReader};
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 use std::{error, fmt, fs};
 
 #[cfg(feature = "alloc")]
@@ -41,7 +41,7 @@ use alloc::boxed::Box;
 
 #[cfg(test)]
 mod nist_aes_rng;
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 use nist_aes_rng::AesState;
 #[cfg(test)]
 #[macro_use]
@@ -602,10 +602,11 @@ impl fmt::Display for InvalidFileFormat {
     }
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(all(test, feature = "alloc", feature = "kem"))]
 type R = Result<(), Box<dyn error::Error>>;
 
 #[derive(Debug, PartialEq)]
+#[cfg(all(test, feature = "kem"))]
 struct Testcase {
     count: usize,
     seed: [u8; 48],
