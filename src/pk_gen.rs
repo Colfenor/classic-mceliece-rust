@@ -367,6 +367,8 @@ mod tests {
     use super::*;
     #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
+    #[cfg(feature = "mceliece8192128f")]
+    use crate::test_utils::TestData;
 
     #[test]
     #[cfg(any(
@@ -441,7 +443,7 @@ mod tests {
 
         // input data
         let mut mat = vec![[0u8; COLS]; PK_NROWS];
-        let mat_data = crate::TestData::new().u8vec("mceliece8192128f_mat_before");
+        let mat_data = TestData::new().u8vec("mceliece8192128f_mat_before");
         assert_eq!(mat_data.len(), PK_NROWS * COLS);
 
         for row in 0..PK_NROWS {
@@ -450,7 +452,7 @@ mod tests {
             }
         }
 
-        let mut pi = crate::TestData::new().i16vec("mceliece8192128f_pi_before");
+        let mut pi = TestData::new().i16vec("mceliece8192128f_pi_before");
         let mut pivots = 0u64;
 
         // generated actual result
@@ -462,13 +464,13 @@ mod tests {
 
         // expected data
         let mut mat_expected = [[0u8; COLS]; PK_NROWS];
-        let mat_expected_data = crate::TestData::new().u8vec("mceliece8192128f_mat_expected");
+        let mat_expected_data = TestData::new().u8vec("mceliece8192128f_mat_expected");
 
         for row in 0..PK_NROWS {
             mat_expected[row].copy_from_slice(&mat_expected_data[row * COLS..(row + 1) * COLS]);
         }
 
-        let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pi_expected");
+        let pi_expected = TestData::new().i16vec("mceliece8192128f_pi_expected");
         let pivots_expected = 8053063679u64;
 
         // comparison
@@ -480,8 +482,8 @@ mod tests {
     #[test]
     #[cfg(feature = "mceliece8192128f")]
     fn test_pk_gen_1() {
-        let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_input");
-        let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
+        let sk_data = TestData::new().u8vec("mceliece8192128f_pk_gen_sk_input");
+        let perm_data = TestData::new().u32vec("mceliece8192128f_pk_gen_perm_input");
 
         let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk = [0u8; 2 * SYS_T];
@@ -507,10 +509,10 @@ mod tests {
             &mut pivots,
         );
 
-        let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
-        let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk_expected");
-        let perm_expected = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm_expected");
-        let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pk_gen_pi_expected");
+        let pk_expected = TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
+        let sk_expected = TestData::new().u8vec("mceliece8192128f_pk_gen_sk_expected");
+        let perm_expected = TestData::new().u32vec("mceliece8192128f_pk_gen_perm_expected");
+        let pi_expected = TestData::new().i16vec("mceliece8192128f_pk_gen_pi_expected");
 
         assert_eq!(pk, pk_expected.as_slice());
         assert_eq!(sk, sk_expected.as_slice());
@@ -523,10 +525,10 @@ mod tests {
     #[cfg(feature = "mceliece8192128f")]
     fn test_pk_gen_2() {
         // NOTE expected pk_data of previous testcase becomes input for this one
-        let pk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
-        let sk_data = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_input");
-        let perm_data = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_input");
-        let pi_data = crate::TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_input");
+        let pk_data = TestData::new().u8vec("mceliece8192128f_pk_gen_pk_expected");
+        let sk_data = TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_input");
+        let perm_data = TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_input");
+        let pi_data = TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_input");
 
         let mut pk = vec![0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk = [0u8; 2 * SYS_T];
@@ -556,10 +558,10 @@ mod tests {
             &mut pivots,
         );
 
-        let pk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
-        let sk_expected = crate::TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");
-        let perm_expected = crate::TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_expected");
-        let pi_expected = crate::TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_expected");
+        let pk_expected = TestData::new().u8vec("mceliece8192128f_pk_gen_pk2_expected");
+        let sk_expected = TestData::new().u8vec("mceliece8192128f_pk_gen_sk2_expected");
+        let perm_expected = TestData::new().u32vec("mceliece8192128f_pk_gen_perm2_expected");
+        let pi_expected = TestData::new().i16vec("mceliece8192128f_pk_gen_pi2_expected");
 
         assert_eq!(pivots, 0xffffffff);
         assert_eq!(sk, sk_expected.as_slice());

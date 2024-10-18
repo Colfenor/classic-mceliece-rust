@@ -16,7 +16,10 @@ RET=0
 TMPDIR=$(mktemp -d)
 for var in "${!variants[@]}"
 do
-    cargo test --release --features "$var kem" --package classic-mceliece-rust --lib -- tests::test_katkem $TMPDIR/$var.req $TMPDIR/$var.rsp
+    # NOTE: if you run into a stack overflow, you can add feature 'alloc'
+    #       which will lead to allocation of large array on the heap (not stack)
+    time cargo test --release --features "$var kem" --package classic-mceliece-rust --lib -- test_katkem::katkem $TMPDIR/$var.req $TMPDIR/$var.rsp
+    echo "variant $var"
     MD5HASH=$(md5sum ${TMPDIR}/${var}.rsp | awk '{print $1}')
     if [[ "$MD5HASH" != "${variants[$var]}" ]]; then
         echo "KAT not as expected for ${var}."
@@ -25,6 +28,3 @@ do
 done
 rm -R $TMPDIR
 exit $RET
-    
-
-

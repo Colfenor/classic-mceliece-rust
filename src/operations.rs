@@ -332,24 +332,21 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "mceliece8192128f"))]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    use crate::test_utils::TestData;
     use super::*;
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use crate::nist_aes_rng::AesState;
-    #[cfg(all(feature = "mceliece8192128f", test))]
     use std::convert::TryFrom;
 
     #[test]
-    #[cfg(feature = "mceliece8192128f")]
     fn test_crypto_kem_dec() {
         use crate::api::{CRYPTO_CIPHERTEXTBYTES, CRYPTO_SECRETKEYBYTES};
 
-        let mut sk = crate::TestData::new().u8vec("mceliece8192128f_sk1");
-        let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
+        let mut sk = TestData::new().u8vec("mceliece8192128f_sk1");
+        let mut c = TestData::new().u8vec("mceliece8192128f_ct1");
         let mut test_key = [0u8; 32];
-        let compare_key = crate::TestData::new().u8vec("mceliece8192128f_operations_ss");
+        let compare_key = TestData::new().u8vec("mceliece8192128f_operations_ss");
 
         crypto_kem_dec(
             &mut test_key,
@@ -361,21 +358,20 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "mceliece8192128f")]
     fn test_crypto_kem_enc() {
         use crate::api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES};
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
         let mut ss = [0u8; CRYPTO_BYTES];
-        let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
+        let mut pk = TestData::new().u8vec("mceliece8192128f_pk1");
         assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
 
-        let compare_ss = crate::TestData::new().u8vec("mceliece8192128f_operations_ss");
-        let compare_ct = crate::TestData::new().u8vec("mceliece8192128f_operations_enc1_ct");
+        let compare_ss = TestData::new().u8vec("mceliece8192128f_operations_ss");
+        let compare_ct = TestData::new().u8vec("mceliece8192128f_operations_enc1_ct");
 
         // set the same seed as in C implementation
         let entropy_input = <[u8; 48]>::try_from(
-            crate::TestData::new()
+            TestData::new()
                 .u8vec("mceliece8192128f_operations_entropy_input")
                 .as_slice(),
         )
@@ -402,7 +398,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "mceliece8192128f")]
     fn test_crypto_kem_keypair() {
         use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
@@ -410,16 +405,16 @@ mod tests {
         let mut sk_input = [0; CRYPTO_SECRETKEYBYTES].to_vec();
 
         let entropy_input = <[u8; 48]>::try_from(
-            crate::TestData::new()
+            TestData::new()
                 .u8vec("mceliece8192128f_operations_entropy_input")
                 .as_slice(),
         )
         .unwrap();
 
-        let compare_sk = crate::TestData::new().u8vec("mceliece8192128f_operations_sk_expected");
+        let compare_sk = TestData::new().u8vec("mceliece8192128f_operations_sk_expected");
         assert_eq!(compare_sk.len(), CRYPTO_SECRETKEYBYTES);
 
-        let compare_pk = crate::TestData::new().u8vec("mceliece8192128f_operations_pk_expected");
+        let compare_pk = TestData::new().u8vec("mceliece8192128f_operations_pk_expected");
         assert_eq!(compare_pk.len(), CRYPTO_PUBLICKEYBYTES);
 
         let mut rng_state = AesState::new();
