@@ -18,14 +18,11 @@ use crate::{keypair,keypair_boxed,encapsulate,decapsulate};
 
 /// We are trying to read the data/testdata.txt file.
 /// If there is some issue, we generate this error
-#[cfg(feature = "kem")]
 #[derive(Debug)]
 struct InvalidFileFormat(String, usize);
 
-#[cfg(feature = "kem")]
 impl error::Error for InvalidFileFormat {}
 
-#[cfg(feature = "kem")]
 impl fmt::Display for InvalidFileFormat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "file has invalid format at line {}: {}", self.1, self.0)
@@ -33,14 +30,11 @@ impl fmt::Display for InvalidFileFormat {
 }
 
 /// the number of KAT testcases/seeds to generate
-#[cfg(feature = "kem")]
 const KATNUM: usize = 100;
 
 /// Convenience result type
-#[cfg(all(feature = "alloc", feature = "kem"))]
 type R = Result<(), Box<dyn error::Error>>;
 
-#[cfg(feature = "kem")]
 #[derive(Debug, PartialEq)]
 pub(crate) struct Testcase {
     count: usize,
@@ -56,7 +50,6 @@ pub(crate) struct Testcase {
     ss_kem: [u8; CRYPTO_BYTES],
 }
 
-#[cfg(feature = "kem")]
 impl Testcase {
     fn new() -> Testcase {
         Testcase {
@@ -169,10 +162,8 @@ impl Testcase {
     }
 }
 
-#[cfg(feature = "kem")]
 impl Eq for Testcase {}
 
-#[cfg(feature = "kem")]
 impl fmt::Display for Testcase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // NOTE it requires a new struct with multiple implementations
@@ -217,15 +208,7 @@ pub(crate) fn create_request_file(filepath: &str) -> R {
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
-        let mut tc;
-        #[cfg(feature = "alloc")]
-        {
-            tc = Box::new(Testcase::new());
-        }
-        #[cfg(not(feature = "alloc"))]
-        {
-            tc = Testcase::new();
-        }
+        let mut tc = Box::new(Testcase::new());
         tc.count = t;
         rng.fill_bytes(&mut tc.seed);
         rng_kem.fill_bytes(&mut tc.seed_kem);
@@ -255,30 +238,14 @@ pub(crate) fn create_response_file(filepath: &str) -> R {
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
-        let mut tc;
-        #[cfg(feature = "alloc")]
-        {
-            tc = Box::new(Testcase::new());
-        }
-        #[cfg(not(feature = "alloc"))]
-        {
-            tc = Testcase::new();
-        }
+        let mut tc = Box::new(Testcase::new());
         tc.count = t;
         rng.fill_bytes(&mut tc.seed);
 
         let mut tc_rng = AesState::new();
         tc_rng.randombytes_init(tc.seed);
 
-        let mut pk_buf;
-        #[cfg(feature = "alloc")]
-        {
-            pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
-        }
-        #[cfg(not(feature = "alloc"))]
-        {
-            pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
-        }
+        let mut pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
         let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
         let mut ss_buf1 = [0u8; CRYPTO_BYTES];
         let mut ss_buf2 = [0u8; CRYPTO_BYTES];
@@ -333,15 +300,7 @@ pub(crate) fn verify(filepath: &str) -> R {
 
         let mut actual = Testcase::with_seed(t, &expected.seed, &expected.seed_kem);
 
-        let mut pk_buf;
-        #[cfg(feature = "alloc")]
-        {
-            pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
-        }
-        #[cfg(not(feature = "alloc"))]
-        {
-            pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
-        }
+        let mut pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
         let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
         let mut ss_buf1 = [0u8; CRYPTO_BYTES];
         let mut ss_buf2 = [0u8; CRYPTO_BYTES];
