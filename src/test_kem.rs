@@ -5,7 +5,6 @@ use crate::{Ciphertext, CRYPTO_CIPHERTEXTBYTES};
 use kem::generic_array::GenericArray;
 use kem::{Decapsulator, EncappedKey, Encapsulator};
 
-
 #[test]
 fn crypto_kem_api() -> Result<(), kem::Error> {
     use crate::ClassicMcEliece;
@@ -23,8 +22,7 @@ fn crypto_kem_api() -> Result<(), kem::Error> {
 
 #[test]
 fn ciphertext_generic_array_length() {
-    let ciphertext =
-        GenericArray::<u8, <Ciphertext as EncappedKey>::EncappedKeySize>::default();
+    let ciphertext = GenericArray::<u8, <Ciphertext as EncappedKey>::EncappedKeySize>::default();
     assert_eq!(ciphertext.len(), CRYPTO_CIPHERTEXTBYTES);
 }
 

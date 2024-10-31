@@ -66,7 +66,7 @@ impl TestData {
 
     impl_parser_per_type!(u8vec, 8, u8);
     impl_parser_per_type!(u16vec, 16, u16);
-    #[cfg(feature = "kem")]
+    #[cfg(any(feature = "kem", feature = "mceliece8192128f"))]
     impl_parser_per_type!(u32vec, 32, u32);
     impl_parser_per_type!(u64vec, 64, u64);
     //impl_parser_per_type!(i8vec, 8, i8);
