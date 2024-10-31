@@ -1,20 +1,23 @@
 #![cfg(all(test, feature = "kem", feature = "alloc"))]
 
+use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::string::ToString;
-use alloc::boxed::Box;
 use rand::RngCore;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Write;
 use std::error;
 use std::fmt;
 use std::fs;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Write;
 
 use crate::nist_aes_rng::AesState;
 use crate::test_utils::TestData;
-use crate::{CRYPTO_PUBLICKEYBYTES,CRYPTO_SECRETKEYBYTES,CRYPTO_CIPHERTEXTBYTES,CRYPTO_BYTES,CRYPTO_PRIMITIVE};
-use crate::{keypair,keypair_boxed,encapsulate,decapsulate};
+use crate::{decapsulate, encapsulate, keypair, keypair_boxed};
+use crate::{
+    CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
+    CRYPTO_SECRETKEYBYTES,
+};
 
 /// We are trying to read the data/testdata.txt file.
 /// If there is some issue, we generate this error
@@ -191,7 +194,6 @@ impl fmt::Display for Testcase {
     }
 }
 
-
 pub(crate) fn create_request_file(filepath: &str) -> R {
     let mut fd = fs::File::create(filepath)?;
 
@@ -220,8 +222,8 @@ pub(crate) fn create_request_file(filepath: &str) -> R {
 }
 
 pub(crate) fn create_response_file(filepath: &str) -> R {
-    use kem::{Decapsulator,Encapsulator};
     use crate::ClassicMcEliece;
+    use kem::{Decapsulator, Encapsulator};
 
     let mut fd = fs::File::create(filepath)?;
     writeln!(&mut fd, "# kem/{}\n", CRYPTO_PRIMITIVE)?;
@@ -277,8 +279,8 @@ pub(crate) fn create_response_file(filepath: &str) -> R {
 }
 
 pub(crate) fn verify(filepath: &str) -> R {
-    use kem::{Decapsulator, Encapsulator};
     use crate::ClassicMcEliece;
+    use kem::{Decapsulator, Encapsulator};
 
     let fd = fs::File::open(filepath)?;
     let mut reader = BufReader::new(fd);

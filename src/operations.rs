@@ -334,9 +334,9 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
 
 #[cfg(all(test, feature = "mceliece8192128f"))]
 mod tests {
-    use crate::test_utils::TestData;
     use super::*;
     use crate::nist_aes_rng::AesState;
+    use crate::test_utils::TestData;
     use std::convert::TryFrom;
 
     #[test]

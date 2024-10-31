@@ -66,8 +66,7 @@ mod tests {
     fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
-        let input_src =
-            TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
+        let input_src = TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
         let first_round_input = sub!(input_src, 0, 128, u16);
         let first_round_output =
             TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");

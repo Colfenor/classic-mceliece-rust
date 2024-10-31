@@ -110,8 +110,7 @@ mod tests {
 
     #[test]
     fn test_first_round_bm() {
-        let compare_array =
-            TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
+        let compare_array = TestData::new().u16vec("mceliece8192128f_bm_first_round_compare_array");
         let compare_array_slice = sub!(compare_array.as_slice(), 0, SYS_T + 1, u16);
         let mut s_input = TestData::new().u16vec("mceliece8192128f_bm_first_round_s_input");
         let s_input_slice = sub!(mut s_input.as_mut_slice(), 0, 2 * SYS_T, u16);
