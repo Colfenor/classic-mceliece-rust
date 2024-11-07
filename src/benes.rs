@@ -379,11 +379,11 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::TestData;
     use crate::api::CRYPTO_PRIMITIVE;
+    use crate::test_utils::TestData;
 
-    use std::vec::Vec;
     use std::convert::TryFrom;
+    use std::vec::Vec;
 
     fn get(name: &str) -> Vec<u64> {
         let fullname = format!("{}_{}", CRYPTO_PRIMITIVE, name);
