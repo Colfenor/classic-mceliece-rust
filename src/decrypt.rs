@@ -78,12 +78,13 @@ pub(crate) fn decrypt(
 #[cfg(any(feature = "mceliece8192128", feature = "mceliece8192128f"))]
 mod tests {
     use super::*;
+    use crate::test_utils::TestData;
 
     #[test]
     fn test_decrypt() {
-        let sk = crate::TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
-        let mut c = crate::TestData::new().u8vec("mceliece8192128f_ct1");
-        let expected_error_vector = crate::TestData::new().u8vec("mceliece8192128f_decrypt_errvec");
+        let sk = TestData::new().u8vec("mceliece8192128f_sk1"); // TODO: sk has wrong size … IRR_BYTES + COND_BYTES required
+        let mut c = TestData::new().u8vec("mceliece8192128f_ct1");
+        let expected_error_vector = TestData::new().u8vec("mceliece8192128f_decrypt_errvec");
 
         let mut actual_error_vector = [0u8; 1 + SYS_N / 8];
         actual_error_vector[0] = 2;

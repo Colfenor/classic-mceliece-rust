@@ -60,16 +60,16 @@ pub(crate) fn genpoly_gen(out: &mut [Gf; SYS_T], f: &[Gf; SYS_T]) -> isize {
 mod tests {
     use super::*;
     use crate::macros::sub;
+    use crate::test_utils::TestData;
 
     #[test]
     fn test_genpoly_gen() {
         assert_eq!(SYS_T, 128);
 
-        let input_src =
-            crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
+        let input_src = TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_input");
         let first_round_input = sub!(input_src, 0, 128, u16);
         let first_round_output =
-            crate::TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");
+            TestData::new().u16vec("mceliece8192128f_sk_gen_genpoly_1st_round_output");
 
         let mut output = [0u16; SYS_T];
 

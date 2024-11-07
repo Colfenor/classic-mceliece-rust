@@ -378,15 +378,16 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
 
 #[cfg(test)]
 mod tests {
-    use std::vec::Vec;
-
     use super::*;
     use crate::api::CRYPTO_PRIMITIVE;
+    use crate::test_utils::TestData;
+
     use std::convert::TryFrom;
+    use std::vec::Vec;
 
     fn get(name: &str) -> Vec<u64> {
         let fullname = format!("{}_{}", CRYPTO_PRIMITIVE, name);
-        crate::TestData::new().u64vec(&fullname)
+        TestData::new().u64vec(&fullname)
     }
 
     fn get64(name: &str) -> [u64; 64] {
@@ -492,7 +493,7 @@ mod tests {
     #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
     #[test]
     fn test_apply_benes() {
-        let t = crate::TestData::new();
+        let t = TestData::new();
         let mut r_arg =
             <[u8; 512]>::try_from(t.u8vec("mceliece348864_benes_apply_benes_r_before")).unwrap();
         let bits_arg =
@@ -507,7 +508,7 @@ mod tests {
     #[cfg(not(any(feature = "mceliece348864", feature = "mceliece348864f")))]
     #[test]
     fn test_apply_benes() {
-        let t = crate::TestData::new();
+        let t = TestData::new();
         let mut r_arg =
             <[u8; 1024]>::try_from(t.u8vec("mceliece460896orlarger_benes_apply_benes_r_before"))
                 .unwrap();

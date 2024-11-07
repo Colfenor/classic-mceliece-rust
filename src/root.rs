@@ -29,6 +29,7 @@ pub(crate) fn root(out: &mut [Gf; SYS_N], f: &[Gf; SYS_T + 1], l: &[Gf; SYS_N]) 
 mod tests {
     use super::*;
     use crate::api::CRYPTO_PRIMITIVE;
+    use crate::test_utils::TestData;
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
@@ -43,7 +44,7 @@ mod tests {
 
         root(&mut inv, &g, &l);
 
-        let expected = crate::TestData::new().u16vec("mceliece8192128f_root_inv_expected");
+        let expected = TestData::new().u16vec("mceliece8192128f_root_inv_expected");
         assert_eq!(expected, inv);
     }
 
@@ -66,7 +67,7 @@ mod tests {
         let mut name = format!("{}_root_out_expected", CRYPTO_PRIMITIVE);
         // NOTE the f-variants equals the non-f variants. We only stored the non-f variants
         name = name.replace("f_root_out", "_root_out");
-        let expected = crate::TestData::new().u16vec(&name);
+        let expected = TestData::new().u16vec(&name);
         assert_eq!(expected, out);
     }
 }

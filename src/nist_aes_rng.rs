@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 //! Implementation of a pseudo-random number generator
 //! based on AES256 in CTR mode.
 //!

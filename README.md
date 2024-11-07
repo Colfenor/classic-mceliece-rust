@@ -205,6 +205,9 @@ $ cargo run --example basic
 The output annotates messages with Alice/Bob to illustrate which data is processed by which party.
 The `katkem` example implements the classic request/response file structure which is part of the NIST PQC framework.
 
+In order to validate a generated repsonse file, the corresponding Classic McEliece variant feature flag 
+needs to be passed as `cargo run` parameter.
+
 ```bash
 $ cargo run --example katkem PQCkemKAT_935.req PQCkemKAT_935.rsp
 $ cargo run --example katkem PQCkemKAT_935.rsp
@@ -213,7 +216,7 @@ $ cargo run --example katkem PQCkemKAT_935.rsp
 The different variants can be enabled through feature flags:
 
 ```bash
-$ cargo run --example katkem --features mceliece6960119 -- PQCkemKAT_1450.req PQCkemKAT_1450.rsp
+$ cargo test --release --features "mceliece6960119 kem" --package classic-mceliece-rust --lib -- tests::test_katkem PQCkemKAT_1450.req PQCkemKAT_1450.rsp
 ```
 
 `mceliece348864` is the default variant. You cannot enable two variants simultaneously.
@@ -275,16 +278,16 @@ Yes, besides passing unittests (derived from the C implementation), the generate
   <thead>
     <tr><td>variant</td><td>expected MD5 hash</td></tr>
   </thead><tbody>
-    <tr><td>mceliece348864</td><td><code>11fd67ba1e2b93cceaec6f5e6fe4ddd1</code></td></tr>
-    <tr><td>mceliece348864f</td><td><code>7a6f5262fa013fe7eedda0765a625789</code></td></tr>
-    <tr><td>mceliece460896</td><td><code>c9acefa82aa705cd324f12df532744c2</code></td></tr>
-    <tr><td>mceliece460896f</td><td><code>cb08e0e3f2122c62692111d684f1cbe7</code></td></tr>
-    <tr><td>mceliece6688128</td><td><code>7e300cc0990b05f5edca3219ac769023</code></td></tr>
-    <tr><td>mceliece6688128f</td><td><code>6d959c2bf54f7d3576a8e49475a74df5</code></td></tr>
-    <tr><td>mceliece6960119</td><td><code>b4960a35e249d55fd48371f793608aa5</code></td></tr>
-    <tr><td>mceliece6960119f</td><td><code>2f5d759cb579c6f85c1ee1306082ffdf</code></td></tr>
-    <tr><td>mceliece8192128</td><td><code>26a47e6d01eec28e91abfdbdf19c3067</code></td></tr>
-    <tr><td>mceliece8192128f</td><td><code>a4cd676dc2c774d644f18de05762c51c</code></td></tr>
+    <tr><td>mceliece348864</td><td><code>f932d4f75d1a788ad58e7d20af8defe9</code></td></tr>
+    <tr><td>mceliece348864f</td><td><code>70e10264d735abe77a509d853bfc6f6d</code></td></tr>
+    <tr><td>mceliece460896</td><td><code>7d2d60f492a8e74a33696a0616f61746</code></td></tr>
+    <tr><td>mceliece460896f</td><td><code>5ce8c2ecbb8c94082b475ff090f457c4</code></td></tr>
+    <tr><td>mceliece6688128</td><td><code>e7ad02c431ac9019820b7ce96654b240</code></td></tr>
+    <tr><td>mceliece6688128f</td><td><code>39984724cdabb810cdc76ade08a9bf52</code></td></tr>
+    <tr><td>mceliece6960119</td><td><code>819e4a4748f201e47d70f28f5b639303</code></td></tr>
+    <tr><td>mceliece6960119f</td><td><code>59426af22ec3a5e5dddc0969782832a6</code></td></tr>
+    <tr><td>mceliece8192128</td><td><code>9dc71f8a9f8a6492e2b7c341b8a0801b</code></td></tr>
+    <tr><td>mceliece8192128f</td><td><code>8022c8ffd8d938e56840261c91d1e59a</code></td></tr>
   </tbody>
 </table>
 

@@ -231,14 +231,16 @@ pub(crate) fn encrypt<R: CryptoRng + RngCore>(
 
 #[cfg(test)]
 mod tests {
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[cfg(feature = "mceliece8192128f")]
     use super::*;
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_CIPHERTEXTBYTES;
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[cfg(feature = "mceliece8192128f")]
     use crate::api::CRYPTO_PUBLICKEYBYTES;
-    #[cfg(all(feature = "mceliece8192128f", test))]
+    #[cfg(feature = "mceliece8192128f")]
     use crate::nist_aes_rng::AesState;
+    #[cfg(feature = "mceliece8192128f")]
+    use crate::test_utils::TestData;
 
     #[test]
     #[cfg(feature = "mceliece8192128f")]
@@ -260,9 +262,9 @@ mod tests {
         let mut e = [0u8; SYS_N / 8];
 
         let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
-        let mut pk = crate::TestData::new().u8vec("mceliece8192128f_pk1");
+        let mut pk = TestData::new().u8vec("mceliece8192128f_pk1");
 
-        let compare_ct = crate::TestData::new().u8vec("mceliece8192128f_encrypt_ct");
+        let compare_ct = TestData::new().u8vec("mceliece8192128f_encrypt_ct");
         assert_eq!(compare_ct.len(), CRYPTO_CIPHERTEXTBYTES);
 
         encrypt(

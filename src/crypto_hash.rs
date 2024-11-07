@@ -12,10 +12,11 @@ pub(crate) fn shake256(output: &mut [u8], input: &[u8]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::TestData;
 
     #[test]
     fn test_shake256() {
-        let compare_array = crate::TestData::new().u8vec("shake256_digest_expected");
+        let compare_array = TestData::new().u8vec("shake256_digest_expected");
 
         let mut c = [0u8; 448];
         let mut two_e = [0u8; 1025];
