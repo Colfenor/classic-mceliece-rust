@@ -35,11 +35,13 @@ Line wrap the file at 100 chars.                                              Th
 - Improve & fix unit tests
 - fix casting to same type clippy warnings
 
+## [2.0.2] - 2023-01-29
+### Changed
+- Exclude testdata folder & files from published crates in order reduce crate size
 
 ## [2.0.1] - 2022-09-08
 ### Fixed
 - Fix README documentation
-
 
 ## [2.0.0] - 2022-09-06
 ### Added
