@@ -266,7 +266,7 @@ pub(crate) fn create_response_file(filepath: &str) -> R {
         let (ct_kem, ss_kem) = ClassicMcEliece.try_encap(&mut rng_kem, &pk_kem).unwrap();
         let ss2_kem = sk_kem.try_decap(&ct_kem).unwrap();
 
-        tc.pk_kem = *pk_kem.as_array();
+        (&mut tc).pk_kem = *pk_kem.as_array();
         tc.sk_kem = *sk_kem.as_array();
         assert_eq!(ss_kem.as_bytes(), ss2_kem.as_bytes());
         tc.ss_kem.copy_from_slice(ss_kem.as_bytes());
@@ -289,18 +289,18 @@ pub(crate) fn verify(filepath: &str) -> R {
 
     // first record in a response file is empty (e.g. “# ntruhps2048509\n”)
     // hence, skip it
-    let mut expected = Testcase::new();
+    let mut expected = Box::new(Testcase::new());
     expected.read_from_file(&mut reader)?;
 
     // create KATNUM testcase seeds
     for t in 0..KATNUM {
-        let mut expected = Testcase::new();
+        let mut expected = Box::new(Testcase::new());
         expected.read_from_file(&mut reader)?;
 
         rng.randombytes_init(expected.seed);
         rng_kem.randombytes_init(expected.seed_kem);
 
-        let mut actual = Testcase::with_seed(t, &expected.seed, &expected.seed_kem);
+        let mut actual = Box::new(Testcase::with_seed(t, &expected.seed, &expected.seed_kem));
 
         let mut pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
         let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
@@ -432,15 +432,19 @@ fn zeroize() {
     fn run_zeroize() {
         use crate::{keypair, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-        let mut pk_buffer = [0u8; CRYPTO_PUBLICKEYBYTES];
+        let mut pk_buffer = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
         let mut sk_buffer = [5u8; CRYPTO_SECRETKEYBYTES];
+
         let mut rng = rand::thread_rng();
 
+        let zeroed_pk_buffer = [0; CRYPTO_PUBLICKEYBYTES];
         let zeroed_key = [0; CRYPTO_SECRETKEYBYTES];
 
         let (_, secret_key) = keypair(&mut pk_buffer, &mut sk_buffer, &mut rng);
+        drop(pk_buffer.clone());
         drop(secret_key);
 
+        assert_eq!(zeroed_pk_buffer, *pk_buffer);
         assert_eq!(zeroed_key, sk_buffer);
     }
 

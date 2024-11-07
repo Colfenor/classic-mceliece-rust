@@ -6,10 +6,18 @@ use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
     let mut rng = rand::thread_rng();
-    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ss_buf_bob = [0u8; CRYPTO_BYTES];
     let mut ss_buf_alice = [0u8; CRYPTO_BYTES];
+    let mut pk_buf;
+    #[cfg(feature = "alloc")]
+    {
+        pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    }
 
     criterion.bench_function("kem", |b| {
         b.iter(|| {
@@ -27,8 +35,16 @@ pub fn bench_complete_kem(criterion: &mut Criterion<CyclesPerByte>) {
 
 pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
     let mut rng = rand::thread_rng();
-    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
+    let mut pk_buf;
+    #[cfg(feature = "alloc")]
+    {
+        pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    }
 
     criterion.bench_function("kem_keypair", |b| {
         #[allow(unused_must_use)]
@@ -40,9 +56,17 @@ pub fn bench_kem_keypair(criterion: &mut Criterion<CyclesPerByte>) {
 
 pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
     let mut rng = rand::thread_rng();
-    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ss_buf = [0u8; CRYPTO_BYTES];
+    let mut pk_buf;
+    #[cfg(feature = "alloc")]
+    {
+        pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    }
 
     let (pk, _) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
 
@@ -56,9 +80,17 @@ pub fn bench_kem_enc(criterion: &mut Criterion<CyclesPerByte>) {
 
 pub fn bench_kem_dec(criterion: &mut Criterion<CyclesPerByte>) {
     let mut rng = rand::thread_rng();
-    let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     let mut ss_buf = [0u8; CRYPTO_BYTES];
+    let mut pk_buf;
+    #[cfg(feature = "alloc")]
+    {
+        pk_buf = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    }
 
     let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
     let (ct, _) = encapsulate(&pk, &mut ss_buf, &mut rng);

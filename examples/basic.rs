@@ -9,7 +9,7 @@ fn main() {
     let mut rng = thread_rng();
 
     // key generation
-    let mut pubkey_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut pubkey_buf = [0u8; CRYPTO_PUBLICKEYBYTES]; // WARN: public keys are large - optionally use Box::new()!
     let mut secret_buf = [0u8; CRYPTO_SECRETKEYBYTES];
     println!("[Alice]\tRunning key generation …");
     let (public_key, secret_key) = keypair(&mut pubkey_buf, &mut secret_buf, &mut rng);
