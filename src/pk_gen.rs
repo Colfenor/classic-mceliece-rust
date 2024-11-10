@@ -305,6 +305,11 @@ pub(crate) fn pk_gen(
             {
                 if row == PK_NROWS - 32 {
                     if mov_columns(&mut mat, pi, pivots) != 0 {
+                        #[cfg(feature = "alloc")]
+                        {
+                            use zeroize::Zeroize;
+                            mat.zeroize();
+                        }
                         return -1;
                     }
                 }
@@ -322,6 +327,11 @@ pub(crate) fn pk_gen(
             }
 
             if ((mat[row][i] >> j) & 1) == 0 {
+                #[cfg(feature = "alloc")]
+                {
+                    use zeroize::Zeroize;
+                    mat.zeroize();
+                }
                 return -1;
             }
 
@@ -359,6 +369,12 @@ pub(crate) fn pk_gen(
         {
             pk[(i + 1) * INNER_PK_ACCESSES - 1] = mat[i][SYS_N / 8 - 1] >> tail;
         }
+    }
+
+    #[cfg(feature = "alloc")]
+    {
+        use zeroize::Zeroize;
+        mat.zeroize();
     }
 
     0
