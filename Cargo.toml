@@ -20,7 +20,7 @@ exclude = ["/data"]
 rand = { version = "0.8", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 kem = { version = "0.2", optional = true }
-zeroize = { version = "1.8", default-features = false, optional = true }
+zeroize = { version = "1.5", default-features = false, optional = true }
 
 [features]
 ## When adding features or changing the default features, remember to update
@@ -57,8 +57,8 @@ harness = false
 
 [dev-dependencies]
 rand = { version = "0.8", features = ["default"] }
-criterion = { version = "0.5", features = ["html_reports"] }
-criterion-cycles-per-byte = "0.6"
+criterion = { version = "0.3", features = ["html_reports"] }
+criterion-cycles-per-byte = "0.1"
 aes = "0.8"
 hex = "0.4.3"
 
