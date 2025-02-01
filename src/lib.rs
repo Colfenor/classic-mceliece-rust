@@ -74,7 +74,7 @@ enum KeyBufferMut<'a, const SIZE: usize> {
     Owned(Box<[u8; SIZE]>),
 }
 
-impl<'a, const SIZE: usize> KeyBufferMut<'a, SIZE> {
+impl<const SIZE: usize> KeyBufferMut<'_, SIZE> {
     #[cfg(feature = "alloc")]
     fn to_owned(&self) -> KeyBufferMut<'static, SIZE> {
         let mut new_buffer = util::alloc_boxed_array::<SIZE>();
@@ -83,7 +83,7 @@ impl<'a, const SIZE: usize> KeyBufferMut<'a, SIZE> {
     }
 }
 
-impl<'a, const SIZE: usize> AsRef<[u8; SIZE]> for KeyBufferMut<'a, SIZE> {
+impl<const SIZE: usize> AsRef<[u8; SIZE]> for KeyBufferMut<'_, SIZE> {
     fn as_ref(&self) -> &[u8; SIZE] {
         match &self {
             KeyBufferMut::Borrowed(buf) => buf,
@@ -93,7 +93,7 @@ impl<'a, const SIZE: usize> AsRef<[u8; SIZE]> for KeyBufferMut<'a, SIZE> {
     }
 }
 
-impl<'a, const SIZE: usize> AsMut<[u8; SIZE]> for KeyBufferMut<'a, SIZE> {
+impl<const SIZE: usize> AsMut<[u8; SIZE]> for KeyBufferMut<'_, SIZE> {
     fn as_mut(&mut self) -> &mut [u8; SIZE] {
         match self {
             KeyBufferMut::Borrowed(buf) => buf,
@@ -104,7 +104,7 @@ impl<'a, const SIZE: usize> AsMut<[u8; SIZE]> for KeyBufferMut<'a, SIZE> {
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a, const SIZE: usize> zeroize::Zeroize for KeyBufferMut<'a, SIZE> {
+impl<const SIZE: usize> zeroize::Zeroize for KeyBufferMut<'_, SIZE> {
     fn zeroize(&mut self) {
         match self {
             KeyBufferMut::Borrowed(buf) => buf.zeroize(),
@@ -120,7 +120,7 @@ impl<'a, const SIZE: usize> zeroize::Zeroize for KeyBufferMut<'a, SIZE> {
 #[must_use]
 pub struct PublicKey<'a>(KeyBufferMut<'a, CRYPTO_PUBLICKEYBYTES>);
 
-impl<'a> PublicKey<'a> {
+impl PublicKey<'_> {
     /// Copies the key to the heap and makes it `'static`.
     #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[cfg(feature = "alloc")]
@@ -133,7 +133,7 @@ impl<'a> PublicKey<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for PublicKey<'a> {
+impl AsRef<[u8]> for PublicKey<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
@@ -154,16 +154,16 @@ impl From<Box<[u8; CRYPTO_PUBLICKEYBYTES]>> for PublicKey<'static> {
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::Zeroize for PublicKey<'a> {
+impl zeroize::Zeroize for PublicKey<'_> {
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::ZeroizeOnDrop for PublicKey<'a> {}
+impl zeroize::ZeroizeOnDrop for PublicKey<'_> {}
 
-impl<'a> Drop for PublicKey<'a> {
+impl Drop for PublicKey<'_> {
     fn drop(&mut self) {
         #[cfg(feature = "zeroize")]
         {
@@ -180,7 +180,7 @@ impl<'a> Drop for PublicKey<'a> {
 #[must_use]
 pub struct SecretKey<'a>(KeyBufferMut<'a, CRYPTO_SECRETKEYBYTES>);
 
-impl<'a> SecretKey<'a> {
+impl SecretKey<'_> {
     /// Copies the key to the heap and makes it `'static`.
     #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[cfg(feature = "alloc")]
@@ -199,13 +199,13 @@ impl<'a> SecretKey<'a> {
     }
 }
 
-impl<'a> Debug for SecretKey<'a> {
+impl Debug for SecretKey<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("SecretKey").field(&"-- redacted --").finish()
     }
 }
 
-impl<'a> AsRef<[u8]> for SecretKey<'a> {
+impl AsRef<[u8]> for SecretKey<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
@@ -228,16 +228,16 @@ impl From<Box<[u8; CRYPTO_SECRETKEYBYTES]>> for SecretKey<'static> {
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::Zeroize for SecretKey<'a> {
+impl zeroize::Zeroize for SecretKey<'_> {
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::ZeroizeOnDrop for SecretKey<'a> {}
+impl zeroize::ZeroizeOnDrop for SecretKey<'_> {}
 
-impl<'a> Drop for SecretKey<'a> {
+impl Drop for SecretKey<'_> {
     fn drop(&mut self) {
         #[cfg(feature = "zeroize")]
         {
@@ -275,7 +275,7 @@ impl From<[u8; CRYPTO_CIPHERTEXTBYTES]> for Ciphertext {
 #[must_use]
 pub struct SharedSecret<'a>(KeyBufferMut<'a, CRYPTO_BYTES>);
 
-impl<'a> SharedSecret<'a> {
+impl SharedSecret<'_> {
     /// Copies the secret to the heap and makes it `'static`.
     #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     #[cfg(feature = "alloc")]
@@ -288,7 +288,7 @@ impl<'a> SharedSecret<'a> {
     }
 }
 
-impl<'a> Debug for SharedSecret<'a> {
+impl Debug for SharedSecret<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("SharedSecret")
             .field(&"-- redacted --")
@@ -296,23 +296,23 @@ impl<'a> Debug for SharedSecret<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for SharedSecret<'a> {
+impl AsRef<[u8]> for SharedSecret<'_> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::Zeroize for SharedSecret<'a> {
+impl zeroize::Zeroize for SharedSecret<'_> {
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 #[cfg(feature = "zeroize")]
-impl<'a> zeroize::ZeroizeOnDrop for SharedSecret<'a> {}
+impl zeroize::ZeroizeOnDrop for SharedSecret<'_> {}
 
-impl<'a> Drop for SharedSecret<'a> {
+impl Drop for SharedSecret<'_> {
     fn drop(&mut self) {
         #[cfg(feature = "zeroize")]
         {
