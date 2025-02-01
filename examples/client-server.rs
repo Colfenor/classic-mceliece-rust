@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
 
 fn spawn_server() -> Sender<(Box<[u8]>, Sender<Box<[u8]>>)> {
     // Convert the bytes read from the client into a `PublicKey`
-    fn parse_public_key<'a>(public_key_data: &'a mut [u8]) -> Result<PublicKey<'a>, Error> {
+    fn parse_public_key(public_key_data: &mut [u8]) -> Result<PublicKey<'_>, Error> {
         let public_key_array = <&mut [u8; CRYPTO_PUBLICKEYBYTES]>::try_from(public_key_data)?;
         Ok(PublicKey::from(public_key_array))
     }
