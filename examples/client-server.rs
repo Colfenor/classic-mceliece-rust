@@ -33,12 +33,12 @@ fn main() -> Result<(), Error> {
 
 fn spawn_server() -> Sender<(Box<[u8]>, Sender<Box<[u8]>>)> {
     // Convert the bytes read from the client into a `PublicKey`
-    fn parse_public_key<'a>(public_key_data: &'a [u8]) -> Result<PublicKey<'a>, Error> {
-        let public_key_array = <&[u8; CRYPTO_PUBLICKEYBYTES]>::try_from(public_key_data)?;
+    fn parse_public_key<'a>(public_key_data: &'a mut [u8]) -> Result<PublicKey<'a>, Error> {
+        let public_key_array = <&mut [u8; CRYPTO_PUBLICKEYBYTES]>::try_from(public_key_data)?;
         Ok(PublicKey::from(public_key_array))
     }
 
-    fn handle_request(public_key: &[u8], response_sender: Sender<Box<[u8]>>) {
+    fn handle_request(public_key: &mut [u8], response_sender: Sender<Box<[u8]>>) {
         match parse_public_key(public_key) {
             Ok(public_key) => {
                 let (ciphertext, shared_secret) = encapsulate_boxed(&public_key, &mut thread_rng());
@@ -54,8 +54,8 @@ fn spawn_server() -> Sender<(Box<[u8]>, Sender<Box<[u8]>>)> {
 
     let (sender, receiver) = mpsc::channel::<(Box<[u8]>, Sender<Box<[u8]>>)>();
     thread::spawn(move || {
-        for (public_key, response_sender) in receiver.iter() {
-            handle_request(&public_key, response_sender);
+        for (mut public_key, response_sender) in receiver.iter() {
+            handle_request(&mut public_key, response_sender);
         }
     });
     sender

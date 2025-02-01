@@ -208,7 +208,16 @@ pub(crate) fn pk_gen(
     pivots: &mut u64,
 ) -> i32 {
     let mut buf = [0u64; 1 << GFBITS];
-    let mut mat = [[0u8; SYS_N / 8]; PK_NROWS];
+    let mut mat;
+    #[cfg(feature = "alloc")]
+    {
+        use alloc::boxed::Box;
+        mat = Box::new([[0u8; SYS_N / 8]; PK_NROWS]);
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        mat = [[0u8; SYS_N / 8]; PK_NROWS];
+    }
 
     let mut g = [0u16; SYS_T + 1];
     let mut l = [0u16; SYS_N];
@@ -296,6 +305,11 @@ pub(crate) fn pk_gen(
             {
                 if row == PK_NROWS - 32 {
                     if mov_columns(&mut mat, pi, pivots) != 0 {
+                        #[cfg(feature = "alloc")]
+                        {
+                            use zeroize::Zeroize;
+                            mat.zeroize();
+                        }
                         return -1;
                     }
                 }
@@ -313,6 +327,11 @@ pub(crate) fn pk_gen(
             }
 
             if ((mat[row][i] >> j) & 1) == 0 {
+                #[cfg(feature = "alloc")]
+                {
+                    use zeroize::Zeroize;
+                    mat.zeroize();
+                }
                 return -1;
             }
 
@@ -350,6 +369,12 @@ pub(crate) fn pk_gen(
         {
             pk[(i + 1) * INNER_PK_ACCESSES - 1] = mat[i][SYS_N / 8 - 1] >> tail;
         }
+    }
+
+    #[cfg(feature = "alloc")]
+    {
+        use zeroize::Zeroize;
+        mat.zeroize();
     }
 
     0

@@ -68,32 +68,6 @@ mod macros {
 }
 
 #[derive(Debug)]
-enum KeyBuffer<'a, const SIZE: usize> {
-    Borrowed(&'a [u8; SIZE]),
-    #[cfg(feature = "alloc")]
-    Owned(Box<[u8; SIZE]>),
-}
-
-impl<'a, const SIZE: usize> KeyBuffer<'a, SIZE> {
-    #[cfg(feature = "alloc")]
-    fn to_owned(&self) -> KeyBuffer<'static, SIZE> {
-        let mut new_buffer = util::alloc_boxed_array::<SIZE>();
-        new_buffer.copy_from_slice(self.as_ref());
-        KeyBuffer::Owned(new_buffer)
-    }
-}
-
-impl<'a, const SIZE: usize> AsRef<[u8; SIZE]> for KeyBuffer<'a, SIZE> {
-    fn as_ref(&self) -> &[u8; SIZE] {
-        match &self {
-            KeyBuffer::Borrowed(buf) => buf,
-            #[cfg(feature = "alloc")]
-            KeyBuffer::Owned(buf) => buf.as_ref(),
-        }
-    }
-}
-
-#[derive(Debug)]
 enum KeyBufferMut<'a, const SIZE: usize> {
     Borrowed(&'a mut [u8; SIZE]),
     #[cfg(feature = "alloc")]
@@ -144,7 +118,7 @@ impl<'a, const SIZE: usize> zeroize::Zeroize for KeyBufferMut<'a, SIZE> {
 /// in most other cryptographic algorithms.
 #[derive(Debug)]
 #[must_use]
-pub struct PublicKey<'a>(KeyBuffer<'a, CRYPTO_PUBLICKEYBYTES>);
+pub struct PublicKey<'a>(KeyBufferMut<'a, CRYPTO_PUBLICKEYBYTES>);
 
 impl<'a> PublicKey<'a> {
     /// Copies the key to the heap and makes it `'static`.
@@ -165,9 +139,9 @@ impl<'a> AsRef<[u8]> for PublicKey<'a> {
     }
 }
 
-impl<'a> From<&'a [u8; CRYPTO_PUBLICKEYBYTES]> for PublicKey<'a> {
-    fn from(data: &'a [u8; CRYPTO_PUBLICKEYBYTES]) -> Self {
-        Self(KeyBuffer::Borrowed(data))
+impl<'a> From<&'a mut [u8; CRYPTO_PUBLICKEYBYTES]> for PublicKey<'a> {
+    fn from(data: &'a mut [u8; CRYPTO_PUBLICKEYBYTES]) -> Self {
+        Self(KeyBufferMut::Borrowed(data))
     }
 }
 
@@ -175,7 +149,27 @@ impl<'a> From<&'a [u8; CRYPTO_PUBLICKEYBYTES]> for PublicKey<'a> {
 #[cfg(feature = "alloc")]
 impl From<Box<[u8; CRYPTO_PUBLICKEYBYTES]>> for PublicKey<'static> {
     fn from(data: Box<[u8; CRYPTO_PUBLICKEYBYTES]>) -> Self {
-        Self(KeyBuffer::Owned(data))
+        Self(KeyBufferMut::Owned(data))
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl<'a> zeroize::Zeroize for PublicKey<'a> {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl<'a> zeroize::ZeroizeOnDrop for PublicKey<'a> {}
+
+impl<'a> Drop for PublicKey<'a> {
+    fn drop(&mut self) {
+        #[cfg(feature = "zeroize")]
+        {
+            use zeroize::Zeroize;
+            self.zeroize();
+        }
     }
 }
 
@@ -341,7 +335,7 @@ pub fn keypair<'public, 'secret, R: CryptoRng + RngCore>(
     operations::crypto_kem_keypair(public_key_buf, secret_key_buf, rng);
 
     (
-        PublicKey(KeyBuffer::Borrowed(public_key_buf)),
+        PublicKey(KeyBufferMut::Borrowed(public_key_buf)),
         SecretKey(KeyBufferMut::Borrowed(secret_key_buf)),
     )
 }
@@ -359,7 +353,7 @@ pub fn keypair_boxed<R: CryptoRng + RngCore>(
     operations::crypto_kem_keypair(&mut public_key_buf, &mut secret_key_buf, rng);
 
     (
-        PublicKey(KeyBuffer::Owned(public_key_buf)),
+        PublicKey(KeyBufferMut::Owned(public_key_buf)),
         SecretKey(KeyBufferMut::Owned(secret_key_buf)),
     )
 }
