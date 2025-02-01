@@ -21,6 +21,19 @@ Line wrap the file at 100 chars.                                              Th
 * **Security**: in case of vulnerabilities.
 
 
+## [3.1.0] - 2025-02-02
+### Changed
+- Reduce stack usage on alloc
+- (refactor lib) Test kem interface against KATs
+- Prefer div_ceil() over manual implementation
+### Added
+- Enable assertions outside test functionality only in debug mode
+### Fixed
+- Update dependencies to latest versions
+- Fix clippy warnings eliding explicit lifetimes
+- Fix clippy warning needless_doctest_main by allowing it globally
+- Cleanup: remove orphaned feature guards
+
 ## [3.0.0] - 2022-01-26
 ### Changed
 - Change from implementing NIST round 3 specification of Classic McEliece to
