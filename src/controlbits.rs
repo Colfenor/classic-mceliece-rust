@@ -288,7 +288,7 @@ fn cbrecursion(
 pub(crate) fn controlbitsfrompermutation(out: &mut [u8], pi: &[i16], w: usize, n: usize) {
     assert_eq!(n, 1 << w);
     assert_eq!(pi.len(), n);
-    assert_eq!(out.len(), (((2 * w - 1) * n / 2) + 7) / 8);
+    assert_eq!(out.len(), ((2 * w - 1) * n / 2).div_ceil(8));
 
     let mut temp = [0i32; 2 * (1 << GFBITS)];
     let mut diff: i16 = 0;

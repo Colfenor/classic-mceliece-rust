@@ -182,7 +182,7 @@ fn syndrome(
 /// Computes syndrome `s` based on public key `pk` and error vector `e`.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
 fn syndrome(
-    s: &mut [u8; (PK_NROWS + 7) / 8],
+    s: &mut [u8; PK_NROWS.div_ceil(8)],
     pk: &[u8; PK_NROWS * PK_ROW_BYTES],
     e: &[u8; SYS_N / 8],
 ) {
@@ -226,7 +226,7 @@ pub(crate) fn encrypt<R: CryptoRng + RngCore>(
     rng: &mut R,
 ) {
     gen_e(e, rng);
-    syndrome(sub!(mut s, 0, (PK_NROWS + 7) / 8), pk, e);
+    syndrome(sub!(mut s, 0, PK_NROWS.div_ceil(8)), pk, e);
 }
 
 #[cfg(test)]

@@ -283,7 +283,7 @@ pub(crate) fn pk_gen(
         }
     }
     // gaussian elimination
-    const ROWS: usize = (PK_NROWS + 7) / 8;
+    const ROWS: usize = PK_NROWS.div_ceil(8);
 
     for i in 0..ROWS {
         for j in 0..8 {
