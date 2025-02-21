@@ -24,10 +24,9 @@ Line wrap the file at 100 chars.                                              Th
 ## [3.1.0] - 2025-02-02
 ### Changed
 - Reduce stack usage on alloc
-- (refactor lib) Test kem interface against KATs
+- refactor: KEM interface tests against KATs
 - Prefer div_ceil() over manual implementation
-### Added
-- Enable assertions outside test functionality only in debug mode
+- Enable assertions [those outside test functionality] only in debug mode
 ### Fixed
 - Update dependencies to latest versions
 - Fix clippy warnings eliding explicit lifetimes
