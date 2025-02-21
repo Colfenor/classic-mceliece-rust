@@ -21,7 +21,7 @@ Line wrap the file at 100 chars.                                              Th
 * **Security**: in case of vulnerabilities.
 
 
-## [3.1.0] - 2025-02-02
+## [3.1.0] - 2025-02-21
 ### Changed
 - Reduce stack usage on alloc
 - refactor: KEM interface tests against KATs
