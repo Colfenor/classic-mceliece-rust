@@ -72,3 +72,6 @@ opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s
 ## To use this locally, run: `RUSTDOCFLAGS="--cfg docsrs" cargo doc --features kem`.
 features = ["kem"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.clippy]
+needless_doctest_main = "allow"
