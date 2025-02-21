@@ -9,14 +9,6 @@ use crate::{
     util::{bitrev, load_gf},
 };
 
-#[cfg(any(
-    feature = "mceliece348864f",
-    feature = "mceliece460896f",
-    feature = "mceliece6688128f",
-    feature = "mceliece6960119f",
-    feature = "mceliece8192128f"
-))]
-
 /// Return number of trailing zeros of the non-zero input `input`
 #[cfg(any(
     feature = "mceliece348864f",
