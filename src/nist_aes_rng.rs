@@ -121,11 +121,6 @@ impl RngCore for AesState {
         Self::aes256_ctr_update(&mut None, &mut self.key, &mut self.v);
         self.reseed_counter += 1;
     }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
-        self.fill_bytes(dest);
-        Ok(())
-    }
 }
 impl CryptoRng for AesState {}
 

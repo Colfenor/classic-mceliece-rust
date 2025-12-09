@@ -4,20 +4,20 @@ description = "Pure rust implementation of the PQC scheme Classic McEliece"
 repository = "https://github.com/Colfenor/classic-mceliece-rust"
 readme = "README.md"
 license = "MIT"
-version = "3.1.0"
+version = "3.2.0"
 authors = [
     "Bernhard Berg <b.b_erg@outlook.com>",
     "Lukas Prokop <admin@lukas-prokop.at>",
     "Daniel Kales <daniel.kales@gmail.com>",
     "Linus Färnstrand",
 ]
-edition = "2021"
+edition = "2024"
 keywords = ["pqc", "post-quantum", "cryptography", "decoding"]
 categories = ["cryptography"]
 exclude = ["/data"]
 
 [dependencies]
-rand = { version = "0.8", default-features = false }
+rand = { version = "0.9", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 kem = { version = "0.2", optional = true }
 zeroize = { version = "1.5", default-features = false, optional = true }
@@ -56,7 +56,7 @@ name = "kem_api"
 harness = false
 
 [dev-dependencies]
-rand = { version = "0.8", features = ["default"] }
+rand = { version = "0.9", features = ["default"] }
 criterion = { version = "0.3", features = ["html_reports"] }
 criterion-cycles-per-byte = "0.1"
 aes = "0.8"

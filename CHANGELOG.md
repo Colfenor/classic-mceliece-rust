@@ -21,6 +21,12 @@ Line wrap the file at 100 chars.                                              Th
 * **Security**: in case of vulnerabilities.
 
 
+## [3.2.0] - 2025-10-29
+### Fixed
+- Updated the `rand` crate to 0.9
+- Updated Rust edition to 2024
+- refactor: updated calls to `rand` in order to match Rust 2024 conventions
+
 ## [3.1.0] - 2025-02-21
 ### Changed
 - Reduce stack usage on alloc

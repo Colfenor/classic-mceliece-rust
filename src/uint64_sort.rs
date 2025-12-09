@@ -69,7 +69,7 @@ mod tests {
     use rand::Rng;
 
     fn gen_random_u64() -> u64 {
-        rand::thread_rng().gen::<u64>()
+        rand::rng().random::<u64>()
     }
 
     #[test]

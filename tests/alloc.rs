@@ -10,7 +10,7 @@ const MIN_STACK_SIZE_FOR_THIS_CRATE: usize = (CRYPTO_PUBLICKEYBYTES as f32 * 1.8
 #[test]
 fn to_owned_copies_correct_data() {
     fn run() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
         let mut sk_buf = [0u8; CRYPTO_SECRETKEYBYTES];
@@ -53,7 +53,7 @@ fn to_owned_copies_correct_data() {
 #[test]
 fn boxed_versions_dont_trash_the_stack() {
     fn run() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let (public_key, secret_key) = keypair_boxed(&mut rng);
         let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
@@ -71,7 +71,7 @@ fn boxed_versions_dont_trash_the_stack() {
 
 #[test]
 fn to_owned_not_copying_to_stack() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let (public_key, _) = keypair_boxed(&mut rng);
 
     let run = move || {

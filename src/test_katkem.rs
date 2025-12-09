@@ -435,7 +435,7 @@ fn zeroize() {
         let mut pk_buffer = Box::new([0u8; CRYPTO_PUBLICKEYBYTES]);
         let mut sk_buffer = [5u8; CRYPTO_SECRETKEYBYTES];
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let zeroed_pk_buffer = [0; CRYPTO_PUBLICKEYBYTES];
         let zeroed_key = [0; CRYPTO_SECRETKEYBYTES];

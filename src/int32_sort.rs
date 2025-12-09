@@ -68,7 +68,7 @@ mod tests {
     use rand::Rng;
 
     fn gen_random_i32() -> i32 {
-        rand::thread_rng().gen::<i32>()
+        rand::rng().random::<i32>()
     }
 
     #[test]

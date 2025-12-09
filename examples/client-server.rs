@@ -7,7 +7,6 @@ use classic_mceliece_rust::{
     decapsulate_boxed, encapsulate_boxed, keypair_boxed, Ciphertext, PublicKey, SharedSecret,
     CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES,
 };
-use rand::thread_rng;
 use std::sync::mpsc::{self, Sender};
 use std::thread;
 
@@ -41,7 +40,7 @@ fn spawn_server() -> Sender<(Box<[u8]>, Sender<Box<[u8]>>)> {
     fn handle_request(public_key: &mut [u8], response_sender: Sender<Box<[u8]>>) {
         match parse_public_key(public_key) {
             Ok(public_key) => {
-                let (ciphertext, shared_secret) = encapsulate_boxed(&public_key, &mut thread_rng());
+                let (ciphertext, shared_secret) = encapsulate_boxed(&public_key, &mut rand::rng());
                 println!(
                     "[server] computed shared secret {:?}",
                     hex::encode_upper(shared_secret.as_array())
@@ -71,7 +70,7 @@ fn run_client(
         Ok(Ciphertext::from(ciphertext_array))
     }
 
-    let (public_key, secret_key) = keypair_boxed(&mut thread_rng());
+    let (public_key, secret_key) = keypair_boxed(&mut rand::rng());
 
     // Send the public key to the server
     let (response_sender, response_receiver) = mpsc::channel();

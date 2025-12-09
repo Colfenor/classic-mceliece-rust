@@ -61,7 +61,7 @@ Here, we consider an example where we run it in a separate thread (be aware that
   use classic_mceliece_rust::{keypair_boxed, encapsulate_boxed, decapsulate_boxed};
 
   fn run_kem() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Alice computes the keypair
     let (public_key, secret_key) = keypair_boxed(&mut rng);
@@ -116,7 +116,7 @@ use classic_mceliece_rust::{keypair, encapsulate, decapsulate};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
 fn main() {
-  let mut rng = rand::thread_rng();
+  let mut rng = rand::rng();
 
   // Please mind that `public_key_buf` is very large.
   let mut public_key_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
@@ -166,7 +166,7 @@ get it from the `as_array` method.
     use classic_mceliece_rust::keypair;
     use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let mut pk_buf = [0u8; CRYPTO_PUBLICKEYBYTES];
     // Initialize to non-zero to show that it has been set to zero by the drop later
