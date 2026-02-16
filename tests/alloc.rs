@@ -1,5 +1,7 @@
 #![cfg(feature = "alloc")]
 
+#[cfg(feature = "embedded-workspace")]
+use classic_mceliece_rust::DecapsulationWorkspace;
 use classic_mceliece_rust::{decapsulate_boxed, encapsulate_boxed, keypair, keypair_boxed};
 use classic_mceliece_rust::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 use std::thread;
@@ -57,6 +59,12 @@ fn boxed_versions_dont_trash_the_stack() {
 
         let (public_key, secret_key) = keypair_boxed(&mut rng);
         let (ciphertext, shared_secret_bob) = encapsulate_boxed(&public_key, &mut rng);
+        #[cfg(feature = "embedded-workspace")]
+        let shared_secret_alice = {
+            let mut workspace = DecapsulationWorkspace::new();
+            decapsulate_boxed(&ciphertext, &secret_key, &mut workspace)
+        };
+        #[cfg(not(feature = "embedded-workspace"))]
         let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
         assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
     }

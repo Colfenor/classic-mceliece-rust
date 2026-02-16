@@ -13,6 +13,8 @@ use std::io::Write;
 
 use crate::nist_aes_rng::AesState;
 use crate::test_utils::TestData;
+#[cfg(feature = "embedded-workspace")]
+use crate::DecapsulationWorkspace;
 use crate::{decapsulate, encapsulate, keypair, keypair_boxed};
 use crate::{
     CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PRIMITIVE, CRYPTO_PUBLICKEYBYTES,
@@ -254,6 +256,12 @@ pub(crate) fn create_response_file(filepath: &str) -> R {
 
         let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut tc_rng);
         let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut tc_rng);
+        #[cfg(feature = "embedded-workspace")]
+        let ss2 = {
+            let mut workspace = DecapsulationWorkspace::new();
+            decapsulate(&ct, &sk, &mut ss_buf2, &mut workspace)
+        };
+        #[cfg(not(feature = "embedded-workspace"))]
         let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
 
         tc.pk = *pk.as_array();
@@ -309,6 +317,12 @@ pub(crate) fn verify(filepath: &str) -> R {
 
         let (pk, sk) = keypair(&mut pk_buf, &mut sk_buf, &mut rng);
         let (ct, ss) = encapsulate(&pk, &mut ss_buf1, &mut rng);
+        #[cfg(feature = "embedded-workspace")]
+        let ss2 = {
+            let mut workspace = DecapsulationWorkspace::new();
+            decapsulate(&ct, &sk, &mut ss_buf2, &mut workspace)
+        };
+        #[cfg(not(feature = "embedded-workspace"))]
         let ss2 = decapsulate(&ct, &sk, &mut ss_buf2);
 
         actual.pk = *pk.as_array();

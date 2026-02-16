@@ -46,10 +46,16 @@ mceliece6960119 = []
 mceliece6960119f = []
 mceliece8192128 = []
 mceliece8192128f = []
+embedded-workspace = []
+example-embedded-keys = []
 
 [[example]]
 name = "client-server"
 required-features = ["alloc"]
+
+[[example]]
+name = "encapsulate_static_no_std"
+required-features = ["example-embedded-keys"]
 
 [[bench]]
 name = "kem_api"
@@ -61,6 +67,9 @@ criterion = { version = "0.3", features = ["html_reports"] }
 criterion-cycles-per-byte = "0.1"
 aes = "0.8"
 hex = "0.4.3"
+
+[profile.release]
+# panic = "abort"
 
 [profile.dev]
 opt-level = 1 # reduces runtime for KATNUM=2 from 281s to 11s

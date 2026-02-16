@@ -1,5 +1,12 @@
 //! Simple example illustrating shared key negotiation.
+//!
+//! Run:
+//!   cargo run --example basic --features mceliece348864
+//! Or:
+//!   ./scripts/run_example.sh basic mceliece348864
 
+#[cfg(feature = "embedded-workspace")]
+use classic_mceliece_rust::DecapsulationWorkspace;
 use classic_mceliece_rust::{decapsulate, encapsulate, keypair};
 use classic_mceliece_rust::{CRYPTO_BYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
@@ -38,6 +45,17 @@ fn main() {
 
     // decapsulation
     let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+    #[cfg(feature = "embedded-workspace")]
+    let shared_secret_alice = {
+        let mut workspace = DecapsulationWorkspace::new();
+        decapsulate(
+            &ciphertext,
+            &secret_key,
+            &mut shared_secret_alice_buf,
+            &mut workspace,
+        )
+    };
+    #[cfg(not(feature = "embedded-workspace"))]
     let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
     println!("[Alice]\tRunning decapsulation …");
     println!(

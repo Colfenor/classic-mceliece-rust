@@ -11,6 +11,15 @@ use crate::params::{COND_BYTES, GFBITS};
 use crate::transpose;
 use crate::util;
 
+/// Scratch storage required by [`support_gen_with_scratch`].
+///
+/// This caller-provided buffer keeps support generation reentrant and avoids
+/// hidden global mutable state.
+///
+/// The buffer contents are treated as ephemeral working state:
+/// support generation clears it before use and scrubs it again before return.
+pub(crate) type SupportGenScratch = [[u8; (1 << GFBITS) / 8]; GFBITS];
+
 /// Layers of the Beneš network. The required size of `data` and `bits` depends on the value `lgs`.
 /// NOTE const expressions are not sophisticated enough in rust yet to represent this relationship.
 ///
@@ -344,19 +353,35 @@ fn apply_benes(r: &mut [u8; 1024], bits: &[u8; COND_BYTES], rev: usize) {
     }
 }
 
-pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
+/// Shared implementation of support generation.
+///
+/// `scratch` stores the bit-sliced temporary representation that is permuted by
+/// the Beneš network before being packed into the final support set `s`.
+///
+/// This function clears `scratch` on entry and scrubs it again before returning.
+/// Callers must not rely on any retained scratch contents across invocations.
+fn support_gen_core(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES], scratch: &mut SupportGenScratch) {
     let mut a: Gf;
-    let mut l = [[0u8; (1 << GFBITS) / 8]; GFBITS];
+
+    // Always clear scratch so behavior is deterministic and no stale data from
+    // previous calls is carried over.
+    for row in scratch.iter_mut() {
+        row.fill(0);
+    }
 
     for i in 0..(1 << GFBITS) {
+        // Elements are prepared in bit-reversed order per reference design.
         a = util::bitrev(i as Gf);
 
-        for (j, itr_l) in l.iter_mut().enumerate() {
+        // Write element bits into a bit-sliced layout:
+        // scratch[j][k] stores the j-th bit for eight consecutive elements.
+        for (j, itr_l) in scratch.iter_mut().enumerate() {
             itr_l[i / 8] |= (((a >> j) & 1) << (i % 8)) as u8;
         }
     }
 
-    for itr_l in l.iter_mut() {
+    // Apply the Benes permutation to each bit plane.
+    for itr_l in scratch.iter_mut() {
         #[cfg(any(feature = "mceliece348864", feature = "mceliece348864f"))]
         {
             apply_benes(itr_l, c, 0);
@@ -367,13 +392,35 @@ pub(crate) fn support_gen(s: &mut [Gf; SYS_N], c: &[u8; COND_BYTES]) {
         }
     }
 
+    // Repack bit-sliced planes back into field elements for the support set.
     for (i, itr_s) in s.iter_mut().enumerate() {
         *itr_s = 0;
         for j in (0..=(GFBITS - 1)).rev() {
             *itr_s <<= 1;
-            *itr_s |= ((l[j][i / 8] >> (i % 8)) & 1) as u16;
+            *itr_s |= ((scratch[j][i / 8] >> (i % 8)) & 1) as u16;
         }
     }
+
+    // Scrub support-generation scratch before return so support-derived
+    // intermediates do not persist in caller-managed long-lived buffers.
+    for row in scratch.iter_mut() {
+        row.fill(0);
+    }
+}
+
+/// Generate support values using caller-provided scratch storage.
+///
+/// This entry point is intended for embedded callers that preallocate a single
+/// workspace and pass it through decapsulation to avoid large stack frames.
+///
+/// The provided `scratch` is overwritten during computation and scrubbed before
+/// this function returns.
+pub(crate) fn support_gen_with_scratch(
+    s: &mut [Gf; SYS_N],
+    c: &[u8; COND_BYTES],
+    scratch: &mut SupportGenScratch,
+) {
+    support_gen_core(s, c, scratch);
 }
 
 #[cfg(test)]

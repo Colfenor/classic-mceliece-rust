@@ -7,6 +7,7 @@ use crate::{
     api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES},
     crypto_hash::shake256,
     decrypt::decrypt,
+    decrypt::DecapsulationWorkspace,
     encrypt::encrypt,
     macros::sub,
     params::{COND_BYTES, GFBITS, IRR_BYTES, SYND_BYTES, SYS_N, SYS_T},
@@ -15,6 +16,19 @@ use crate::{
     util::{load_gf, store_gf},
 };
 use rand::{CryptoRng, RngCore};
+
+pub(crate) fn derive_ss_from_e_and_c(
+    key: &mut [u8; CRYPTO_BYTES],
+    e: &[u8; SYS_N / 8],
+    c: &[u8; SYND_BYTES],
+) {
+    let mut one_ec = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
+    one_ec[0] = 1;
+    one_ec[1..1 + SYS_N / 8].copy_from_slice(&e[..SYS_N / 8]);
+    one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES].copy_from_slice(c);
+
+    shake256(&mut key[0..32], &one_ec);
+}
 
 /// This function determines (in a constant-time manner) whether the padding bits of `pk` are all zero.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
@@ -53,15 +67,8 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
 ) {
     let mut e = [0u8; SYS_N / 8];
 
-    let mut one_ec = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
-    one_ec[0] = 1;
-
     encrypt(c, pk, sub!(mut e, 0, SYS_N / 8), rng);
-
-    one_ec[1..1 + SYS_N / 8].copy_from_slice(&e[..SYS_N / 8]);
-    one_ec[1 + SYS_N / 8..1 + SYS_N / 8 + SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
-
-    shake256(&mut key[0..32], &one_ec);
+    derive_ss_from_e_and_c(key, &e, sub!(c, 0, SYND_BYTES));
 }
 
 /// KEM Encapsulation.
@@ -78,17 +85,10 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
 ) -> u8 {
     let mut e = [0u8; SYS_N / 8];
 
-    let mut one_ec = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
-    one_ec[0] = 1;
-
     let padding_ok = check_pk_padding(pk);
 
     encrypt(c, pk, sub!(mut e, 0, SYS_N / 8), rng);
-
-    one_ec[1..1 + (SYS_N / 8)].copy_from_slice(&e[..SYS_N / 8]);
-    one_ec[1 + (SYS_N / 8)..1 + (SYS_N / 8) + SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
-
-    shake256(&mut key[0..32], &one_ec);
+    derive_ss_from_e_and_c(key, &e, sub!(c, 0, SYND_BYTES));
 
     // clear outputs (set to all 0's) if padding bits are not all zero
 
@@ -110,33 +110,53 @@ pub(crate) fn crypto_kem_enc<R: CryptoRng + RngCore>(
 /// Given a secret key `sk` and a ciphertext `c`,
 /// determine the shared text `key` negotiated by both parties.
 #[cfg(not(any(feature = "mceliece6960119", feature = "mceliece6960119f")))]
-pub(crate) fn crypto_kem_dec(
+fn crypto_kem_dec_core(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
+    workspace: &mut DecapsulationWorkspace,
 ) -> u8 {
-    let mut e = [0u8; SYS_N / 8];
+    #[cfg(not(feature = "embedded-workspace"))]
+    let _ = workspace;
 
+    let mut e = [0u8; SYS_N / 8];
     let mut preimage = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
 
+    // Decryption consumes the caller-provided workspace. For embedded targets
+    // this avoids thread-unsafe global mutable state.
+    #[cfg(feature = "embedded-workspace")]
+    let ret_decrypt: u8 = decrypt(
+        sub!(mut e, 0, SYS_N / 8),
+        sub!(sk, 40, IRR_BYTES + COND_BYTES),
+        sub!(c, 0, SYND_BYTES),
+        workspace,
+    );
+    // Non-embedded builds use the stack-allocating decrypt entry point.
+    #[cfg(not(feature = "embedded-workspace"))]
     let ret_decrypt: u8 = decrypt(
         sub!(mut e, 0, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
     );
 
+    // Convert decrypt return value (0=success, 1=failure) into mask:
+    // success -> 0xFFFF, failure -> 0x0000.
     let mut m = ret_decrypt as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
+    // Domain-separation byte for the KDF preimage.
     preimage[0] = (m & 1) as u8;
 
     let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
+    // On success, use decoded error vector e; on failure, use fallback secret s.
+    // Selection is branch-free to avoid leaking decoder outcome.
     for i in 0..SYS_N / 8 {
         preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & e[i]);
     }
 
+    // Ciphertext prefix is always included in the KDF preimage.
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &preimage);
@@ -149,40 +169,60 @@ pub(crate) fn crypto_kem_dec(
 /// Given a secret key `sk` and a ciphertext `c`,
 /// determine the shared text `key` negotiated by both parties.
 #[cfg(any(feature = "mceliece6960119", feature = "mceliece6960119f"))]
-pub(crate) fn crypto_kem_dec(
+fn crypto_kem_dec_core(
     key: &mut [u8; CRYPTO_BYTES],
     c: &[u8; CRYPTO_CIPHERTEXTBYTES],
     sk: &[u8; CRYPTO_SECRETKEYBYTES],
+    workspace: &mut DecapsulationWorkspace,
 ) -> u8 {
+    #[cfg(not(feature = "embedded-workspace"))]
+    let _ = workspace;
+
     let mut e = [0u8; SYS_N / 8];
 
     let mut preimage = [0u8; 1 + SYS_N / 8 + SYND_BYTES];
 
+    // For parameter sets with non-byte-aligned syndrome size, verify that
+    // higher padding bits are zero.
     let padding_ok = check_c_padding(sub!(c, 0, SYND_BYTES));
 
+    #[cfg(feature = "embedded-workspace")]
+    let ret_decrypt: u8 = decrypt(
+        sub!(mut e, 0, SYS_N / 8),
+        sub!(sk, 40, IRR_BYTES + COND_BYTES),
+        sub!(c, 0, SYND_BYTES),
+        workspace,
+    );
+    #[cfg(not(feature = "embedded-workspace"))]
     let ret_decrypt: u8 = decrypt(
         sub!(mut e, 0, SYS_N / 8),
         sub!(sk, 40, IRR_BYTES + COND_BYTES),
         sub!(c, 0, SYND_BYTES),
     );
 
+    // Convert decrypt return value (0=success, 1=failure) into mask:
+    // success -> 0xFFFF, failure -> 0x0000.
     let mut m = ret_decrypt as u16;
     m = m.wrapping_sub(1);
     m >>= 8;
 
+    // Domain-separation byte for the KDF preimage.
     preimage[0] = (m & 1) as u8;
 
     let s = &sk[40 + IRR_BYTES + COND_BYTES..];
 
+    // On success, use decoded error vector e; on failure, use fallback secret s.
+    // Selection is branch-free to avoid leaking decoder outcome.
     for i in 0..SYS_N / 8 {
         preimage[1 + i] = (!m as u8 & s[i]) | (m as u8 & e[i]);
     }
 
+    // Ciphertext prefix is always included in the KDF preimage.
     (&mut preimage[1 + (SYS_N / 8)..])[0..SYND_BYTES].copy_from_slice(&c[0..SYND_BYTES]);
 
     shake256(&mut key[0..32], &preimage);
 
-    // clear outputs (set to all 1's) if padding bits are not all zero
+    // Invalidate key material if ciphertext padding is malformed.
 
     let mask = padding_ok;
 
@@ -191,6 +231,70 @@ pub(crate) fn crypto_kem_dec(
     }
 
     padding_ok
+}
+
+/// KEM Decapsulation.
+///
+/// Non-embedded path: allocate workspace on stack per call.
+#[cfg(all(
+    not(feature = "embedded-workspace"),
+    not(any(feature = "mceliece6960119", feature = "mceliece6960119f"))
+))]
+pub(crate) fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+) -> u8 {
+    let mut workspace = DecapsulationWorkspace::new();
+    crypto_kem_dec_core(key, c, sk, &mut workspace)
+}
+
+/// KEM Decapsulation with caller-managed workspace.
+///
+/// Embedded path: the caller owns workspace memory and can reuse it.
+#[cfg(all(
+    feature = "embedded-workspace",
+    not(any(feature = "mceliece6960119", feature = "mceliece6960119f"))
+))]
+pub(crate) fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+    workspace: &mut DecapsulationWorkspace,
+) -> u8 {
+    crypto_kem_dec_core(key, c, sk, workspace)
+}
+
+/// KEM Decapsulation.
+///
+/// Non-embedded path for padding-checked variants.
+#[cfg(all(
+    not(feature = "embedded-workspace"),
+    any(feature = "mceliece6960119", feature = "mceliece6960119f")
+))]
+pub(crate) fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+) -> u8 {
+    let mut workspace = DecapsulationWorkspace::new();
+    crypto_kem_dec_core(key, c, sk, &mut workspace)
+}
+
+/// KEM Decapsulation with caller-managed workspace.
+///
+/// Embedded path for padding-checked variants.
+#[cfg(all(
+    feature = "embedded-workspace",
+    any(feature = "mceliece6960119", feature = "mceliece6960119f")
+))]
+pub(crate) fn crypto_kem_dec(
+    key: &mut [u8; CRYPTO_BYTES],
+    c: &[u8; CRYPTO_CIPHERTEXTBYTES],
+    sk: &[u8; CRYPTO_SECRETKEYBYTES],
+    workspace: &mut DecapsulationWorkspace,
+) -> u8 {
+    crypto_kem_dec_core(key, c, sk, workspace)
 }
 
 /// KEM Keypair generation.
@@ -336,6 +440,7 @@ pub(crate) fn crypto_kem_keypair<R: CryptoRng + RngCore>(
 mod tests {
     use super::*;
     use crate::nist_aes_rng::AesState;
+    use crate::test_utils::SliceReader;
     use crate::test_utils::TestData;
     use std::convert::TryFrom;
 
@@ -348,11 +453,24 @@ mod tests {
         let mut test_key = [0u8; 32];
         let compare_key = TestData::new().u8vec("mceliece8192128f_operations_ss");
 
-        crypto_kem_dec(
-            &mut test_key,
-            sub!(mut c, 0, CRYPTO_CIPHERTEXTBYTES),
-            sub!(mut sk, 0, CRYPTO_SECRETKEYBYTES),
-        );
+        #[cfg(feature = "embedded-workspace")]
+        {
+            let mut workspace = DecapsulationWorkspace::new();
+            crypto_kem_dec(
+                &mut test_key,
+                sub!(mut c, 0, CRYPTO_CIPHERTEXTBYTES),
+                sub!(mut sk, 0, CRYPTO_SECRETKEYBYTES),
+                &mut workspace,
+            );
+        }
+        #[cfg(not(feature = "embedded-workspace"))]
+        {
+            crypto_kem_dec(
+                &mut test_key,
+                sub!(mut c, 0, CRYPTO_CIPHERTEXTBYTES),
+                sub!(mut sk, 0, CRYPTO_SECRETKEYBYTES),
+            );
+        }
 
         assert_eq!(test_key, compare_key.as_slice());
     }
@@ -398,6 +516,42 @@ mod tests {
     }
 
     #[test]
+    fn test_crypto_kem_enc_from_reader() {
+        use crate::api::{CRYPTO_BYTES, CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES};
+
+        let mut c = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut ss = [0u8; CRYPTO_BYTES];
+        let pk = TestData::new().u8vec("mceliece8192128f_pk1");
+        assert_eq!(pk.len(), CRYPTO_PUBLICKEYBYTES);
+
+        let compare_ss = TestData::new().u8vec("mceliece8192128f_operations_ss");
+        let compare_ct = TestData::new().u8vec("mceliece8192128f_operations_enc1_ct");
+
+        let entropy_input = <[u8; 48]>::try_from(
+            TestData::new()
+                .u8vec("mceliece8192128f_operations_entropy_input")
+                .as_slice(),
+        )
+        .unwrap();
+
+        let mut rng_state = AesState::new();
+        rng_state.randombytes_init(entropy_input);
+
+        let mut second_seed = [0u8; 33];
+        second_seed[0] = 64;
+
+        rng_state.fill_bytes(&mut second_seed[1..]);
+
+        let mut reader = SliceReader { data: &pk, pos: 0 };
+        crate::streaming::crypto_kem_enc_from_reader(&mut c, &mut ss, &mut reader, &mut rng_state)
+            .unwrap();
+
+        assert_eq!(reader.pos, CRYPTO_PUBLICKEYBYTES);
+        assert_eq!(ss, compare_ss.as_slice());
+        assert_eq!(c, compare_ct.as_slice());
+    }
+
+    #[test]
     fn test_crypto_kem_keypair() {
         use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
 
@@ -428,5 +582,44 @@ mod tests {
 
         assert_eq!(compare_sk, sk_input);
         assert_eq!(compare_pk, pk_input);
+    }
+}
+
+#[cfg(test)]
+mod streaming_tests {
+    use super::*;
+    use crate::test_utils::{generate_public_key_bytes, SliceReader};
+    use rand::{rngs::StdRng, SeedableRng};
+
+    #[test]
+    fn test_crypto_kem_enc_from_reader_matches_enc() {
+        let pk = generate_public_key_bytes([0x55; 32]);
+        let mut c_direct = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut c_reader = [0u8; CRYPTO_CIPHERTEXTBYTES];
+        let mut ss_direct = [0u8; CRYPTO_BYTES];
+        let mut ss_reader = [0u8; CRYPTO_BYTES];
+
+        let mut rng_direct = StdRng::from_seed([0x99; 32]);
+        let mut rng_reader = StdRng::from_seed([0x99; 32]);
+
+        let _ = crypto_kem_enc(
+            &mut c_direct,
+            &mut ss_direct,
+            sub!(pk, 0, CRYPTO_PUBLICKEYBYTES),
+            &mut rng_direct,
+        );
+
+        let mut reader = SliceReader { data: &pk, pos: 0 };
+        crate::streaming::crypto_kem_enc_from_reader(
+            &mut c_reader,
+            &mut ss_reader,
+            &mut reader,
+            &mut rng_reader,
+        )
+        .unwrap();
+
+        assert_eq!(reader.pos, CRYPTO_PUBLICKEYBYTES);
+        assert_eq!(c_direct, c_reader);
+        assert_eq!(ss_direct, ss_reader);
     }
 }

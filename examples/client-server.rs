@@ -1,8 +1,15 @@
 //! This example tries to mimic a key exchange between two computers over a network.
+//!
+//! Run:
+//!   cargo run --example client-server --features mceliece348864
+//! Or:
+//!   ./scripts/run_example.sh client-server mceliece348864
 //! Here the "network" is simulated by simple message passing channels sending heap
 //! allocated byte buffers.
 #![cfg(feature = "alloc")]
 
+#[cfg(feature = "embedded-workspace")]
+use classic_mceliece_rust::DecapsulationWorkspace;
 use classic_mceliece_rust::{
     decapsulate_boxed, encapsulate_boxed, keypair_boxed, Ciphertext, PublicKey, SharedSecret,
     CRYPTO_CIPHERTEXTBYTES, CRYPTO_PUBLICKEYBYTES,
@@ -85,5 +92,13 @@ fn run_client(
     let ciphertext = parse_ciphertext(&ciphertext_data)?;
 
     // Decapsulate the shared secret
-    Ok(decapsulate_boxed(&ciphertext, &secret_key))
+    #[cfg(feature = "embedded-workspace")]
+    {
+        let mut workspace = DecapsulationWorkspace::new();
+        Ok(decapsulate_boxed(&ciphertext, &secret_key, &mut workspace))
+    }
+    #[cfg(not(feature = "embedded-workspace"))]
+    {
+        Ok(decapsulate_boxed(&ciphertext, &secret_key))
+    }
 }

@@ -72,6 +72,12 @@ Here, we consider an example where we run it in a separate thread (be aware that
 
     // Send `ciphertext` back to Alice.
     // Alice decapsulates the ciphertext...
+    #[cfg(feature = "embedded-workspace")]
+    let shared_secret_alice = {
+      let mut workspace = classic_mceliece_rust::DecapsulationWorkspace::new();
+      decapsulate_boxed(&ciphertext, &secret_key, &mut workspace)
+    };
+    #[cfg(not(feature = "embedded-workspace"))]
     let shared_secret_alice = decapsulate_boxed(&ciphertext, &secret_key);
 
     // ... and ends up with the same key material as Bob.
@@ -127,6 +133,12 @@ fn main() {
   let (ciphertext, shared_secret_bob) = encapsulate(&public_key, &mut shared_secret_bob_buf, &mut rng);
 
   let mut shared_secret_alice_buf = [0u8; CRYPTO_BYTES];
+  #[cfg(feature = "embedded-workspace")]
+  let shared_secret_alice = {
+    let mut workspace = classic_mceliece_rust::DecapsulationWorkspace::new();
+    decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf, &mut workspace)
+  };
+  #[cfg(not(feature = "embedded-workspace"))]
   let shared_secret_alice = decapsulate(&ciphertext, &secret_key, &mut shared_secret_alice_buf);
 
   assert_eq!(shared_secret_bob.as_array(), shared_secret_alice.as_array());
@@ -211,6 +223,31 @@ needs to be passed as `cargo run` parameter.
 ```bash
 $ cargo run --example katkem PQCkemKAT_935.req PQCkemKAT_935.rsp
 $ cargo run --example katkem PQCkemKAT_935.rsp
+```
+
+### Example helper script
+
+There is a helper to run examples and auto-generate example key files when required:
+
+```bash
+$ ./scripts/run_example.sh
+$ ./scripts/run_example.sh encapsulate_from_file
+$ ./scripts/run_example.sh encapsulate_static_no_std mceliece348864f
+$ ./scripts/run_example.sh katkem -- PQCkemKAT_935.req PQCkemKAT_935.rsp
+```
+
+Notes:
+- Default example is `encapsulate_from_file` and default variant is `mceliece348864`.
+- Pass a variant as the second argument or via `--variant <name>`.
+- The helper generates `examples/keys/public_key_<variant>.bin` and
+  `examples/keys/secret_key_<variant>.bin` on demand.
+- The `encapsulate_static_no_std` example is gated behind the
+  `example-embedded-keys` feature to avoid missing key files during `cargo test`.
+
+If you want to run the embedded example directly, generate the example keys first:
+
+```bash
+$ ./scripts/gen-example-keys.sh --all
 ```
 
 The different variants can be enabled through feature flags:

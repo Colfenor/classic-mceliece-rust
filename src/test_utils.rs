@@ -1,5 +1,10 @@
 #![cfg(test)]
 
+use crate::api::{CRYPTO_PUBLICKEYBYTES, CRYPTO_SECRETKEYBYTES};
+use crate::streaming::PublicKeyReader;
+use rand::{rngs::StdRng, SeedableRng};
+use std::convert::TryInto;
+
 macro_rules! impl_parser_per_type {
     ($name:ident, $bitsize:expr, $t:ty) => {
         /// Parses a testdata file and returns a vector of $ty stored for the given `search_key`.
@@ -78,4 +83,48 @@ impl TestData {
     impl_parser_per_type!(i16vec, 16, i16);
     //impl_parser_per_type!(i32vec, 32, i32);
     //impl_parser_per_type!(i64vec, 64, i64);
+}
+
+pub(crate) struct SliceReader<'a> {
+    pub(crate) data: &'a [u8],
+    pub(crate) pos: usize,
+}
+
+impl<'a> PublicKeyReader for SliceReader<'a> {
+    type Error = ();
+
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), Self::Error> {
+        let end = self.pos + buf.len();
+        if end > self.data.len() {
+            return Err(());
+        }
+        buf.copy_from_slice(&self.data[self.pos..end]);
+        self.pos = end;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> Result<(), Self::Error> {
+        if self.pos == self.data.len() {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    fn invalid_padding(&self) -> Self::Error {
+        ()
+    }
+}
+
+pub(crate) fn generate_public_key_bytes(seed: [u8; 32]) -> std::vec::Vec<u8> {
+    let mut pk_storage = vec![0u8; CRYPTO_PUBLICKEYBYTES];
+    let mut sk_storage = vec![0u8; CRYPTO_SECRETKEYBYTES];
+
+    let pk_array: &mut [u8; CRYPTO_PUBLICKEYBYTES] = pk_storage.as_mut_slice().try_into().unwrap();
+    let sk_array: &mut [u8; CRYPTO_SECRETKEYBYTES] = sk_storage.as_mut_slice().try_into().unwrap();
+
+    let mut keygen_rng = StdRng::from_seed(seed);
+    crate::operations::crypto_kem_keypair(pk_array, sk_array, &mut keygen_rng);
+
+    pk_storage
 }
